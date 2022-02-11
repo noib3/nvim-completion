@@ -2,7 +2,14 @@
 name = "compleet"
 version = "0.1.0"
 edition = "2021"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+repository = "https://github.com/noib3/nvim-compleet.git"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1.52"
+futures = "0.3"
+nvim-rs = { version = "0.4.0", features = ["use_tokio"] }
+rmpv = "1.0.0"
+tokio = { version = "1.16.1", features = ["full"] }
