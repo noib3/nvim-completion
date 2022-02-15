@@ -1,7 +1,11 @@
 use async_trait::async_trait;
-use nvim_rs::compat::tokio::Compat;
+use nvim_rs::{compat::tokio::Compat, Neovim};
 use rmpv::Value;
 use tokio::io::Stdout;
+
+use compleet::{
+    handle_cursor_moved_i, handle_insert_char_pre, handle_insert_leave,
+};
 
 #[derive(Clone)]
 struct NeovimHandler {}
@@ -12,20 +16,28 @@ impl nvim_rs::Handler for NeovimHandler {
 
     async fn handle_notify(
         &self,
-        _method: String,
-        _args: Vec<Value>,
-        _neovim: nvim_rs::Neovim<Self::Writer>,
+        method: String,
+        args: Vec<Value>,
+        nvim: Neovim<Self::Writer>,
     ) {
-        unimplemented!()
+        match method.as_str() {
+            "CursorMovedI" => handle_cursor_moved_i(&nvim).await,
+            "InsertCharPre" => {
+                handle_insert_char_pre(&nvim, &args[0].as_str().unwrap_or(""))
+                    .await;
+            },
+            "InsertLeave" => handle_insert_leave(&nvim).await,
+            _ => {},
+        }
     }
 
     async fn handle_request(
         &self,
         method: String,
         args: Vec<Value>,
-        _neovim: nvim_rs::Neovim<Self::Writer>,
+        _nvim: Neovim<Self::Writer>,
     ) -> Result<Value, Value> {
-        match method.as_ref() {
+        match method.as_str() {
             "ping" => {
                 match args[0].as_str().expect("Was expecting a string") {
                     "Neovim says ping!" => Ok(Value::from("Rust says pong!")),
