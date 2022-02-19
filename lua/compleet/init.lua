@@ -1,5 +1,8 @@
 local augroups = require('compleet/augroups')
 
+local col = vim.fn.col
+local getline = vim.fn.getline
+
 local channel_id
 
 ---@param method  string
@@ -11,6 +14,35 @@ end
 ---@return any
 local request = function(method, ...)
   return vim.rpcrequest(channel_id, method, ...)
+end
+
+local accept_completion = function()
+  notify('accept_completion')
+end
+
+local cursor_moved = function()
+  notify('cursor_moved')
+end
+
+local insert_left = function()
+  notify('insert_left')
+end
+
+---@return boolean
+local completion_menu_is_visible = function()
+  return request('is_completion_menu_visible')
+end
+
+local ping = function()
+  print(request('ping', 'Neovim says ping!'))
+end
+
+local select_next_completion = function()
+  notify('insert_left')
+end
+
+local select_prev_completion = function()
+  notify('insert_left')
 end
 
 ---@param preferences  table | nil
@@ -36,8 +68,20 @@ local setup = function(preferences)
   augroups.setup()
 end
 
+local text_changed = function()
+  local current_line = getline('.')
+  local bytes_before_cursor = col('.') - 1
+  notify('text_changed', current_line, bytes_before_cursor)
+end
+
 return {
-  notify = notify,
-  request = request,
+  accept_completion = accept_completion,
+  cursor_moved = cursor_moved,
+  insert_left = insert_left,
+  completion_menu_is_visible = completion_menu_is_visible,
+  ping = ping,
+  select_next_completion = select_next_completion,
+  select_prev_completion = select_prev_completion,
   setup = setup,
+  text_changed = text_changed,
 }

@@ -1,44 +1,119 @@
-use nvim_rs::{compat::tokio::Compat, Buffer, Neovim};
-use rmpv::Value;
+use futures::future;
+use nvim_rs::{compat::tokio::Compat, Neovim};
 use tokio::io::Stdout;
 
-mod utils;
-use utils::nvim_echo;
+pub mod completion;
+use completion::CompletionItem;
 
-// mod window;
-// use window::config::FloatingWindowConfig;
+// mod debugging;
+// use debugging::nvim_echo::nvim_echo;
 
-type Nvim = Neovim<Compat<Stdout>>;
+mod insertion;
 
-pub async fn handle_cursor_moved_i(nvim: &Nvim) {
-    nvim_echo(nvim, "Cursor moved", "Normal", false).await;
-}
+pub mod ui;
+use ui::UIState;
 
-pub async fn handle_insert_char_pre(nvim: &Nvim, char: &str) {
-    let config = vec![
-        (Value::from("relative"), Value::from("cursor")),
-        (Value::from("height"), Value::from(2)),
-        (Value::from("width"), Value::from(20)),
-        (Value::from("row"), Value::from(1)),
-        (Value::from("col"), Value::from(0)),
-        (Value::from("style"), Value::from("minimal")),
-    ];
+pub type Nvim = Neovim<Writer>;
 
-    // let config =
-    //     FloatingWindowConfig::new(&[("relative", "cursor"), ("height", 2)]);
+pub type Writer = Compat<Stdout>;
 
-    nvim.open_win(
-        &Buffer::new(Value::from(0), nvim.clone()),
-        false,
-        Vec::<(Value, Value)>::from(config),
-    )
-    .await
-    .unwrap();
-
-    nvim_echo(nvim, &format!("Inserted char: '{}'", char), "Normal", true)
+pub async fn accept_completion(
+    nvim: &Nvim,
+    completion_items: &mut Vec<CompletionItem>,
+    ui_state: &mut UIState,
+    current_line: &str,
+    bytes_before_cursor: u64,
+) {
+    if let Some(index) = ui_state.completion_menu.selected_index {
+        future::join4(
+            ui_state.completion_menu.hide(),
+            ui_state.details_pane.hide(),
+            ui_state.virtual_text.erase(),
+            insertion::insert_completion(
+                nvim,
+                current_line,
+                bytes_before_cursor,
+                &completion_items[index],
+            ),
+        )
         .await;
+
+        completion_items.clear();
+    }
 }
 
-pub async fn handle_insert_leave(nvim: &Nvim) {
-    nvim_echo(nvim, "Left insert mode", "Normal", false).await;
+pub async fn cursor_moved(ui_state: &mut UIState) {
+    future::join3(
+        ui_state.completion_menu.hide(),
+        ui_state.details_pane.hide(),
+        ui_state.virtual_text.erase(),
+    )
+    .await;
+}
+
+pub async fn insert_left(ui_state: &mut UIState) {
+    future::join3(
+        ui_state.completion_menu.hide(),
+        ui_state.details_pane.hide(),
+        ui_state.virtual_text.erase(),
+    )
+    .await;
+}
+
+pub async fn select_next_completion(
+    ui_state: &mut UIState,
+    completion_items_len: usize,
+) {
+    if !ui_state.completion_menu.is_visible() {
+        return;
+    }
+
+    ui_state.completion_menu.selected_index =
+        match ui_state.completion_menu.selected_index {
+            Some(index) if index == completion_items_len - 1 => None,
+            Some(index) => Some(index + 1),
+            None => Some(0),
+        }
+}
+
+pub async fn select_prev_completion(
+    ui_state: &mut UIState,
+    completion_items_len: usize,
+) {
+    if !ui_state.completion_menu.is_visible() {
+        return;
+    }
+
+    ui_state.completion_menu.selected_index =
+        match ui_state.completion_menu.selected_index {
+            Some(index) if index == 0 => None,
+            Some(index) => Some(index - 1),
+            None => Some(completion_items_len - 1),
+        }
+}
+
+pub async fn text_changed(
+    nvim: &Nvim,
+    completion_items: &mut Vec<CompletionItem>,
+    ui_state: &mut UIState,
+    current_line: &str,
+    bytes_before_cursor: u64,
+) {
+    *completion_items =
+        completion::complete(current_line, bytes_before_cursor);
+
+    if completion_items.is_empty() {
+        ui_state.completion_menu.selected_index = None;
+        return;
+    }
+
+    if let Some(index) = ui_state.completion_menu.selected_index {
+        ui_state.completion_menu.selected_index =
+            Some(std::cmp::min(index, completion_items.len() - 1))
+    }
+
+    ui_state
+        .completion_menu
+        .show_completions(nvim, completion_items)
+        .await;
 }

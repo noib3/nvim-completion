@@ -1,32 +1,83 @@
 use async_trait::async_trait;
-use nvim_rs::{compat::tokio::Compat, Neovim};
+use futures::lock::Mutex;
 use rmpv::Value;
-use tokio::io::Stdout;
+use std::sync::Arc;
 
-use compleet::{
-    handle_cursor_moved_i, handle_insert_char_pre, handle_insert_leave,
-};
+use compleet::{completion::CompletionItem, ui::UIState};
 
 #[derive(Clone)]
-struct NeovimHandler {}
+pub struct NeovimHandler {
+    completion_items: Arc<Mutex<Vec<CompletionItem>>>,
+    ui_state: Arc<Mutex<UIState>>,
+}
+
+impl NeovimHandler {
+    fn new() -> Self {
+        NeovimHandler {
+            completion_items: Arc::new(Mutex::new(Vec::new())),
+            ui_state: Arc::new(Mutex::new(UIState::new())),
+        }
+    }
+}
 
 #[async_trait]
 impl nvim_rs::Handler for NeovimHandler {
-    type Writer = Compat<Stdout>;
+    type Writer = compleet::Writer;
 
     async fn handle_notify(
         &self,
         method: String,
         args: Vec<Value>,
-        nvim: Neovim<Self::Writer>,
+        nvim: compleet::Nvim,
     ) {
+        let completion_items = &mut *self.completion_items.lock().await;
+        let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
-            "CursorMovedI" => handle_cursor_moved_i(&nvim).await,
-            "InsertCharPre" => {
-                handle_insert_char_pre(&nvim, &args[0].as_str().unwrap_or(""))
-                    .await;
+            "accept_completion" => {
+                let current_line = args[0].as_str().unwrap_or("");
+                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
+                compleet::accept_completion(
+                    &nvim,
+                    completion_items,
+                    ui_state,
+                    current_line,
+                    bytes_before_cursor,
+                )
+                .await
             },
-            "InsertLeave" => handle_insert_leave(&nvim).await,
+
+            "cursor_moved" => compleet::cursor_moved(ui_state).await,
+
+            "insert_left" => compleet::insert_left(ui_state).await,
+
+            "select_next_completion" => {
+                compleet::select_next_completion(
+                    ui_state,
+                    completion_items.len(),
+                )
+                .await
+            },
+
+            "select_prev_completion" => {
+                compleet::select_prev_completion(
+                    ui_state,
+                    completion_items.len(),
+                )
+                .await
+            },
+
+            "text_changed" => {
+                let current_line = args[0].as_str().unwrap_or("");
+                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
+                compleet::text_changed(
+                    &nvim,
+                    completion_items,
+                    ui_state,
+                    current_line,
+                    bytes_before_cursor,
+                )
+                .await
+            },
             _ => {},
         }
     }
@@ -35,15 +86,23 @@ impl nvim_rs::Handler for NeovimHandler {
         &self,
         method: String,
         args: Vec<Value>,
-        _nvim: Neovim<Self::Writer>,
+        _nvim: compleet::Nvim,
     ) -> Result<Value, Value> {
+        let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
-            "ping" => {
-                match args[0].as_str().expect("Was expecting a string") {
-                    "Neovim says ping!" => Ok(Value::from("Rust says pong!")),
-                    _ => Err(Value::from("Idk what that is :(")),
-                }
+            "is_completion_item_selected" => Ok(Value::from(
+                ui_state.completion_menu.selected_index.is_some(),
+            )),
+
+            "is_completion_menu_visible" => {
+                Ok(Value::from(ui_state.completion_menu.is_visible()))
             },
+
+            "ping" => match args[0].as_str().unwrap_or("") {
+                "Neovim says ping!" => Ok(Value::from("Rust says pong!")),
+                _ => Err(Value::Nil),
+            },
+
             _ => Err(Value::Nil),
         }
     }
@@ -51,8 +110,9 @@ impl nvim_rs::Handler for NeovimHandler {
 
 #[tokio::main]
 async fn main() {
+    let handler = NeovimHandler::new();
     let (_nvim, io_handler) =
-        nvim_rs::create::tokio::new_parent(NeovimHandler {}).await;
+        nvim_rs::create::tokio::new_parent(handler).await;
 
     match io_handler.await {
         Ok(_) => {},

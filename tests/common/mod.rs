@@ -1,4 +1,4 @@
-use std::{process::Command, str};
+use std::process::Command;
 
 pub fn nvim_execute(cmds: &[&str]) -> String {
     let args = cmds

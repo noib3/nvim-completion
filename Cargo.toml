@@ -10,6 +10,7 @@ repository = "https://github.com/noib3/nvim-compleet.git"
 [dependencies]
 async-trait = "0.1.52"
 futures = "0.3"
+itertools = "0.10.2"
 nvim-rs = { version = "0.4.0", features = ["use_tokio"] }
 rmpv = "1.0.0"
 tokio = { version = "1.16.1", features = ["full"] }

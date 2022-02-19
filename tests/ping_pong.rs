@@ -6,7 +6,8 @@ use common::nvim_execute;
 fn ping_pong() {
     let response = nvim_execute(&[
         r#"lua require('compleet').setup()"#,
-        r#"lua print(require('compleet').request('ping', 'Neovim says ping!'))"#,
+        r#"lua require('compleet').ping()"#,
     ]);
+
     assert_eq!(response, "Rust says pong!");
 }
