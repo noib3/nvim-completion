@@ -66,6 +66,19 @@ impl nvim_rs::Handler for NeovimHandler {
                 .await
             },
 
+            "show_completions" => {
+                let current_line = args[0].as_str().unwrap_or("");
+                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
+                compleet::show_completions(
+                    &nvim,
+                    completion_items,
+                    ui_state,
+                    current_line,
+                    bytes_before_cursor,
+                )
+                .await
+            },
+
             "text_changed" => {
                 let current_line = args[0].as_str().unwrap_or("");
                 let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
@@ -78,6 +91,7 @@ impl nvim_rs::Handler for NeovimHandler {
                 )
                 .await
             },
+
             _ => {},
         }
     }
@@ -90,11 +104,23 @@ impl nvim_rs::Handler for NeovimHandler {
     ) -> Result<Value, Value> {
         let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
-            "is_completion_item_selected" => Ok(Value::from(
+            "has_completions" => {
+                let completion_items =
+                    &mut *self.completion_items.lock().await;
+                let current_line = args[0].as_str().unwrap_or("");
+                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
+                Ok(Value::from(compleet::has_completions(
+                    completion_items,
+                    current_line,
+                    bytes_before_cursor,
+                )))
+            },
+
+            "is_item_selected" => Ok(Value::from(
                 ui_state.completion_menu.selected_index.is_some(),
             )),
 
-            "is_completion_menu_visible" => {
+            "is_menu_visible" => {
                 Ok(Value::from(ui_state.completion_menu.is_visible()))
             },
 

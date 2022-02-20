@@ -1,7 +1,7 @@
 local augroups = require('compleet/augroups')
 
-local col = vim.fn.col
-local getline = vim.fn.getline
+local get_current_line = vim.api.nvim_get_current_line
+local get_cursor = vim.api.nvim_win_get_cursor
 
 local channel_id
 
@@ -69,9 +69,11 @@ local setup = function(preferences)
 end
 
 local text_changed = function()
-  local current_line = getline('.')
-  local bytes_before_cursor = col('.') - 1
-  notify('text_changed', current_line, bytes_before_cursor)
+  notify(
+    'text_changed',
+    get_current_line(),
+    get_cursor(0)[2]
+  )
 end
 
 return {

@@ -69,6 +69,7 @@ impl CompletionMenu {
 }
 
 impl fmt::Display for CompletionItem {
+    // Look into `:h nvim_buf_add_highlight` for highlighting matching chars
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, " {} ({}) ", self.text, self.matched_characters.len())
     }
