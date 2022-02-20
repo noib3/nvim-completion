@@ -114,7 +114,7 @@ pub async fn select_next_completion(
             Some(index) if index == completion_items_len - 1 => None,
             Some(index) => Some(index + 1),
             None => Some(0),
-        }
+        };
 }
 
 pub async fn select_prev_completion(
@@ -130,7 +130,7 @@ pub async fn select_prev_completion(
             Some(index) if index == 0 => None,
             Some(index) => Some(index - 1),
             None => Some(completion_items_len - 1),
-        }
+        };
 }
 
 // TODO: how does this interact w/ virtual text?

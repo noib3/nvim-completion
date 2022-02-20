@@ -1,54 +1,16 @@
 local augroups = require('compleet/augroups')
+local mappings = require('compleet/mappings')
 
-local get_current_line = vim.api.nvim_get_current_line
-local get_cursor = vim.api.nvim_win_get_cursor
+local request = vim.rpcrequest
 
-local channel_id
-
----@param method  string
-local notify = function(method, ...)
-  vim.rpcnotify(channel_id, method, ...)
-end
-
----@param method  string
----@return any
-local request = function(method, ...)
-  return vim.rpcrequest(channel_id, method, ...)
-end
-
-local accept_completion = function()
-  notify('accept_completion')
-end
-
-local cursor_moved = function()
-  notify('cursor_moved')
-end
-
-local insert_left = function()
-  notify('insert_left')
-end
-
----@return boolean
-local completion_menu_is_visible = function()
-  return request('is_completion_menu_visible')
-end
-
-local ping = function()
-  print(request('ping', 'Neovim says ping!'))
-end
-
-local select_next_completion = function()
-  notify('insert_left')
-end
-
-local select_prev_completion = function()
-  notify('insert_left')
-end
+_G.compleet = {
+  channel_id = nil,
+}
 
 ---@param preferences  table | nil
 local setup = function(preferences)
   -- If the connection has already been started return early.
-  if channel_id then return end
+  if _G.compleet.channel_id then return end
 
   -- The path of this file in the filesystem
   local path_self =
@@ -63,27 +25,24 @@ local setup = function(preferences)
   if vim.fn.executable(path_binary) ~= 1 then return end
 
   -- Start the connection to the Rust binary
-  channel_id = vim.fn.jobstart({ path_binary }, { rpc = true })
+  _G.compleet.channel_id = vim.fn.jobstart({ path_binary }, { rpc = true })
 
   augroups.setup()
+  mappings.setup()
 end
 
-local text_changed = function()
-  notify(
-    'text_changed',
-    get_current_line(),
-    get_cursor(0)[2]
-  )
+---@return boolean
+local is_menu_visible = function()
+  return request(_G.compleet.channel_id, 'is_completion_menu_visible')
+end
+
+---@return boolean
+local has_completions = function()
+  return request(_G.compleet.channel_id, 'has_completions')
 end
 
 return {
-  accept_completion = accept_completion,
-  cursor_moved = cursor_moved,
-  insert_left = insert_left,
-  completion_menu_is_visible = completion_menu_is_visible,
-  ping = ping,
-  select_next_completion = select_next_completion,
-  select_prev_completion = select_prev_completion,
+  has_completions = has_completions,
+  is_menu_visible = is_menu_visible,
   setup = setup,
-  text_changed = text_changed,
 }

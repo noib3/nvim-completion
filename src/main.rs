@@ -34,6 +34,8 @@ impl nvim_rs::Handler for NeovimHandler {
         let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
             "accept_completion" => {
+                // TODO: I shouldn't need any args here. All that I need should
+                // be saved in a `CompletionState` struct.
                 let current_line = args[0].as_str().unwrap_or("");
                 let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
                 compleet::accept_completion(
