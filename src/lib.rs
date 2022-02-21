@@ -149,15 +149,20 @@ pub async fn show_completions(
     // completion menu is currently hidden and we want to show the completions
     // (e.g. the user moved the cursor and now wants to get completions at the
     // current cursor position), ideally after checking `has_completions`,
-    // which already updates the `completion_items`.
+    // which already updates the `completion_items`, so reupdating them again
+    // is wasteful.
+    //
+    // However we actually have no way to control that that's what all users
+    // will do, nor is there any obvious way to enforce it. But calling it
+    // twice just penalizes the users that use this feature properly, which
+    // isn't fair. Hmmmm.
+    //
     // *completion_items =
     //     completion::complete(current_line, bytes_before_cursor);
 
     if completion_items.is_empty() {
         return;
     }
-
-    ui_state.completion_menu.selected_index = None;
 
     ui_state
         .completion_menu
@@ -180,6 +185,10 @@ pub async fn text_changed(
         return;
     }
 
+    // TODO: I don't actually need this bc the completion_menu is hidden on
+    // every cursor_moved and every completion_menu.hide() already sets the
+    // selected index to None. Maybe I do if I decide it's not the
+    // responsability of completion_menu.hide() to reset the selected index.
     if let Some(index) = ui_state.completion_menu.selected_index {
         ui_state.completion_menu.selected_index =
             Some(cmp::min(index, completion_items.len() - 1))

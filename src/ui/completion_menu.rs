@@ -22,11 +22,11 @@ impl CompletionMenu {
             self.window = None;
         }
 
-        self.selected_index = None
+        self.selected_index = None;
     }
 
     pub fn is_visible(&self) -> bool {
-        self.window.is_none()
+        self.window.is_some()
     }
 
     pub fn new() -> Self {

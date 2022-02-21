@@ -54,54 +54,54 @@ mod tests {
     #[test]
     // `|`
     fn empty_line() {
-        assert_eq!("", get_prefix("", 0).as_str())
+        assert_eq!("", get_prefix("", 0))
     }
 
     #[test]
     // `|foo`
     fn cursor_at_beginning_of_line() {
-        assert_eq!("", get_prefix("foo", 0).as_str())
+        assert_eq!("", get_prefix("foo", 0))
     }
 
     #[test]
     // ` ⇥|foo`
     fn only_whitespace_before_cursor() {
-        assert_eq!("", get_prefix(" \tfoo", 2).as_str())
+        assert_eq!("", get_prefix(" \tfoo", 2))
     }
 
     #[test]
     // `foo |bar`
     fn cursor_before_word() {
-        assert_eq!("", get_prefix("foo bar", 4).as_str())
+        assert_eq!("", get_prefix("foo bar", 4))
     }
 
     #[test]
     // `foo | bar`
     fn cursor_between_spaces() {
-        assert_eq!("", get_prefix("foo  bar", 4).as_str())
+        assert_eq!("", get_prefix("foo  bar", 4))
     }
 
     #[test]
     // `foo⇥|⇥bar`
     fn cursor_between_tabs() {
-        assert_eq!("", get_prefix("foo\t\tbar", 4).as_str())
+        assert_eq!("", get_prefix("foo\t\tbar", 4))
     }
 
     #[test]
     // `foo|`
     fn cursor_end_of_word() {
-        assert_eq!("foo", get_prefix("foo", 3).as_str())
+        assert_eq!("foo", get_prefix("foo", 3))
     }
 
     #[test]
     // `foo|bar`
     fn cursor_inside_word() {
-        assert_eq!("foo", get_prefix("foobar", 3).as_str())
+        assert_eq!("foo", get_prefix("foobar", 3))
     }
 
     #[test]
     // `fö|ö` (every `ö` is 2 bytes long)
     fn cursor_inside_word_multibyte_chars() {
-        assert_eq!("fö", get_prefix("föö", 3).as_str())
+        assert_eq!("fö", get_prefix("föö", 3))
     }
 }

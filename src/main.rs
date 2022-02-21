@@ -118,11 +118,11 @@ impl nvim_rs::Handler for NeovimHandler {
                 )))
             },
 
-            "is_item_selected" => Ok(Value::from(
+            "is_completion_item_selected" => Ok(Value::from(
                 ui_state.completion_menu.selected_index.is_some(),
             )),
 
-            "is_menu_visible" => {
+            "is_completion_menu_visible" => {
                 Ok(Value::from(ui_state.completion_menu.is_visible()))
             },
 
