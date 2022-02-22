@@ -11,7 +11,8 @@ fn greet_people(lua: &Lua, names: Vec<String>) -> LuaResult<LuaTable> {
     Ok(strings)
 }
 
-fn compleet(lua: &Lua) -> LuaResult<LuaTable> {
+#[mlua::lua_module]
+pub fn libcompleet(lua: &Lua) -> LuaResult<LuaTable> {
     let exports = lua.create_table()?;
     exports.set("greet_people", lua.create_function(greet_people)?)?;
     Ok(exports)
