@@ -13,4 +13,16 @@ impl Buffer {
             .await
             .unwrap()
     }
+
+    // TODO: offer some more abstraction over the raw api?
+    pub async fn add_highlight(&self, line: i64) {
+        self.0
+            .add_highlight(-1, "Visual", line, 0, -1)
+            .await
+            .unwrap();
+    }
+
+    pub async fn clear_highlight(&self, line: i64) {
+        self.0.clear_highlight(-1, line, line + 1).await.unwrap();
+    }
 }

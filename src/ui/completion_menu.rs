@@ -22,7 +22,8 @@ impl CompletionMenu {
             self.window = None;
         }
 
-        self.selected_index = None;
+        // TODO
+        // self.selected_index = None;
     }
 
     pub fn is_visible(&self) -> bool {
@@ -43,7 +44,9 @@ impl CompletionMenu {
         completion_items: &[CompletionItem],
     ) {
         if self.buffer.is_none() {
-            self.buffer = Some(Buffer::new(&nvim).await);
+            // This is only executed the first time the completion menu is
+            // shown. After that we'll already have a buffer available.
+            self.buffer = Some(Buffer::new(nvim).await);
         }
 
         let lines = completion_items
@@ -51,10 +54,8 @@ impl CompletionMenu {
             .map(|item| item.to_string())
             .collect::<Vec<String>>();
 
-        let max_window_height = 7;
-
         let width = lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        let height = cmp::min(lines.len(), max_window_height);
+        let height = cmp::min(lines.len(), 7);
 
         if let Some(buffer) = &self.buffer {
             let (_, window) = future::join(
@@ -66,10 +67,31 @@ impl CompletionMenu {
             self.window = Some(window);
         }
     }
+
+    pub async fn update_selected_completion(
+        &mut self,
+        new_selected_index: Option<usize>,
+    ) {
+        // TODO: if both the old and new indexes are `Some` we don't have to
+        // wait for the old one to be cleared before adding the new one => run
+        // them at the same time asyncy.
+        if let Some(buffer) = &self.buffer {
+            match self.selected_index {
+                Some(old) => buffer.clear_highlight(old as i64).await,
+                None => {},
+            }
+
+            match new_selected_index {
+                Some(new) => buffer.add_highlight(new as i64).await,
+                None => {},
+            }
+        }
+
+        self.selected_index = new_selected_index;
+    }
 }
 
 impl fmt::Display for CompletionItem {
-    // Look into `:h nvim_buf_add_highlight` for highlighting matching chars
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, " {} ({}) ", self.text, self.matched_characters.len())
     }

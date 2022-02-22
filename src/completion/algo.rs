@@ -3,10 +3,8 @@ use itertools::Itertools;
 use super::CompletionItem;
 
 // TODO: docs
-pub fn complete(line: &str, bytes_before_cursor: u64) -> Vec<CompletionItem> {
-    let prefix = get_prefix(line, bytes_before_cursor);
-
-    if prefix.is_empty() {
+pub fn complete(matched_prefix: &str) -> Vec<CompletionItem> {
+    if matched_prefix.is_empty() {
         return Vec::new();
     }
 
@@ -18,8 +16,10 @@ pub fn complete(line: &str, bytes_before_cursor: u64) -> Vec<CompletionItem> {
 
     entries
         .into_iter()
-        .filter(|entry| entry.starts_with(&prefix) && entry != &prefix)
-        .map(|entry| CompletionItem::new(entry, &prefix))
+        .filter(|entry| {
+            entry.starts_with(&matched_prefix) && entry != matched_prefix
+        })
+        .map(|entry| CompletionItem::new(entry, matched_prefix))
         .collect::<Vec<CompletionItem>>()
 }
 
@@ -31,7 +31,7 @@ pub fn complete(line: &str, bytes_before_cursor: u64) -> Vec<CompletionItem> {
 // fn get_prefix<'a>(line: &'a str, bytes_before_cursor: u64) -> &'a str {
 //
 // TODO: docs
-fn get_prefix(line: &str, bytes_before_cursor: u64) -> String {
+pub fn get_matched_prefix(line: &str, bytes_before_cursor: u64) -> String {
     line[..bytes_before_cursor as usize]
         .chars()
         .rev()
@@ -47,61 +47,61 @@ fn get_prefix(line: &str, bytes_before_cursor: u64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::get_prefix;
+    use super::get_matched_prefix;
 
     // NOTE: the `|` in the following comments indicates the cursor position.
 
     #[test]
     // `|`
     fn empty_line() {
-        assert_eq!("", get_prefix("", 0))
+        assert_eq!("", get_matched_prefix("", 0))
     }
 
     #[test]
     // `|foo`
     fn cursor_at_beginning_of_line() {
-        assert_eq!("", get_prefix("foo", 0))
+        assert_eq!("", get_matched_prefix("foo", 0))
     }
 
     #[test]
     // ` ⇥|foo`
     fn only_whitespace_before_cursor() {
-        assert_eq!("", get_prefix(" \tfoo", 2))
+        assert_eq!("", get_matched_prefix(" \tfoo", 2))
     }
 
     #[test]
     // `foo |bar`
     fn cursor_before_word() {
-        assert_eq!("", get_prefix("foo bar", 4))
+        assert_eq!("", get_matched_prefix("foo bar", 4))
     }
 
     #[test]
     // `foo | bar`
     fn cursor_between_spaces() {
-        assert_eq!("", get_prefix("foo  bar", 4))
+        assert_eq!("", get_matched_prefix("foo  bar", 4))
     }
 
     #[test]
     // `foo⇥|⇥bar`
     fn cursor_between_tabs() {
-        assert_eq!("", get_prefix("foo\t\tbar", 4))
+        assert_eq!("", get_matched_prefix("foo\t\tbar", 4))
     }
 
     #[test]
     // `foo|`
     fn cursor_end_of_word() {
-        assert_eq!("foo", get_prefix("foo", 3))
+        assert_eq!("foo", get_matched_prefix("foo", 3))
     }
 
     #[test]
     // `foo|bar`
     fn cursor_inside_word() {
-        assert_eq!("foo", get_prefix("foobar", 3))
+        assert_eq!("foo", get_matched_prefix("foobar", 3))
     }
 
     #[test]
     // `fö|ö` (every `ö` is 2 bytes long)
     fn cursor_inside_word_multibyte_chars() {
-        assert_eq!("fö", get_prefix("föö", 3))
+        assert_eq!("fö", get_matched_prefix("föö", 3))
     }
 }

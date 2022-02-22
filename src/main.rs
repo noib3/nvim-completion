@@ -3,18 +3,18 @@ use futures::lock::Mutex;
 use rmpv::Value;
 use std::sync::Arc;
 
-use compleet::{completion::CompletionItem, ui::UIState};
+use compleet::{completion::CompletionState, ui::UIState};
 
 #[derive(Clone)]
 pub struct NeovimHandler {
-    completion_items: Arc<Mutex<Vec<CompletionItem>>>,
+    completion_state: Arc<Mutex<CompletionState>>,
     ui_state: Arc<Mutex<UIState>>,
 }
 
 impl NeovimHandler {
     fn new() -> Self {
         NeovimHandler {
-            completion_items: Arc::new(Mutex::new(Vec::new())),
+            completion_state: Arc::new(Mutex::new(CompletionState::new())),
             ui_state: Arc::new(Mutex::new(UIState::new())),
         }
     }
@@ -30,22 +30,12 @@ impl nvim_rs::Handler for NeovimHandler {
         args: Vec<Value>,
         nvim: compleet::Nvim,
     ) {
-        let completion_items = &mut *self.completion_items.lock().await;
+        let completion_state = &mut *self.completion_state.lock().await;
         let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
             "accept_completion" => {
-                // TODO: I shouldn't need any args here. All that I need should
-                // be saved in a `CompletionState` struct.
-                let current_line = args[0].as_str().unwrap_or("");
-                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
-                compleet::accept_completion(
-                    &nvim,
-                    completion_items,
-                    ui_state,
-                    current_line,
-                    bytes_before_cursor,
-                )
-                .await
+                compleet::accept_completion(&nvim, completion_state, ui_state)
+                    .await
             },
 
             "cursor_moved" => compleet::cursor_moved(ui_state).await,
@@ -55,7 +45,7 @@ impl nvim_rs::Handler for NeovimHandler {
             "select_next_completion" => {
                 compleet::select_next_completion(
                     ui_state,
-                    completion_items.len(),
+                    completion_state.completion_items.len(),
                 )
                 .await
             },
@@ -63,22 +53,14 @@ impl nvim_rs::Handler for NeovimHandler {
             "select_prev_completion" => {
                 compleet::select_prev_completion(
                     ui_state,
-                    completion_items.len(),
+                    completion_state.completion_items.len(),
                 )
                 .await
             },
 
             "show_completions" => {
-                let current_line = args[0].as_str().unwrap_or("");
-                let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
-                compleet::show_completions(
-                    &nvim,
-                    completion_items,
-                    ui_state,
-                    current_line,
-                    bytes_before_cursor,
-                )
-                .await
+                compleet::show_completions(&nvim, completion_state, ui_state)
+                    .await
             },
 
             "text_changed" => {
@@ -86,7 +68,7 @@ impl nvim_rs::Handler for NeovimHandler {
                 let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
                 compleet::text_changed(
                     &nvim,
-                    completion_items,
+                    completion_state,
                     ui_state,
                     current_line,
                     bytes_before_cursor,
@@ -104,15 +86,14 @@ impl nvim_rs::Handler for NeovimHandler {
         args: Vec<Value>,
         _nvim: compleet::Nvim,
     ) -> Result<Value, Value> {
+        let completion_state = &mut *self.completion_state.lock().await;
         let ui_state = &mut *self.ui_state.lock().await;
         match method.as_str() {
             "has_completions" => {
-                let completion_items =
-                    &mut *self.completion_items.lock().await;
                 let current_line = args[0].as_str().unwrap_or("");
                 let bytes_before_cursor = args[1].as_u64().unwrap_or(0);
                 Ok(Value::from(compleet::has_completions(
-                    completion_items,
+                    completion_state,
                     current_line,
                     bytes_before_cursor,
                 )))

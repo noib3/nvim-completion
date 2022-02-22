@@ -5,7 +5,7 @@ use nvim_rs::{compat::tokio::Compat, Neovim};
 use tokio::io::Stdout;
 
 pub mod completion;
-use completion::CompletionItem;
+use completion::CompletionState;
 
 // mod debugging;
 // use debugging::nvim_echo;
@@ -21,13 +21,12 @@ pub type Writer = Compat<Stdout>;
 
 pub async fn accept_completion(
     nvim: &Nvim,
-    completion_items: &mut Vec<CompletionItem>,
+    completion_state: &mut CompletionState,
     ui_state: &mut UIState,
-    current_line: &str,
-    bytes_before_cursor: u64,
 ) {
     if let Some(selected_index) = ui_state.completion_menu.selected_index {
-        let line_after_cursor = &current_line[bytes_before_cursor as usize..];
+        let line_after_cursor = &completion_state.current_line
+            [completion_state.bytes_before_cursor..];
 
         let (current_buffer, current_window, (start_col, replacement)) =
             future::join3(
@@ -35,41 +34,58 @@ pub async fn accept_completion(
                 nvim.get_current_win(),
                 async {
                     insertion::get_completion(
-                        // TODO: get matched_prefix here
-                        "hi",
+                        &completion_state.matched_prefix,
                         line_after_cursor,
-                        &completion_items[selected_index].text,
+                        &completion_state.completion_items[selected_index]
+                            .text,
                     )
                 },
             )
             .await;
 
-        // Do I event need to get the current row? What if I use 0?
-        let current_row =
-            current_window.unwrap().get_position().await.unwrap().0 - 1;
+        let current_window = &current_window.unwrap();
+        let current_row = current_window.get_cursor().await.unwrap().0 - 1;
+
+        let start_col = (completion_state.bytes_before_cursor
+            - completion_state.matched_prefix.len()
+            + start_col) as i64;
+
+        // The end column (which `nvim_buf_set_text` interprets to be
+        // bytes from the beginning of the line, not characters) is
+        // always equal to `bytes_before_cursor`, meaning we never
+        // mangle the text after the current cursor position.
+        let end_col = completion_state.bytes_before_cursor as i64;
+
+        let shift_the_cursor_this_many_bytes =
+            completion_state.completion_items[selected_index].text.len()
+                - completion_state.matched_prefix.len();
+
+        // nvim_echo(nvim, &format!("Row: {current_row}, Start col: {start_col}, End col: {end_col}, Replacement: '{replacement}', Shift bytes: {shift_the_cursor_this_many_bytes}"), "Normal", true).await;
 
         // We're assigning just to ignore the `Result` returned by
         // `current_buffer.set_text`.
-        let (_, _, _, _) = future::join4(
+        let (_, _, _, _, _) = future::join5(
             ui_state.completion_menu.hide(),
+            // TODO: why doesn't the window hide if I don't move the cursor?
             ui_state.details_pane.hide(),
             ui_state.virtual_text.erase(),
             // See `:h nvim_buf_set_text` for the docs on how this works.
             current_buffer.unwrap().set_text(
                 current_row,
-                start_col as i64,
+                start_col,
                 current_row,
-                // The end column (which `nvim_buf_set_text` interprets to be
-                // bytes from the beginning of the line, not characters) is
-                // always equal to `bytes_before_cursor`, meaning we never
-                // mangle the text after the current cursor position.
-                bytes_before_cursor as i64,
+                end_col,
                 vec![replacement.to_string()],
             ),
+            current_window.set_cursor((
+                current_row + 1,
+                (completion_state.bytes_before_cursor
+                    + shift_the_cursor_this_many_bytes) as i64,
+            )),
         )
         .await;
 
-        completion_items.clear();
+        completion_state.completion_items.clear();
     }
 }
 
@@ -92,13 +108,18 @@ pub async fn insert_left(ui_state: &mut UIState) {
 }
 
 pub fn has_completions(
-    completion_items: &mut Vec<CompletionItem>,
+    completion_state: &mut CompletionState,
     current_line: &str,
     bytes_before_cursor: u64,
 ) -> bool {
-    *completion_items =
-        completion::complete(current_line, bytes_before_cursor);
-    !completion_items.is_empty()
+    completion_state.current_line = current_line.to_string();
+    completion_state.bytes_before_cursor = bytes_before_cursor as usize;
+    completion_state.matched_prefix =
+        completion::get_matched_prefix(current_line, bytes_before_cursor);
+    completion_state.completion_items =
+        completion::complete(&completion_state.matched_prefix);
+
+    !completion_state.completion_items.is_empty()
 }
 
 pub async fn select_next_completion(
@@ -109,12 +130,16 @@ pub async fn select_next_completion(
         return;
     }
 
-    ui_state.completion_menu.selected_index =
-        match ui_state.completion_menu.selected_index {
-            Some(index) if index == completion_items_len - 1 => None,
-            Some(index) => Some(index + 1),
-            None => Some(0),
-        };
+    let new_selected_index = match ui_state.completion_menu.selected_index {
+        Some(index) if index == completion_items_len - 1 => None,
+        Some(index) => Some(index + 1),
+        None => Some(0),
+    };
+
+    ui_state
+        .completion_menu
+        .update_selected_completion(new_selected_index)
+        .await;
 }
 
 pub async fn select_prev_completion(
@@ -125,21 +150,23 @@ pub async fn select_prev_completion(
         return;
     }
 
-    ui_state.completion_menu.selected_index =
-        match ui_state.completion_menu.selected_index {
-            Some(index) if index == 0 => None,
-            Some(index) => Some(index - 1),
-            None => Some(completion_items_len - 1),
-        };
+    let new_selected_index = match ui_state.completion_menu.selected_index {
+        Some(index) if index == 0 => None,
+        Some(index) => Some(index - 1),
+        None => Some(completion_items_len - 1),
+    };
+
+    ui_state
+        .completion_menu
+        .update_selected_completion(new_selected_index)
+        .await;
 }
 
 // TODO: how does this interact w/ virtual text?
 pub async fn show_completions(
     nvim: &Nvim,
-    completion_items: &mut Vec<CompletionItem>,
+    completion_state: &mut CompletionState,
     ui_state: &mut UIState,
-    _current_line: &str,
-    _bytes_before_cursor: u64,
 ) {
     if ui_state.completion_menu.is_visible() {
         return;
@@ -157,30 +184,32 @@ pub async fn show_completions(
     // twice just penalizes the users that use this feature properly, which
     // isn't fair. Hmmmm.
     //
-    // *completion_items =
+    // completion_state.completion_items =
     //     completion::complete(current_line, bytes_before_cursor);
 
-    if completion_items.is_empty() {
-        return;
+    if !completion_state.completion_items.is_empty() {
+        ui_state
+            .completion_menu
+            .show_completions(nvim, &completion_state.completion_items)
+            .await;
     }
-
-    ui_state
-        .completion_menu
-        .show_completions(nvim, completion_items)
-        .await;
 }
 
 pub async fn text_changed(
     nvim: &Nvim,
-    completion_items: &mut Vec<CompletionItem>,
+    completion_state: &mut CompletionState,
     ui_state: &mut UIState,
     current_line: &str,
     bytes_before_cursor: u64,
 ) {
-    *completion_items =
-        completion::complete(current_line, bytes_before_cursor);
+    completion_state.current_line = current_line.to_string();
+    completion_state.bytes_before_cursor = bytes_before_cursor as usize;
+    completion_state.matched_prefix =
+        completion::get_matched_prefix(current_line, bytes_before_cursor);
+    completion_state.completion_items =
+        completion::complete(&completion_state.matched_prefix);
 
-    if completion_items.is_empty() {
+    if completion_state.completion_items.is_empty() {
         ui_state.completion_menu.selected_index = None;
         return;
     }
@@ -191,11 +220,11 @@ pub async fn text_changed(
     // responsability of completion_menu.hide() to reset the selected index.
     if let Some(index) = ui_state.completion_menu.selected_index {
         ui_state.completion_menu.selected_index =
-            Some(cmp::min(index, completion_items.len() - 1))
+            Some(cmp::min(index, completion_state.completion_items.len() - 1))
     }
 
     ui_state
         .completion_menu
-        .show_completions(nvim, completion_items)
+        .show_completions(nvim, &completion_state.completion_items)
         .await;
 }
