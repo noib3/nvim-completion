@@ -1,29 +1,27 @@
 use mlua::Result;
 
-use super::{Buffer, FloatingWindow};
-
 use crate::Nvim;
 
 pub struct DetailsPane {
     /// TODO: docs
-    _buffer: Buffer,
+    _bufnr: usize,
 
     /// TODO: docs
-    window: Option<FloatingWindow>,
+    winid: Option<usize>,
 }
 
 impl DetailsPane {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(DetailsPane {
-            _buffer: Buffer::new(nvim, false, true)?,
-            window: None,
+            _bufnr: nvim.create_buf(false, true)?,
+            winid: None,
         })
     }
 
     pub fn hide(&mut self, nvim: &Nvim) -> Result<()> {
-        if let Some(window) = &self.window {
-            window.hide(nvim)?;
-            self.window = None;
+        if let Some(winid) = &self.winid {
+            nvim.win_hide(*winid)?;
+            self.winid = None;
         }
         Ok(())
     }

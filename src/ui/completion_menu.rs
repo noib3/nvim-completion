@@ -1,17 +1,15 @@
 use mlua::{Lua, Result};
 use std::{cmp, fmt};
 
-use super::{Buffer, FloatingWindow};
-
 use crate::completion::CompletionItem;
 use crate::Nvim;
 
 pub struct CompletionMenu {
     /// TODO: docs
-    buffer: Buffer,
+    bufnr: usize,
 
     /// TODO: docs
-    window: Option<FloatingWindow>,
+    winid: Option<usize>,
 
     /// TODO: docs
     pub selected_index: Option<usize>,
@@ -21,8 +19,8 @@ impl CompletionMenu {
     /// TODO: docs
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionMenu {
-            buffer: Buffer::new(nvim, false, true)?,
-            window: None,
+            bufnr: nvim.create_buf(false, true)?,
+            winid: None,
             selected_index: None,
         })
     }
@@ -30,15 +28,15 @@ impl CompletionMenu {
 
 impl CompletionMenu {
     pub fn hide(&mut self, nvim: &Nvim) -> Result<()> {
-        if let Some(window) = &self.window {
-            window.hide(nvim)?;
-            self.window = None;
+        if let Some(winid) = &self.winid {
+            nvim.win_hide(*winid)?;
+            self.winid = None;
         }
         Ok(())
     }
 
     pub fn is_visible(&self) -> bool {
-        self.window.is_some()
+        self.winid.is_some()
     }
 
     pub fn select_completion(
@@ -47,12 +45,19 @@ impl CompletionMenu {
         new_selected_index: Option<usize>,
     ) -> Result<()> {
         match self.selected_index {
-            Some(old) => self.buffer.clear_namespace(nvim, old)?,
+            Some(old) => nvim.buf_clear_namespace(
+                self.bufnr,
+                -1,
+                old,
+                (old + 1).try_into().unwrap(),
+            )?,
             None => {},
         };
 
         match new_selected_index {
-            Some(new) => self.buffer.add_highlight(nvim, new)?,
+            Some(new) => {
+                nvim.buf_add_highlight(self.bufnr, -1, "Visual", new, 0, -1)?;
+            },
             None => {},
         };
 
@@ -72,18 +77,22 @@ impl CompletionMenu {
             .map(|item| item.to_string())
             .collect::<Vec<String>>();
 
-        self.buffer.set_lines(nvim, &lines)?;
+        nvim.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
         let width = lines.iter().map(|line| line.len()).max().unwrap_or(0);
         let height = cmp::min(lines.len(), 7);
 
-        self.window = Some(FloatingWindow::new(
-            nvim,
-            lua,
-            self.buffer.bufnr,
-            width,
-            height,
-        )?);
+        let config = lua.create_table_with_capacity(0, 8)?;
+        config.set("relative", "cursor")?;
+        config.set("width", width)?;
+        config.set("height", height)?;
+        config.set("row", 1)?;
+        config.set("col", 0)?;
+        config.set("focusable", false)?;
+        config.set("style", "minimal")?;
+        config.set("noautocmd", true)?;
+
+        self.winid = Some(nvim.open_win(self.bufnr, false, config)?);
 
         Ok(())
     }

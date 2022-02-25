@@ -11,17 +11,6 @@ mod ui;
 use nvim::Nvim;
 use state::State;
 
-// macro_rules! export {
-//     ($lua:expr, $($export:expr),+ $(,)?) => {
-//         {
-//             // let lua = Lua::new();
-//             let exports = $lua.create_table()?;
-//             $(exports.set("$export", $export)?;)+
-//             Ok(exports)
-//         }
-//     };
-// }
-
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
     let nvim = Nvim::new(lua)?;
