@@ -1,54 +1,88 @@
 use mlua::{Lua, Result, Table};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+mod api;
+mod completion;
+mod insertion;
+mod nvim;
+mod state;
 mod ui;
-use ui::UIState;
 
-type Nvim<'lua> = Table<'lua>;
+use nvim::Nvim;
+use state::State;
 
-struct State {
-    ui: Arc<Mutex<UIState>>,
-}
-
-impl State {
-    fn new() -> Self {
-        State {
-            ui: Arc::new(Mutex::new(UIState::new())),
-        }
-    }
-}
-
-fn plus_one(ui_state: &mut UIState) {
-    ui_state.foo += 1;
-}
-
-fn minus_one(ui_state: &mut UIState) {
-    ui_state.foo -= 1;
-}
+// macro_rules! export {
+//     ($lua:expr, $($export:expr),+ $(,)?) => {
+//         {
+//             // let lua = Lua::new();
+//             let exports = $lua.create_table()?;
+//             $(exports.set("$export", $export)?;)+
+//             Ok(exports)
+//         }
+//     };
+// }
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    let _nvim = lua.globals().get::<&str, Nvim>("vim")?;
-    let state = State::new();
+    let nvim = Nvim::new(lua)?;
+    let state = State::new(&nvim)?;
 
-    let ui_state_1 = Arc::clone(&state.ui);
-    let plus_one = lua.create_function(move |_, ()| {
-        Ok(plus_one(&mut ui_state_1.lock().unwrap()))
+    let ui_state = Arc::clone(&state.ui);
+    let cursor_moved = lua.create_function(move |lua, ()| {
+        api::cursor_moved(lua, &mut ui_state.lock().unwrap())?;
+        Ok(())
     })?;
 
-    let ui_state_2 = Arc::clone(&state.ui);
-    let minus_one = lua.create_function(move |_, ()| {
-        Ok(minus_one(&mut ui_state_2.lock().unwrap()))
+    let ui_state = Arc::clone(&state.ui);
+    let insert_left = lua.create_function(move |lua, ()| {
+        api::insert_left(lua, &mut ui_state.lock().unwrap())?;
+        Ok(())
     })?;
 
-    let ui_state_3 = Arc::clone(&state.ui);
-    let print = lua.create_function(move |_, ()| {
-        Ok(println!("{:?}", &ui_state_3.lock().unwrap().foo))
+    let completion_state = Arc::clone(&state.completion);
+    let ui_state = Arc::clone(&state.ui);
+    let text_changed = lua.create_function(move |lua, ()| {
+        api::text_changed(
+            lua,
+            &mut completion_state.lock().unwrap(),
+            &mut ui_state.lock().unwrap(),
+        )?;
+        Ok(())
     })?;
 
-    let exports = lua.create_table()?;
-    exports.set("plus_one", plus_one)?;
-    exports.set("minus_one", minus_one)?;
-    exports.set("print", print)?;
+    let events = lua.create_table_with_capacity(0, 3)?;
+    events.set("cursor_moved", cursor_moved)?;
+    events.set("insert_left", insert_left)?;
+    events.set("text_changed", text_changed)?;
+
+    let completion_state = Arc::clone(&state.completion);
+    let has_completions = lua.create_function(move |lua, ()| {
+        Ok(api::has_completions(
+            lua,
+            &mut completion_state.lock().unwrap(),
+        )?)
+    })?;
+
+    let ui_state = Arc::clone(&state.ui);
+    let is_completion_item_selected = lua.create_function(move |_, ()| {
+        Ok(api::is_completion_item_selected(&ui_state.lock().unwrap()))
+    })?;
+
+    let ui_state = Arc::clone(&state.ui);
+    let is_completion_menu_visible = lua.create_function(move |_, ()| {
+        Ok(api::is_completion_menu_visible(&ui_state.lock().unwrap()))
+    })?;
+
+    let setup = lua.create_function(move |lua, ()| {
+        api::setup(lua, &state)?;
+        Ok(())
+    })?;
+
+    let exports = lua.create_table_with_capacity(0, 8)?;
+    exports.set("__events", events)?;
+    exports.set("has_completions", has_completions)?;
+    exports.set("is_completion_selected", is_completion_item_selected)?;
+    exports.set("is_menu_visible", is_completion_menu_visible)?;
+    exports.set("setup", setup)?;
     Ok(exports)
 }

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 description = "A Neovim autocompletion framework written in Rust"
+repository = "https://github.com/noib3/nvim-compleet"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,4 +12,5 @@ description = "A Neovim autocompletion framework written in Rust"
 crate-type = ["cdylib"]
 
 [dependencies]
-mlua = { version = "0.7.3", features = ["luajit", "vendored", "module", "async", "send"] }
+itertools = "0.10.2"
+mlua = { version = "0.7.3", features = ["luajit", "vendored", "module"] }
