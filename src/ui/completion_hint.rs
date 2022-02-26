@@ -21,7 +21,7 @@ impl CompletionHint {
 
 impl CompletionHint {
     pub fn erase(&mut self, nvim: &Nvim) -> Result<()> {
-        if !self.is_visible {
+        if self.is_visible {
             // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
             nvim.buf_clear_namespace(
                 0,

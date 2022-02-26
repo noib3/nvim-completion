@@ -1,45 +1,55 @@
 use mlua::{Function, Lua, Result, Table};
 use std::sync::Arc;
 
+use crate::config::{self, Config};
 use crate::{Nvim, State};
 
-#[derive(Debug)]
-struct Config {
-    takeover_inscomp_mappings: bool,
-    autoshow_completion_menu: bool,
-    display_completion_hints: bool,
-}
-
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            takeover_inscomp_mappings: false,
-            autoshow_completion_menu: true,
-            display_completion_hints: false,
-        }
-    }
-}
-
-impl<'a> From<Option<Table<'a>>> for Config {
-    fn from(config: Option<Table>) -> Config {
-        if config.is_none() {
-            return Default::default();
-        }
-
-        Config {
-            takeover_inscomp_mappings: true,
-            autoshow_completion_menu: true,
-            display_completion_hints: false,
-        }
-    }
-}
-
-pub fn setup(lua: &Lua, state: &State, config: Option<Table>) -> Result<()> {
+pub fn setup(
+    lua: &Lua,
+    state: &State,
+    preferences: Option<Table>,
+) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
-    let config = Config::from(config);
+    let config = match Config::try_from(preferences) {
+        Ok(config) => config,
+        Err(e) => match e {
+            config::Error::Conversion { option, expected } => {
+                nvim.echo(
+                    &[
+                        &["[nvim-compleet]: ", "ErrorMsg"],
+                        &["Error parsing config option '"],
+                        &[option, "TSWarning"],
+                        &[&format!("': expected a {expected}.")],
+                    ],
+                    true,
+                    &[],
+                )?;
+
+                return Ok(());
+            },
+
+            config::Error::OptionDoesntExist { option } => {
+                nvim.echo(
+                    &[
+                        &["[nvim-compleet]: ", "ErrorMsg"],
+                        &["Config option '"],
+                        &[&option, "TSWarning"],
+                        &["' doesn't exist!"],
+                    ],
+                    true,
+                    &[],
+                )?;
+
+                return Ok(());
+            },
+
+            config::Error::Lua(e) => return Err(e),
+        },
+    };
+
     let print = lua.globals().get::<&str, Function>("print")?;
-    print.call::<_, ()>(format!("Config is {:?}", config))?;
+    print.call::<_, ()>(format!("{:?}", &config))?;
 
     setup_augroups(&nvim)?;
     setup_plug_mappings(lua, state)?;

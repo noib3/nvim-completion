@@ -5,7 +5,6 @@ authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 description = "A Neovim autocompletion framework written in Rust"
 repository = "https://github.com/noib3/nvim-compleet"
-build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

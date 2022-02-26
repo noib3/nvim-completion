@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 mod api;
 mod completion;
+mod config;
 mod insertion;
 mod nvim;
 mod state;

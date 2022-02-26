@@ -197,6 +197,29 @@ impl<'a> Nvim<'a> {
             .call::<_, usize>(name)?)
     }
 
+    /// Binding to `nvim_echo`.
+    ///
+    /// Echoes a message.
+    ///
+    /// # Arguments
+    ///
+    /// * `chunks`   A slice of `[text, hlgroup]` slices, each representing a
+    /// text chunk with specified highlight. The `hl_group` element can be
+    /// omitted for no highlight.
+    /// * `history`  Whether to add the message to the message history
+    /// * `opts`     Optional parameters reserved for future use
+    pub fn echo(
+        &self,
+        chunks: &[&[&str]],
+        history: bool,
+        opts: &[u8],
+    ) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_echo")?
+            .call::<_, ()>((chunks, history, opts))?)
+    }
+
     /// Binding to `nvim_exec`.
     ///
     /// Executes a block of Vimscript. Returns the output if `output` is true,
