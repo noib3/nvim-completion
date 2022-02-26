@@ -5,6 +5,7 @@ use crate::completion::{self, CompletionState};
 use crate::ui::UIState;
 use crate::Nvim;
 
+/// Executed on every `TextChangedI` event.
 pub fn text_changed(
     lua: &Lua,
     completion_state: &mut CompletionState,
@@ -42,6 +43,22 @@ pub fn text_changed(
         lua,
         &completion_state.completion_items,
     )?;
+
+    // Only show a completion hint if there's no text in the line beyond the
+    // current cursor position
+    if completion_state.bytes_before_cursor
+        == completion_state.current_line.len()
+    {
+        let current_row = nvim.win_get_cursor(0)?.0;
+        ui_state.completion_hint.set(
+            lua,
+            &nvim,
+            current_row - 1,
+            completion_state.bytes_before_cursor,
+            &completion_state.completion_items[0].text
+                [completion_state.matched_prefix.len()..],
+        )?;
+    }
 
     Ok(())
 }

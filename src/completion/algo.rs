@@ -11,6 +11,7 @@ pub fn complete(matched_prefix: &str) -> Vec<CompletionItem> {
     let entries = [
         String::from("foo"),
         String::from("bar"),
+        String::from("bazooka"),
         String::from("baz"),
     ];
 

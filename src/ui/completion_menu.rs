@@ -49,7 +49,7 @@ impl CompletionMenu {
                 self.bufnr,
                 -1,
                 old,
-                (old + 1).try_into().unwrap(),
+                (old + 1).try_into().unwrap(), // TODO: this is bad
             )?,
             None => {},
         };
@@ -72,20 +72,23 @@ impl CompletionMenu {
         lua: &Lua,
         completion_items: &[CompletionItem],
     ) -> Result<()> {
+        let max_width = completion_items
+            .iter()
+            .map(|item| item.text.len())
+            .max()
+            .unwrap_or(0);
+
         let lines = completion_items
-            .into_iter()
-            .map(|item| item.to_string())
+            .iter()
+            .map(|item| item.format(max_width))
             .collect::<Vec<String>>();
 
         nvim.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
-        let width = lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        let height = cmp::min(lines.len(), 7);
-
         let config = lua.create_table_with_capacity(0, 8)?;
         config.set("relative", "cursor")?;
-        config.set("width", width)?;
-        config.set("height", height)?;
+        config.set("width", max_width + 2)?;
+        config.set("height", cmp::min(lines.len(), 7))?;
         config.set("row", 1)?;
         config.set("col", 0)?;
         config.set("focusable", false)?;
@@ -95,6 +98,12 @@ impl CompletionMenu {
         self.winid = Some(nvim.open_win(self.bufnr, false, config)?);
 
         Ok(())
+    }
+}
+
+impl CompletionItem {
+    fn format(&self, padding: usize) -> String {
+        format!(" {: <padding$} ", self.text)
     }
 }
 

@@ -4,7 +4,7 @@ use crate::completion::CompletionState;
 use crate::ui::UIState;
 use crate::{insertion, Nvim};
 
-pub fn accept_completion(
+pub fn insert_completion(
     lua: &Lua,
     completion_state: &mut CompletionState,
     ui_state: &mut UIState,

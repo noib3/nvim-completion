@@ -69,6 +69,33 @@ impl<'a> Nvim<'a> {
             .call::<_, ()>((bufnr, ns_id, line_start, line_end))?)
     }
 
+    /// Binding to `nvim_buf_set_extmark`.
+    ///
+    /// Creates or updates an extmark. To create a new extmark pass `ns_id =
+    /// 0`. To move an extmark pass its `ns_id`. Returns the namespace id of
+    /// the created/updates extmark.
+    ///
+    /// # Arguments
+    ///
+    /// * `bufnr`  Buffer handle, or 0 for current buffer
+    /// * `ns_id`  Namespace id
+    /// * `row`    Row where to place the extmark (0-indexed)
+    /// * `col`    Column where to place the extmark (0-indexed)
+    /// * `opts`   Optional parameters. See `:h nvim_buf_set_extmark` for  details
+    pub fn buf_set_extmark(
+        &self,
+        bufnr: usize,
+        ns_id: usize,
+        row: usize,
+        col: usize,
+        opts: Table,
+    ) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_buf_set_extmark")?
+            .call::<_, usize>((bufnr, ns_id, row, col, opts))?)
+    }
+
     /// Binding to `nvim_buf_set_lines`.
     ///
     /// Sets (replaces) a line-range in the buffer. Out-of-bounds indices are
@@ -151,6 +178,23 @@ impl<'a> Nvim<'a> {
             .0
             .get::<&str, Function>("nvim_create_buf")?
             .call::<_, usize>((listed, scratch))?)
+    }
+
+    /// Binding to `nvim_create_namespace`.
+    ///
+    /// Creates a new namespace or gets an existing one. Namespaces can be
+    /// named or anonymous. If `name` matches an existing namespace the
+    /// associated id is returned. If `name` is an empty string a new,
+    /// anonymous namespace is created.
+    ///
+    /// # Arguments
+    ///
+    /// * `name`   Namespace name or empty string
+    pub fn create_namespace(&self, name: &str) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_create_namespace")?
+            .call::<_, usize>(name)?)
     }
 
     /// Binding to `nvim_exec`.

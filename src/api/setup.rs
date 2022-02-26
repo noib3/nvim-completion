@@ -34,11 +34,11 @@ fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
     let opts = lua.create_table()?;
     opts.set("silent", true)?;
 
-    // ------------ ACCEPT COMPLETION -----------
+    // ------------ INSERT COMPLETION -----------
     let completion_state = Arc::clone(&state.completion);
     let ui_state = Arc::clone(&state.ui);
-    let accept_completion = lua.create_function(move |lua, ()| {
-        super::accept_completion(
+    let insert_completion = lua.create_function(move |lua, ()| {
+        super::insert_completion(
             lua,
             &mut completion_state.lock().unwrap(),
             &mut ui_state.lock().unwrap(),
@@ -48,19 +48,20 @@ fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
 
     set_keymap.call::<_, ()>((
         "i",
-        "<Plug>(compleet-accept-completion)",
-        accept_completion,
+        "<Plug>(compleet-insert-completion)",
+        insert_completion,
         opts.clone(),
     ))?;
 
-    // ------------ SELECT NEXT COMPLETION -----------
+    // ------------ SELECT COMPLETION -----------
     let completion_state = Arc::clone(&state.completion);
     let ui_state = Arc::clone(&state.ui);
-    let select_next_completion = lua.create_function(move |lua, ()| {
-        super::select_next_completion(
+    let select_completion = lua.create_function(move |lua, step| {
+        super::select_completion(
             lua,
             &mut ui_state.lock().unwrap(),
-            completion_state.lock().unwrap().completion_items.len(),
+            &completion_state.lock().unwrap(),
+            step,
         )?;
         Ok(())
     })?;
@@ -68,26 +69,14 @@ fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
     set_keymap.call::<_, ()>((
         "i",
         "<Plug>(compleet-next-completion)",
-        select_next_completion,
+        select_completion.bind(1)?,
         opts.clone(),
     ))?;
-
-    // ------------ SELECT PREV COMPLETION -----------
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let select_prev_completion = lua.create_function(move |lua, ()| {
-        super::select_prev_completion(
-            lua,
-            &mut ui_state.lock().unwrap(),
-            completion_state.lock().unwrap().completion_items.len(),
-        )?;
-        Ok(())
-    })?;
 
     set_keymap.call::<_, ()>((
         "i",
         "<Plug>(compleet-prev-completion)",
-        select_prev_completion,
+        select_completion.bind(-1)?,
         opts.clone(),
     ))?;
 
