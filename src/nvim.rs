@@ -205,7 +205,7 @@ impl<'a> Nvim<'a> {
     /// # Arguments
     ///
     /// * `src`     Vimscript code
-    /// * `output`  Whether to Capture and return all output.
+    /// * `output`  Whether to capture and return all output.
     pub fn exec(&self, src: &str, output: bool) -> Result<()> {
         Ok(self
             .0

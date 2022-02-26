@@ -62,8 +62,8 @@ fn compleet(lua: &Lua) -> Result<Table> {
         Ok(api::is_completion_menu_visible(&ui_state.lock().unwrap()))
     })?;
 
-    let setup = lua.create_function(move |lua, ()| {
-        api::setup(lua, &state)?;
+    let setup = lua.create_function(move |lua, config| {
+        api::setup(lua, &state, config)?;
         Ok(())
     })?;
 

@@ -3,25 +3,60 @@ use std::sync::Arc;
 
 use crate::{Nvim, State};
 
-pub fn setup(lua: &Lua, state: &State) -> Result<()> {
+#[derive(Debug)]
+struct Config {
+    takeover_inscomp_mappings: bool,
+    autoshow_completion_menu: bool,
+    display_completion_hints: bool,
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            takeover_inscomp_mappings: false,
+            autoshow_completion_menu: true,
+            display_completion_hints: false,
+        }
+    }
+}
+
+impl<'a> From<Option<Table<'a>>> for Config {
+    fn from(config: Option<Table>) -> Config {
+        if config.is_none() {
+            return Default::default();
+        }
+
+        Config {
+            takeover_inscomp_mappings: true,
+            autoshow_completion_menu: true,
+            display_completion_hints: false,
+        }
+    }
+}
+
+pub fn setup(lua: &Lua, state: &State, config: Option<Table>) -> Result<()> {
     let nvim = Nvim::new(lua)?;
+
+    let config = Config::from(config);
+    let print = lua.globals().get::<&str, Function>("print")?;
+    print.call::<_, ()>(format!("Config is {:?}", config))?;
+
     setup_augroups(&nvim)?;
     setup_plug_mappings(lua, state)?;
-
     Ok(())
 }
 
+// Use https://github.com/neovim/neovim/pull/14661 once it gets merged into a
+// stable release.
 fn setup_augroups(nvim: &Nvim) -> Result<()> {
-    nvim.exec(
-        r#"
+    let src = r#"
     augroup compleet_events
       autocmd CursorMovedI * lua require("compleet").__events.cursor_moved()
       autocmd InsertLeave  * lua require("compleet").__events.insert_left()
       autocmd TextChangedI * lua require("compleet").__events.text_changed()
     augroup END
-"#,
-        false,
-    )
+"#;
+    nvim.exec(src, false)
 }
 
 fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
