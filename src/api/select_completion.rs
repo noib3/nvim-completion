@@ -1,11 +1,13 @@
 use mlua::{Lua, Result};
 
 use crate::completion::CompletionState;
+use crate::config::Config;
 use crate::ui::UIState;
 use crate::Nvim;
 
 pub fn select_completion(
     lua: &Lua,
+    config: &Config,
     ui_state: &mut UIState,
     completion_state: &CompletionState,
     step: i8, // either 1 or -1
@@ -39,8 +41,9 @@ pub fn select_completion(
         .completion_menu
         .select_completion(&nvim, new_selected_index)?;
 
-    if completion_state.bytes_before_cursor
-        == completion_state.current_line.len()
+    if (completion_state.bytes_before_cursor
+        == completion_state.current_line.len())
+        && config.show_hints
     {
         match new_selected_index {
             None => ui_state.completion_hint.erase(&nvim)?,
@@ -50,6 +53,7 @@ pub fn select_completion(
                 ui_state.completion_hint.set(
                     lua,
                     &nvim,
+                    index,
                     current_row - 1,
                     completion_state.bytes_before_cursor,
                     &completion_state.completion_items[index].text

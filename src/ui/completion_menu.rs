@@ -1,5 +1,5 @@
 use mlua::{Lua, Result};
-use std::{cmp, fmt};
+use std::cmp;
 
 use crate::completion::CompletionItem;
 use crate::Nvim;
@@ -104,11 +104,5 @@ impl CompletionMenu {
 impl CompletionItem {
     fn format(&self, padding: usize) -> String {
         format!(" {: <padding$} ", self.text)
-    }
-}
-
-impl fmt::Display for CompletionItem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, " {} ({}) ", self.text, self.matched_characters.len())
     }
 }

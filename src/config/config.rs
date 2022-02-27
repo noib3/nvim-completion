@@ -3,13 +3,13 @@ use mlua::{Table, Value};
 #[derive(Debug)]
 pub struct Config {
     /// TODO: docs
-    autoshow_menu: bool,
+    pub autoshow_menu: bool,
 
     /// TODO: docs
-    enable_default_mappings: bool,
+    pub enable_default_mappings: bool,
 
     /// TODO: docs
-    show_hints: bool,
+    pub show_hints: bool,
 }
 
 impl Config {

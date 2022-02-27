@@ -7,21 +7,21 @@ pub struct CompletionHint {
     ns_id: usize,
 
     // TODO: docs
-    is_visible: bool,
+    pub hinted_index: Option<usize>,
 }
 
 impl CompletionHint {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionHint {
             ns_id: nvim.create_namespace("compleet_completion_hint")?,
-            is_visible: false,
+            hinted_index: None,
         })
     }
 }
 
 impl CompletionHint {
     pub fn erase(&mut self, nvim: &Nvim) -> Result<()> {
-        if self.is_visible {
+        if self.hinted_index.is_some() {
             // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
             nvim.buf_clear_namespace(
                 0,
@@ -29,15 +29,20 @@ impl CompletionHint {
                 0,
                 -1,
             )?;
-            self.is_visible = false;
+            self.hinted_index = None;
         }
         Ok(())
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.hinted_index.is_some()
     }
 
     pub fn set(
         &mut self,
         lua: &Lua,
         nvim: &Nvim,
+        hinted_index: usize,
         row: usize,
         col: usize,
         hint: &str,
@@ -48,7 +53,8 @@ impl CompletionHint {
         opts.set("virt_text_pos", "overlay")?;
 
         nvim.buf_set_extmark(0, self.ns_id, row, col, opts)?;
-        self.is_visible = true;
+        self.hinted_index = Some(hinted_index);
+
         Ok(())
     }
 }

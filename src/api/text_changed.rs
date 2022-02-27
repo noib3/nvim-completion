@@ -2,12 +2,14 @@ use mlua::{Lua, Result};
 use std::cmp;
 
 use crate::completion::{self, CompletionState};
+use crate::config::Config;
 use crate::ui::UIState;
 use crate::Nvim;
 
 /// Executed on every `TextChangedI` event.
 pub fn text_changed(
     lua: &Lua,
+    config: &Config,
     completion_state: &mut CompletionState,
     ui_state: &mut UIState,
 ) -> Result<()> {
@@ -38,21 +40,25 @@ pub fn text_changed(
             Some(cmp::min(index, completion_state.completion_items.len() - 1))
     }
 
-    ui_state.completion_menu.show_completions(
-        &nvim,
-        lua,
-        &completion_state.completion_items,
-    )?;
+    if config.autoshow_menu {
+        ui_state.completion_menu.show_completions(
+            &nvim,
+            lua,
+            &completion_state.completion_items,
+        )?;
+    }
 
     // Only show a completion hint if there's no text in the line beyond the
-    // current cursor position
-    if completion_state.bytes_before_cursor
-        == completion_state.current_line.len()
+    // current cursor position (and if hints are enabled, ofc).
+    if (completion_state.bytes_before_cursor
+        == completion_state.current_line.len())
+        && config.show_hints
     {
         let current_row = nvim.win_get_cursor(0)?.0;
         ui_state.completion_hint.set(
             lua,
             &nvim,
+            0,
             current_row - 1,
             completion_state.bytes_before_cursor,
             &completion_state.completion_items[0].text
