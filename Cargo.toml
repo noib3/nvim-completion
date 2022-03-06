@@ -12,5 +12,4 @@ repository = "https://github.com/noib3/nvim-compleet"
 crate-type = ["cdylib"]
 
 [dependencies]
-itertools = "0.10.2"
 mlua = { version = "0.7.3", features = ["luajit", "vendored", "module", "serialize"] }

@@ -1,19 +1,18 @@
 pub struct CompletionItem {
-    /// TODO: docs
+    /// The text that will be inserted into the buffer if a completion is
+    /// selected.
     pub text: String,
 
-    /// TODO: docs
-    pub matched_characters: Vec<usize>,
+    /// A vector of indices representing bytes of the `text` field that are
+    /// matched by the current completion prefix.
+    pub matched_bytes: Vec<usize>,
 }
 
 impl CompletionItem {
     pub fn new(text: String, matched_prefix: &str) -> Self {
         CompletionItem {
             text,
-
-            // TODO: len() won't work w/ multi bytes chars. Use
-            // graphemes/bytes?
-            matched_characters: (0..matched_prefix.len()).collect(),
+            matched_bytes: (0..matched_prefix.len()).collect(),
         }
     }
 }

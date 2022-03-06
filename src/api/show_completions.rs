@@ -1,11 +1,8 @@
 use mlua::{Lua, Result};
 
-use crate::completion::CompletionState;
-use crate::ui::UIState;
+use crate::state::{CompletionState, UIState};
 use crate::Nvim;
 
-// TODO:
-// #[compleet::lua_export]
 pub fn show_completions(
     lua: &Lua,
     completion_state: &CompletionState,

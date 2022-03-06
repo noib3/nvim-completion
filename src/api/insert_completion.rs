@@ -1,6 +1,6 @@
 use mlua::{Lua, Result};
 
-use crate::completion::CompletionState;
+use crate::state::CompletionState;
 use crate::{insertion, Nvim};
 
 pub fn insert_completion(
@@ -34,7 +34,7 @@ pub fn insert_completion(
         current_row - 1,
         start_col,
         current_row - 1,
-        // The end column (which `nvim_buf_set_text` interprets to be
+        // The end column (which `Nvim::buf_set_text` interprets to be
         // bytes from the beginning of the line, not characters) is
         // always equal to `bytes_before_cursor`, meaning we never
         // mangle the text after the current cursor position.
@@ -49,7 +49,10 @@ pub fn insert_completion(
 
     completion_state.completion_items.clear();
 
-    // TODO: explain why you're not doing any UI cleanup here.
+    // We don't do any UI cleanup here (e.g. `completion_menu.hide()`, etc.)
+    // since inserting a completion will move the cursor, triggering a
+    // `CursorMovedI` event, which in turns executes `api::cursor_moved` where
+    // the cleanup happens.
 
     Ok(())
 }

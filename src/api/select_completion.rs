@@ -1,8 +1,7 @@
 use mlua::{Lua, Result};
 
-use crate::completion::CompletionState;
 use crate::config::Config;
-use crate::ui::UIState;
+use crate::state::{CompletionState, UIState};
 use crate::Nvim;
 
 pub fn select_completion(

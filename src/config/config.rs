@@ -2,13 +2,14 @@ use mlua::{Table, Value};
 
 #[derive(Debug)]
 pub struct Config {
-    /// TODO: docs
+    /// Whether to automatically show the completion menu every time there are
+    /// completion items available.
     pub autoshow_menu: bool,
 
-    /// TODO: docs
+    /// Enable insert mode mappings for `<Tab>`, `<S-Tab>` and `<CR>`.
     pub enable_default_mappings: bool,
 
-    /// TODO: docs
+    /// Whether to show completion hints.
     pub show_hints: bool,
 }
 
@@ -53,11 +54,10 @@ impl<'a> TryFrom<Option<Table<'a>>> for Config {
     fn try_from(preferences: Option<Table>) -> Result<Self, Error> {
         let mut config = Config::default();
 
-        if preferences.is_none() {
-            return Ok(config);
-        }
-
-        let preferences = preferences.unwrap();
+        let preferences = match preferences {
+            Some(table) => table,
+            None => return Ok(config),
+        };
 
         for pair in preferences.clone().pairs::<String, Value>() {
             let (key, _) = pair?;

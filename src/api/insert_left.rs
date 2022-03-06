@@ -1,6 +1,6 @@
 use mlua::{Lua, Result};
 
-use crate::ui::UIState;
+use crate::state::UIState;
 use crate::Nvim;
 
 /// Executed on every `InsertLeft` event.

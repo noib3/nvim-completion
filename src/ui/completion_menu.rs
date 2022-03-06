@@ -5,18 +5,19 @@ use crate::completion::CompletionItem;
 use crate::Nvim;
 
 pub struct CompletionMenu {
-    /// TODO: docs
+    /// The handle of the buffer used to show the completion items.
     bufnr: usize,
 
-    /// TODO: docs
+    /// The handle of the floating window used to show the completion items, or
+    /// `None` if the completion menu is not currently visible.
     winid: Option<usize>,
 
-    /// TODO: docs
+    /// The index of the currently selected completion item, or `None` if no
+    /// completion is selected.
     pub selected_index: Option<usize>,
 }
 
 impl CompletionMenu {
-    /// TODO: docs
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionMenu {
             bufnr: nvim.create_buf(false, true)?,
@@ -49,7 +50,7 @@ impl CompletionMenu {
                 self.bufnr,
                 -1,
                 old,
-                (old + 1).try_into().unwrap(), // TODO: this is bad
+                (old + 1).try_into().unwrap_or(-1), // TODO: this is bad
             )?,
             None => {},
         };

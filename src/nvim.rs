@@ -53,7 +53,7 @@ impl<'a> Nvim<'a> {
     /// # Arguments
     ///
     /// * `bufnr`       Buffer handle, or 0 for current buffer
-    /// * `ns_id`       Namespace to clear, or -1 to clear all namespaces
+    /// * `ns_id`       Namespace to clear
     /// * `line_start`  Start of range of lines to clear (zero-indexed)
     /// * `line_end`    End of range of lines to clear (zero-indexed and exclusive)
     pub fn buf_clear_namespace(
@@ -253,7 +253,7 @@ impl<'a> Nvim<'a> {
     /// # Arguments
     ///
     /// * `bufnr`   Buffer to display, or 0 for current buffer
-    /// * `enter`   Whether to enter the newly created window, making in the current window
+    /// * `enter`   Whether to enter the newly created window, making it the current window
     /// * `config`  Map defining the window configuration. See `:h nvim_open_win` for details.
     pub fn open_win(
         &self,

@@ -1,49 +1,30 @@
-use itertools::Itertools;
-
 use super::CompletionItem;
 
-// TODO: docs
+pub fn get_matched_prefix(line: &str, bytes_before_cursor: usize) -> &'_ str {
+    let bytes_to_take = line[..bytes_before_cursor]
+        .chars()
+        .rev()
+        .take_while(|&char| !char.is_whitespace())
+        .collect::<String>()
+        .len();
+
+    &line[(bytes_before_cursor - bytes_to_take)..bytes_before_cursor]
+}
+
 pub fn complete(matched_prefix: &str) -> Vec<CompletionItem> {
     if matched_prefix.is_empty() {
         return Vec::new();
     }
 
-    let entries = [
-        String::from("foo"),
-        String::from("bar"),
-        String::from("bazooka"),
-        String::from("baz"),
-    ];
+    let entries = ["foo", "bar", "baz", "bazooka"];
 
     entries
-        .into_iter()
-        .filter(|entry| {
-            entry.starts_with(&matched_prefix) && entry != matched_prefix
+        .iter()
+        .filter(|&&entry| {
+            entry.starts_with(matched_prefix) && entry != matched_prefix
         })
-        .map(|entry| CompletionItem::new(entry, matched_prefix))
+        .map(|entry| CompletionItem::new(entry.to_string(), matched_prefix))
         .collect::<Vec<CompletionItem>>()
-}
-
-// TODO: is there a (possibly less elegant) way to do this w/o using
-// `.join("")` twice? It creates a new `String` every time. I just need a
-// string slice that w/ the same lifetime of `line`. No assignments should be
-// needed.
-//
-// fn get_prefix<'a>(line: &'a str, bytes_before_cursor: u64) -> &'a str {
-//
-// TODO: docs
-pub fn get_matched_prefix(line: &str, bytes_before_cursor: usize) -> String {
-    line[..bytes_before_cursor]
-        .chars()
-        .rev()
-        .take_while(|&char| !char.is_whitespace())
-        // I wish I could just put a `.rev()` here and end the chain after the
-        // next `.join("")`. Unfortunately `TakeWhile` doesn't implement
-        // `DoulbeEndedIterator`, which is a trait bound needed by `.rev()`.
-        .join("")
-        .chars()
-        .rev()
-        .join("")
 }
 
 #[cfg(test)]

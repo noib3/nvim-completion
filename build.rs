@@ -1,7 +1,7 @@
-use std::{env, fs};
+use std::{env, fs, io};
 
-fn main() -> std::io::Result<()> {
-    let profile = env::var("PROFILE").unwrap();
+fn main() -> io::Result<()> {
+    let profile = env::var("PROFILE").unwrap_or("debug".to_string());
     let makefile = format!(
         r#"install:
 	@mkdir -p ./lua/deps

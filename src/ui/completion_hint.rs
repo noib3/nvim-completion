@@ -3,10 +3,10 @@ use mlua::{Lua, Result};
 use crate::Nvim;
 
 pub struct CompletionHint {
-    // TODO: docs
+    /// The Neovim namespace id associated to the completion hint.
     ns_id: usize,
 
-    // TODO: docs
+    /// TODO
     pub hinted_index: Option<usize>,
 }
 
@@ -21,11 +21,11 @@ impl CompletionHint {
 
 impl CompletionHint {
     pub fn erase(&mut self, nvim: &Nvim) -> Result<()> {
-        if self.hinted_index.is_some() {
+        if self.is_visible() {
             // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
             nvim.buf_clear_namespace(
                 0,
-                (self.ns_id).try_into().unwrap(), // TODO: this is bad
+                (self.ns_id).try_into().unwrap_or(-1), // TODO: this is bad
                 0,
                 -1,
             )?;
@@ -47,7 +47,7 @@ impl CompletionHint {
         col: usize,
         hint: &str,
     ) -> Result<()> {
-        let opts = lua.create_table()?;
+        let opts = lua.create_table_with_capacity(0, 3)?;
         opts.set("id", 1)?;
         opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "Comment"]])?;
         opts.set("virt_text_pos", "overlay")?;

@@ -3,10 +3,12 @@ use mlua::Result;
 use crate::Nvim;
 
 pub struct DetailsPane {
-    /// TODO: docs
+    /// The handle of the buffer used to show details for the currently
+    /// selected completion items.
     _bufnr: usize,
 
-    /// TODO: docs
+    /// The handle of the floating window used to show the detail infos, or
+    /// `None` if the details pane is not currently visible.
     winid: Option<usize>,
 }
 
@@ -24,5 +26,9 @@ impl DetailsPane {
             self.winid = None;
         }
         Ok(())
+    }
+
+    fn _is_visible(&self) -> bool {
+        self.winid.is_some()
     }
 }

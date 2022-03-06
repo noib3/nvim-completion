@@ -1,19 +1,19 @@
 use mlua::Result;
 use std::sync::{Arc, Mutex};
 
-use crate::completion::CompletionState;
+use super::CompletionState;
+use super::UIState;
 use crate::config::Config;
 use crate::nvim::Nvim;
-use crate::ui::UIState;
 
 pub struct State {
-    /// TODO: docs
+    /// Holds state about values used to compute the completion candidates.
     pub completion: Arc<Mutex<CompletionState>>,
 
-    /// TODO: docs
+    /// Used to store the current configuration.
     pub config: Arc<Mutex<Config>>,
 
-    /// TODO: docs
+    /// Holds state about the currently displayed UI.
     pub ui: Arc<Mutex<UIState>>,
 }
 

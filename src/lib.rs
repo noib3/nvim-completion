@@ -14,6 +14,11 @@ use state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
+    // TODO: look into vim's event loop. Are we blocking on every single event
+    // we listen to? Is there a way not to? Can we leverage async on the Rust
+    // end in some way?
+    // TODO: bazooka then ALT-BS stops at baz?
+
     let nvim = Nvim::new(lua)?;
     let state = State::new(&nvim)?;
 
@@ -46,10 +51,7 @@ fn compleet(lua: &Lua) -> Result<Table> {
 
     let completion_state = Arc::clone(&state.completion);
     let has_completions = lua.create_function(move |lua, ()| {
-        Ok(api::has_completions(
-            lua,
-            &mut completion_state.lock().unwrap(),
-        )?)
+        api::has_completions(lua, &mut completion_state.lock().unwrap())
     })?;
 
     let ui_state = Arc::clone(&state.ui);
@@ -70,11 +72,7 @@ fn compleet(lua: &Lua) -> Result<Table> {
     let setup = lua
         .create_function(move |lua, config| api::setup(lua, &state, config))?;
 
-    // TODO:
-    // Add `is_hint_visible()` and `insert_hinted_completion()`, rename
-    // `insert_completion` to `insert_selected_completion`.
-
-    let exports = lua.create_table_with_capacity(0, 8)?;
+    let exports = lua.create_table_with_capacity(0, 6)?;
     exports.set("__events", events)?;
     exports.set("has_completions", has_completions)?;
     exports.set("is_completion_selected", is_completion_item_selected)?;
