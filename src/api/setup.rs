@@ -4,6 +4,8 @@ use std::sync::Arc;
 use crate::config::{self, Config};
 use crate::{Nvim, State};
 
+// TODO: refactor everything, this looks like shit
+
 pub fn setup(
     lua: &Lua,
     state: &State,
@@ -53,29 +55,56 @@ pub fn setup(
     // let print = lua.globals().get::<&str, Function>("print")?;
     // print.call::<_, ()>(format!("{:?}", &config))?;
 
-    setup_augroups(&nvim)?;
-    setup_plug_mappings(lua, state)?;
+    setup_augroups(lua, &nvim, state)?;
+    setup_mappings(lua, state)?;
     if config.enable_default_mappings {
-        add_default_mappings(lua, state)?;
+        enable_default_mappings(lua, state)?;
     }
 
     Ok(())
 }
 
-// Use https://github.com/neovim/neovim/pull/14661 once it gets merged into a
-// stable release.
-fn setup_augroups(nvim: &Nvim) -> Result<()> {
-    let src = r#"
-    augroup compleet_events
-      autocmd CursorMovedI * lua require("compleet").__events.cursor_moved()
-      autocmd InsertLeave  * lua require("compleet").__events.insert_left()
-      autocmd TextChangedI * lua require("compleet").__events.text_changed()
-    augroup END
-"#;
-    nvim.exec(src, false)
+fn setup_augroups(lua: &Lua, nvim: &Nvim, state: &State) -> Result<()> {
+    let ui_state = Arc::clone(&state.ui);
+    let cursor_moved = lua.create_function(move |lua, ()| {
+        crate::api::cursor_moved(lua, &mut ui_state.lock().unwrap())
+    })?;
+
+    let ui_state = Arc::clone(&state.ui);
+    let insert_left = lua.create_function(move |lua, ()| {
+        crate::api::insert_left(lua, &mut ui_state.lock().unwrap())
+    })?;
+
+    let completion_state = Arc::clone(&state.completion);
+    let config = Arc::clone(&state.config);
+    let ui_state = Arc::clone(&state.ui);
+    let text_changed = lua.create_function(move |lua, ()| {
+        crate::api::text_changed(
+            lua,
+            &config.lock().unwrap(),
+            &mut completion_state.lock().unwrap(),
+            &mut ui_state.lock().unwrap(),
+        )
+    })?;
+
+    let augroup_name = "compleet";
+
+    let opts_w_callback = |callback: Function| -> Result<Table> {
+        let opts = lua.create_table()?;
+        opts.set("group", augroup_name)?;
+        opts.set("callback", callback)?;
+        Ok(opts)
+    };
+
+    nvim.create_augroup(augroup_name, lua.create_table()?)?;
+    nvim.create_autocmd("CursorMovedI", opts_w_callback(cursor_moved)?)?;
+    nvim.create_autocmd("InsertLeave", opts_w_callback(insert_left)?)?;
+    nvim.create_autocmd("TextChangedI", opts_w_callback(text_changed)?)?;
+
+    Ok(())
 }
 
-fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
+fn setup_mappings(lua: &Lua, state: &State) -> Result<()> {
     let set_keymap = lua
         .globals()
         .get::<&str, Table>("vim")?
@@ -181,7 +210,7 @@ fn setup_plug_mappings(lua: &Lua, state: &State) -> Result<()> {
     Ok(())
 }
 
-fn add_default_mappings(lua: &Lua, state: &State) -> Result<()> {
+fn enable_default_mappings(lua: &Lua, state: &State) -> Result<()> {
     let set_keymap = lua
         .globals()
         .get::<&str, Table>("vim")?

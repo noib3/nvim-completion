@@ -17,5 +17,10 @@ pub fn cursor_moved(lua: &Lua, ui_state: &mut UIState) -> Result<()> {
     //
     // TODO: same on `InsertEnter`.
 
+    // // Some expensive calculation, will this block the UI thread?
+    // std::thread::sleep(std::time::Duration::from_millis(4000));
+    // let print = lua.globals().get::<&str, mlua::Function>("print")?;
+    // print.call::<_, ()>("Done!")?;
+
     Ok(())
 }

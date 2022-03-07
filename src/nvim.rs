@@ -164,6 +164,37 @@ impl<'a> Nvim<'a> {
             ))?)
     }
 
+    /// Binding to `nvim_create_augroup`.
+    ///
+    /// Creates or gets an augroup. Returns the id to be used in
+    /// `Nvim::del_augroup_by_id`.
+    ///
+    /// # Arguments
+    ///
+    /// * `name`  The name of the augroup to create
+    /// * `opts`  Optional parameters. See `:h nvim_create_augroup` for  details
+    pub fn create_augroup(&self, name: &str, opts: Table) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_create_augroup")?
+            .call::<_, usize>((name, opts))?)
+    }
+
+    /// Binding to `nvim_create_autocmd`.
+    ///
+    /// Creates an autocmd. Returns an id to be used in `Nvim::del_autocmd`.
+    ///
+    /// # Arguments
+    ///
+    /// * `event`  A comma-separated string of events
+    /// * `opts`  Optional parameters. See `:h nvim_create_autocmd` for  details
+    pub fn create_autocmd(&self, event: &str, opts: Table) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_create_autocmd")?
+            .call::<_, usize>((event, opts))?)
+    }
+
     /// Binding to `nvim_create_buf`.
     ///
     /// Creates a new, empty, unnamed buffer. Returns the new buffer handle, or
@@ -218,22 +249,6 @@ impl<'a> Nvim<'a> {
             .0
             .get::<&str, Function>("nvim_echo")?
             .call::<_, ()>((chunks, history, opts))?)
-    }
-
-    /// Binding to `nvim_exec`.
-    ///
-    /// Executes a block of Vimscript. Returns the output if `output` is true,
-    /// else an empty string.
-    ///
-    /// # Arguments
-    ///
-    /// * `src`     Vimscript code
-    /// * `output`  Whether to capture and return all output.
-    pub fn exec(&self, src: &str, output: bool) -> Result<()> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_exec")?
-            .call::<_, ()>((src, output))?)
     }
 
     /// Binding to `nvim_get_current_line`
