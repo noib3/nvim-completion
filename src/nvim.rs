@@ -186,13 +186,17 @@ impl<'a> Nvim<'a> {
     ///
     /// # Arguments
     ///
-    /// * `event`  A comma-separated string of events
-    /// * `opts`  Optional parameters. See `:h nvim_create_autocmd` for  details
-    pub fn create_autocmd(&self, event: &str, opts: Table) -> Result<usize> {
+    /// * `events`  A slice of strings reprenting event names
+    /// * `opts`    Optional parameters. See `:h nvim_create_autocmd` for  details
+    pub fn create_autocmd(
+        &self,
+        events: &[&str],
+        opts: Table,
+    ) -> Result<usize> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_create_autocmd")?
-            .call::<_, usize>((event, opts))?)
+            .call::<_, usize>((events, opts))?)
     }
 
     /// Binding to `nvim_create_buf`.

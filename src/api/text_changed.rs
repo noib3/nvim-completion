@@ -2,33 +2,27 @@ use mlua::{Lua, Result};
 use std::cmp;
 
 use crate::completion;
-use crate::config::Config;
-use crate::state::{CompletionState, UIState};
+use crate::state::State;
 use crate::Nvim;
 
 /// Executed on every `TextChangedI` event.
-pub fn text_changed(
-    lua: &Lua,
-    config: &Config,
-    completion_state: &mut CompletionState,
-    ui_state: &mut UIState,
-) -> Result<()> {
+pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
-    completion_state.current_line = nvim.get_current_line()?;
-    completion_state.bytes_before_cursor = nvim.win_get_cursor(0)?.1;
+    state.completion.update_bytes_before_cursor(&nvim)?;
+    state.completion.update_current_line(&nvim)?;
 
-    completion_state.matched_prefix =
+    state.completion.matched_prefix =
         String::from(completion::get_matched_prefix(
-            &completion_state.current_line,
-            completion_state.bytes_before_cursor,
+            &state.completion.current_line,
+            state.completion.bytes_before_cursor,
         ));
 
-    completion_state.completion_items =
-        completion::complete(&completion_state.matched_prefix);
+    state.completion.completion_items =
+        completion::complete(&state.completion.matched_prefix);
 
-    if completion_state.completion_items.is_empty() {
-        ui_state.completion_menu.selected_index = None;
+    if state.completion.completion_items.is_empty() {
+        state.ui.completion_menu.selected_index = None;
         return Ok(());
     }
 
@@ -36,34 +30,32 @@ pub fn text_changed(
     // every cursor_moved and every completion_menu.hide() already sets the
     // selected index to None. Maybe I do if I decide it's not the
     // responsability of completion_menu.hide() to reset the selected index.
-    if let Some(index) = ui_state.completion_menu.selected_index {
-        ui_state.completion_menu.selected_index =
-            Some(cmp::min(index, completion_state.completion_items.len() - 1))
+    if let Some(index) = state.ui.completion_menu.selected_index {
+        state.ui.completion_menu.selected_index =
+            Some(cmp::min(index, state.completion.completion_items.len() - 1))
     }
 
-    if config.autoshow_menu {
-        ui_state.completion_menu.show_completions(
+    if state.settings.autoshow_menu {
+        state.ui.completion_menu.show_completions(
             &nvim,
             lua,
-            &completion_state.completion_items,
+            &state.completion.completion_items,
         )?;
     }
 
     // Only show a completion hint if there's no text in the line beyond the
     // current cursor position (and if hints are enabled, ofc).
-    if (completion_state.bytes_before_cursor
-        == completion_state.current_line.len())
-        && config.show_hints
+    if (state.completion.bytes_before_cursor
+        == state.completion.current_line.len())
+        && state.settings.show_hints
     {
-        let current_row = nvim.win_get_cursor(0)?.0;
-        ui_state.completion_hint.set(
+        state.ui.completion_hint.set(
             lua,
             &nvim,
             0,
-            current_row - 1,
-            completion_state.bytes_before_cursor,
-            &completion_state.completion_items[0].text
-                [completion_state.matched_prefix.len()..],
+            state.completion.bytes_before_cursor,
+            &state.completion.completion_items[0].text
+                [state.completion.matched_prefix.len()..],
         )?;
     }
 

@@ -28,7 +28,7 @@ impl DetailsPane {
         Ok(())
     }
 
-    fn _is_visible(&self) -> bool {
+    pub fn is_visible(&self) -> bool {
         self.winid.is_some()
     }
 }

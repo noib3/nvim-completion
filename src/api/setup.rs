@@ -1,39 +1,25 @@
 use mlua::{Function, Lua, Result, Table};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::config::{self, Config};
+use crate::settings::{Error, Settings};
 use crate::{Nvim, State};
 
-// TODO: refactor everything, this looks like shit
+const COMPLEET_AUGROUP_NAME: &'static str = "compleet";
 
 pub fn setup(
     lua: &Lua,
-    state: &State,
+    state: &Arc<Mutex<State>>,
     preferences: Option<Table>,
 ) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
-    let config = Arc::clone(&state.config);
-    let mut config = config.lock().unwrap();
-    *config = match Config::try_from(preferences) {
-        Ok(config) => config,
+    let _state = Arc::clone(&state);
+    let settings = &mut _state.lock().unwrap().settings;
+
+    *settings = match Settings::try_from(preferences) {
+        Ok(settings) => settings,
         Err(e) => match e {
-            config::Error::Conversion { option, expected } => {
-                nvim.echo(
-                    &[
-                        &["[nvim-compleet]: ", "ErrorMsg"],
-                        &["Error parsing config option '"],
-                        &[option, "TSWarning"],
-                        &[&format!("': expected a {expected}.")],
-                    ],
-                    true,
-                    &[],
-                )?;
-
-                return Ok(());
-            },
-
-            config::Error::OptionDoesntExist { option } => {
+            Error::OptionDoesntExist { option } => {
                 nvim.echo(
                     &[
                         &["[nvim-compleet]: ", "ErrorMsg"],
@@ -48,7 +34,22 @@ pub fn setup(
                 return Ok(());
             },
 
-            config::Error::Lua(e) => return Err(e),
+            Error::FailedConversion { option, expected } => {
+                nvim.echo(
+                    &[
+                        &["[nvim-compleet]: ", "ErrorMsg"],
+                        &["Error parsing config option '"],
+                        &[option, "TSWarning"],
+                        &[&format!("': expected a {expected}.")],
+                    ],
+                    true,
+                    &[],
+                )?;
+
+                return Ok(());
+            },
+
+            Error::Lua(e) => return Err(e),
         },
     };
 
@@ -57,79 +58,104 @@ pub fn setup(
 
     setup_augroups(lua, &nvim, state)?;
     setup_mappings(lua, state)?;
-    if config.enable_default_mappings {
+
+    if settings.enable_default_mappings {
         enable_default_mappings(lua, state)?;
     }
 
     Ok(())
 }
 
-fn setup_augroups(lua: &Lua, nvim: &Nvim, state: &State) -> Result<()> {
-    let ui_state = Arc::clone(&state.ui);
-    let cursor_moved = lua.create_function(move |lua, ()| {
-        crate::api::cursor_moved(lua, &mut ui_state.lock().unwrap())
+fn setup_augroups(
+    lua: &Lua,
+    nvim: &Nvim,
+    state: &Arc<Mutex<State>>,
+) -> Result<()> {
+    let _state = Arc::clone(&state);
+    let cleanup = lua.create_function(move |lua, ()| {
+        super::cleanup_ui(lua, &mut _state.lock().unwrap().ui)
     })?;
 
-    let ui_state = Arc::clone(&state.ui);
-    let insert_left = lua.create_function(move |lua, ()| {
-        crate::api::insert_left(lua, &mut ui_state.lock().unwrap())
+    let _state = Arc::clone(&state);
+    let maybe_show_hint = lua.create_function(move |lua, ()| {
+        super::maybe_show_hint(lua, &mut _state.lock().unwrap())
     })?;
 
-    let completion_state = Arc::clone(&state.completion);
-    let config = Arc::clone(&state.config);
-    let ui_state = Arc::clone(&state.ui);
+    let _state = Arc::clone(&state);
     let text_changed = lua.create_function(move |lua, ()| {
-        crate::api::text_changed(
-            lua,
-            &config.lock().unwrap(),
-            &mut completion_state.lock().unwrap(),
-            &mut ui_state.lock().unwrap(),
-        )
+        super::text_changed(lua, &mut _state.lock().unwrap())
     })?;
 
-    let augroup_name = "compleet";
+    let opts = lua.create_table_with_capacity(0, 1)?;
+    opts.set("clear", true)?;
+    let _group_id = nvim.create_augroup(COMPLEET_AUGROUP_NAME, opts)?;
 
     let opts_w_callback = |callback: Function| -> Result<Table> {
-        let opts = lua.create_table()?;
-        opts.set("group", augroup_name)?;
+        let opts = lua.create_table_with_capacity(0, 2)?;
+        // TODO: why doesn't it work if I use the group id returned by
+        // `create_augroup` here instead of the name?
+        // opts.set("group", group_id)?;
+        opts.set("group", COMPLEET_AUGROUP_NAME)?;
         opts.set("callback", callback)?;
         Ok(opts)
     };
 
-    nvim.create_augroup(augroup_name, lua.create_table()?)?;
-    nvim.create_autocmd("CursorMovedI", opts_w_callback(cursor_moved)?)?;
-    nvim.create_autocmd("InsertLeave", opts_w_callback(insert_left)?)?;
-    nvim.create_autocmd("TextChangedI", opts_w_callback(text_changed)?)?;
+    nvim.create_autocmd(
+        &["CursorMovedI", "InsertLeave"],
+        opts_w_callback(cleanup)?,
+    )?;
+    nvim.create_autocmd(
+        &["CursorMovedI", "InsertEnter"],
+        opts_w_callback(maybe_show_hint)?,
+    )?;
+    nvim.create_autocmd(&["TextChangedI"], opts_w_callback(text_changed)?)?;
 
     Ok(())
 }
 
-fn setup_mappings(lua: &Lua, state: &State) -> Result<()> {
+fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
+    // Insert the currently hinted completion
+    let _state = Arc::clone(&state);
+    let insert_hinted_completion = lua.create_function(move |lua, ()| {
+        let _state = &mut _state.lock().unwrap();
+        if let Some(index) = _state.ui.completion_hint.hinted_index {
+            super::insert_completion(lua, &mut _state.completion, index)?;
+        }
+        Ok(())
+    })?;
+
+    // Insert the currently selected completion
+    let _state = Arc::clone(&state);
+    let insert_selected_completion = lua.create_function(move |lua, ()| {
+        let _state = &mut _state.lock().unwrap();
+        if let Some(index) = _state.ui.completion_menu.selected_index {
+            super::insert_completion(lua, &mut _state.completion, index)?;
+        }
+        Ok(())
+    })?;
+
+    // Select either the previous or next completion in the completion menu
+    // based on the value of `step`.
+    let _state = Arc::clone(&state);
+    let select_completion = lua.create_function(move |lua, step| {
+        super::select_completion(lua, &mut _state.lock().unwrap(), step)
+    })?;
+
+    // Show the completion menu with all the currently available completion
+    // candidates.
+    let _state = Arc::clone(&state);
+    let show_completions = lua.create_function(move |lua, ()| {
+        super::show_completions(lua, &mut _state.lock().unwrap())
+    })?;
+
     let set_keymap = lua
         .globals()
         .get::<&str, Table>("vim")?
         .get::<&str, Table>("keymap")?
         .get::<&str, Function>("set")?;
 
-    let opts = lua.create_table()?;
+    let opts = lua.create_table_with_capacity(0, 1)?;
     opts.set("silent", true)?;
-
-    // TODO: unify w/ insert selected completion
-    // ------------ INSERT HINTED COMPLETION -----------
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let insert_hinted_completion = lua.create_function(move |lua, ()| {
-        if let Some(index) =
-            &ui_state.lock().unwrap().completion_hint.hinted_index
-        {
-            super::insert_completion(
-                lua,
-                &mut completion_state.lock().unwrap(),
-                *index,
-            )?;
-        }
-        Ok(())
-    })?;
 
     set_keymap.call::<_, ()>((
         "i",
@@ -138,42 +164,12 @@ fn setup_mappings(lua: &Lua, state: &State) -> Result<()> {
         opts.clone(),
     ))?;
 
-    // ------------ INSERT SELECTED COMPLETION -----------
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let insert_selected_completion = lua.create_function(move |lua, ()| {
-        if let Some(index) =
-            &ui_state.lock().unwrap().completion_menu.selected_index
-        {
-            super::insert_completion(
-                lua,
-                &mut completion_state.lock().unwrap(),
-                *index,
-            )?;
-        }
-        Ok(())
-    })?;
-
     set_keymap.call::<_, ()>((
         "i",
         "<Plug>(compleet-insert-selected-completion)",
         insert_selected_completion,
         opts.clone(),
     ))?;
-
-    // ------------ SELECT COMPLETION -----------
-    let config = Arc::clone(&state.config);
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let select_completion = lua.create_function(move |lua, step| {
-        super::select_completion(
-            lua,
-            &config.lock().unwrap(),
-            &mut ui_state.lock().unwrap(),
-            &completion_state.lock().unwrap(),
-            step,
-        )
-    })?;
 
     set_keymap.call::<_, ()>((
         "i",
@@ -189,17 +185,6 @@ fn setup_mappings(lua: &Lua, state: &State) -> Result<()> {
         opts.clone(),
     ))?;
 
-    // ------------ SHOW COMPLETIONS -----------
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let show_completions = lua.create_function(move |lua, ()| {
-        super::show_completions(
-            lua,
-            &completion_state.lock().unwrap(),
-            &mut ui_state.lock().unwrap(),
-        )
-    })?;
-
     set_keymap.call::<_, ()>((
         "i",
         "<Plug>(compleet-show-completions)",
@@ -210,55 +195,56 @@ fn setup_mappings(lua: &Lua, state: &State) -> Result<()> {
     Ok(())
 }
 
-fn enable_default_mappings(lua: &Lua, state: &State) -> Result<()> {
+fn enable_default_mappings(
+    lua: &Lua,
+    state: &Arc<Mutex<State>>,
+) -> Result<()> {
+    // Insert mode mapping for `<Tab>`. If the completion menu is visible
+    // select the next completion, if it isn't but there are completions to be
+    // displayed show the completion menu, else just return `<Tab>`.
+    let _state = Arc::clone(&state);
+    let tab = lua.create_function(move |lua, ()| -> Result<&'static str> {
+        let _state = &mut _state.lock().unwrap();
+        if _state.ui.completion_menu.is_visible() {
+            Ok("<Plug>(compleet-next-completion)")
+        } else if super::has_completions(lua, &mut _state.completion)? {
+            Ok("<Plug>(compleet-show-completions)")
+        } else {
+            Ok("<Tab>")
+        }
+    })?;
+
+    // Insert mode mapping for `<Tab>`. If the completion menu is visible
+    // select the previous completion, else just return `<S-Tab>`.
+    let _state = Arc::clone(&state);
+    let s_tab = lua.create_function(move |_, ()| -> Result<&'static str> {
+        if _state.lock().unwrap().ui.completion_menu.is_visible() {
+            Ok("<Plug>(compleet-prev-completion)")
+        } else {
+            Ok("<S-Tab>")
+        }
+    })?;
+
+    // Insert mode mapping for `<Tab>`. If a completion item in the completion
+    // menu is currently selected insert it, else just return `<CR>`.
+    let _state = Arc::clone(&state);
+    let cr = lua.create_function(move |_, ()| -> Result<&'static str> {
+        if _state.lock().unwrap().ui.completion_menu.is_item_selected() {
+            Ok("<Plug>(compleet-insert-selected-completion)")
+        } else {
+            Ok("<CR>")
+        }
+    })?;
+
     let set_keymap = lua
         .globals()
         .get::<&str, Table>("vim")?
         .get::<&str, Table>("keymap")?
         .get::<&str, Function>("set")?;
 
-    let opts = lua.create_table()?;
+    let opts = lua.create_table_with_capacity(0, 2)?;
     opts.set("expr", true)?;
     opts.set("remap", true)?;
-
-    let completion_state = Arc::clone(&state.completion);
-    let ui_state = Arc::clone(&state.ui);
-    let tab = lua.create_function(move |lua, ()| -> Result<&'static str> {
-        Ok(
-            if super::is_completion_menu_visible(&ui_state.lock().unwrap()) {
-                "<Plug>(compleet-next-completion)"
-            } else if super::has_completions(
-                lua,
-                &mut completion_state.lock().unwrap(),
-            )? {
-                "<Plug>(compleet-show-completions)"
-            } else {
-                "<Tab>"
-            },
-        )
-    })?;
-
-    let ui_state = Arc::clone(&state.ui);
-    let s_tab = lua.create_function(move |_, ()| -> Result<&'static str> {
-        Ok(
-            if super::is_completion_menu_visible(&ui_state.lock().unwrap()) {
-                "<Plug>(compleet-prev-completion)"
-            } else {
-                "<S-Tab>"
-            },
-        )
-    })?;
-
-    let ui_state = Arc::clone(&state.ui);
-    let cr = lua.create_function(move |_, ()| -> Result<&'static str> {
-        Ok(
-            if super::is_completion_item_selected(&ui_state.lock().unwrap()) {
-                "<Plug>(compleet-insert-selected-completion)"
-            } else {
-                "<CR>"
-            },
-        )
-    })?;
 
     set_keymap.call::<_, ()>(("i", "<Tab>", tab, opts.clone()))?;
     set_keymap.call::<_, ()>(("i", "<S-Tab>", s_tab, opts.clone()))?;

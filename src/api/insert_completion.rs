@@ -10,6 +10,7 @@ pub fn insert_completion(
 ) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
+    // TODO: this doesn't work for right-to-left languages.
     let line_after_cursor =
         &completion_state.current_line[completion_state.bytes_before_cursor..];
 
@@ -53,7 +54,7 @@ pub fn insert_completion(
 
     // We don't do any UI cleanup here (e.g. `completion_menu.hide()`, etc.)
     // since inserting a completion will move the cursor, triggering a
-    // `CursorMovedI` event, which in turns executes `api::cursor_moved` where
+    // `CursorMovedI` event, which in turn executes `api::cursor_moved` where
     // the cleanup happens.
 
     Ok(())

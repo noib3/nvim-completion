@@ -8,21 +8,26 @@ pub struct CompletionMenu {
     /// The handle of the buffer used to show the completion items.
     bufnr: usize,
 
-    /// The handle of the floating window used to show the completion items, or
-    /// `None` if the completion menu is not currently visible.
-    winid: Option<usize>,
+    /// The maximum height of the completion menu, or `None` if no max height
+    /// has been set by the user.
+    _max_height: Option<usize>,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.
     pub selected_index: Option<usize>,
+
+    /// The handle of the floating window used to show the completion items, or
+    /// `None` if the completion menu is not currently visible.
+    winid: Option<usize>,
 }
 
 impl CompletionMenu {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionMenu {
             bufnr: nvim.create_buf(false, true)?,
-            winid: None,
+            _max_height: None,
             selected_index: None,
+            winid: None,
         })
     }
 }
@@ -34,6 +39,10 @@ impl CompletionMenu {
             self.winid = None;
         }
         Ok(())
+    }
+
+    pub fn is_item_selected(&self) -> bool {
+        self.selected_index.is_some()
     }
 
     pub fn is_visible(&self) -> bool {

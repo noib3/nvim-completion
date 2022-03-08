@@ -21,16 +21,14 @@ impl CompletionHint {
 
 impl CompletionHint {
     pub fn erase(&mut self, nvim: &Nvim) -> Result<()> {
-        if self.is_visible() {
-            // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
-            nvim.buf_clear_namespace(
-                0,
-                (self.ns_id).try_into().unwrap_or(-1), // TODO: this is bad
-                0,
-                -1,
-            )?;
-            self.hinted_index = None;
-        }
+        // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
+        nvim.buf_clear_namespace(
+            0,
+            (self.ns_id).try_into().unwrap_or(-1), // TODO: this is bad
+            0,
+            -1,
+        )?;
+        self.hinted_index = None;
         Ok(())
     }
 
@@ -43,7 +41,6 @@ impl CompletionHint {
         lua: &Lua,
         nvim: &Nvim,
         hinted_index: usize,
-        row: usize,
         col: usize,
         hint: &str,
     ) -> Result<()> {
@@ -52,6 +49,7 @@ impl CompletionHint {
         opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "Comment"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
+        let row = nvim.win_get_cursor(0)?.0 - 1;
         nvim.buf_set_extmark(0, self.ns_id, row, col, opts)?;
         self.hinted_index = Some(hinted_index);
 

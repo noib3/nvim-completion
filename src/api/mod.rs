@@ -1,23 +1,17 @@
-mod cursor_moved;
+mod cleanup_ui;
 mod has_completions;
 mod insert_completion;
-mod insert_left;
-mod is_completion_hint_visible;
-mod is_completion_item_selected;
-mod is_completion_menu_visible;
+mod maybe_show_hint;
 mod select_completion;
 mod setup;
 mod show_completions;
 mod text_changed;
 
-pub use cursor_moved::cursor_moved;
+use cleanup_ui::cleanup_ui;
 pub use has_completions::has_completions;
 use insert_completion::insert_completion;
-pub use insert_left::insert_left;
-pub use is_completion_hint_visible::is_completion_hint_visible;
-pub use is_completion_item_selected::is_completion_item_selected;
-pub use is_completion_menu_visible::is_completion_menu_visible;
+use maybe_show_hint::maybe_show_hint;
 use select_completion::select_completion;
 pub use setup::setup;
 use show_completions::show_completions;
-pub use text_changed::text_changed;
+use text_changed::text_changed;

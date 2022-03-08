@@ -1,28 +1,27 @@
 use mlua::Result;
-use std::sync::{Arc, Mutex};
 
 use super::CompletionState;
 use super::UIState;
-use crate::config::Config;
 use crate::nvim::Nvim;
+use crate::settings::Settings;
 
 pub struct State {
     /// Holds state about values used to compute the completion candidates.
-    pub completion: Arc<Mutex<CompletionState>>,
+    pub completion: CompletionState,
 
     /// Used to store the current configuration.
-    pub config: Arc<Mutex<Config>>,
+    pub settings: Settings,
 
     /// Holds state about the currently displayed UI.
-    pub ui: Arc<Mutex<UIState>>,
+    pub ui: UIState,
 }
 
 impl State {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(State {
-            completion: Arc::new(Mutex::new(CompletionState::new())),
-            config: Arc::new(Mutex::new(Config::default())),
-            ui: Arc::new(Mutex::new(UIState::new(nvim)?)),
+            completion: CompletionState::new(),
+            settings: Settings::default(),
+            ui: UIState::new(nvim)?,
         })
     }
 }

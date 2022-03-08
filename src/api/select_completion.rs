@@ -1,33 +1,30 @@
 use mlua::{Lua, Result};
 
-use crate::config::Config;
-use crate::state::{CompletionState, UIState};
+use crate::state::State;
 use crate::Nvim;
 
 pub fn select_completion(
     lua: &Lua,
-    config: &Config,
-    ui_state: &mut UIState,
-    completion_state: &CompletionState,
+    state: &mut State,
     step: i8, // either 1 or -1
 ) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
-    if !ui_state.completion_menu.is_visible() {
+    if !state.ui.completion_menu.is_visible() {
         return Ok(());
     }
 
-    let last_index = completion_state.completion_items.len() - 1;
+    let last_index = state.completion.completion_items.len() - 1;
     let new_selected_index = match step {
         // Selecting the next completion
-        1 => match ui_state.completion_menu.selected_index {
+        1 => match state.ui.completion_menu.selected_index {
             Some(index) if index == last_index => None,
             Some(index) => Some(index + 1),
             None => Some(0),
         },
 
         // Selecting the previous completion
-        -1 => match ui_state.completion_menu.selected_index {
+        -1 => match state.ui.completion_menu.selected_index {
             Some(index) if index == 0 => None,
             Some(index) => Some(index - 1),
             None => Some(last_index),
@@ -36,27 +33,25 @@ pub fn select_completion(
         _ => unreachable!(),
     };
 
-    ui_state
+    state
+        .ui
         .completion_menu
         .select_completion(&nvim, new_selected_index)?;
 
-    if (completion_state.bytes_before_cursor
-        == completion_state.current_line.len())
-        && config.show_hints
+    if (state.completion.bytes_before_cursor
+        == state.completion.current_line.len())
+        && state.settings.show_hints
     {
         match new_selected_index {
-            None => ui_state.completion_hint.erase(&nvim)?,
+            None => state.ui.completion_hint.erase(&nvim)?,
             Some(index) => {
-                // TODO: this shouldn't be needed at this point
-                let current_row = nvim.win_get_cursor(0)?.0;
-                ui_state.completion_hint.set(
+                state.ui.completion_hint.set(
                     lua,
                     &nvim,
                     index,
-                    current_row - 1,
-                    completion_state.bytes_before_cursor,
-                    &completion_state.completion_items[index].text
-                        [completion_state.matched_prefix.len()..],
+                    state.completion.bytes_before_cursor,
+                    &state.completion.completion_items[index].text
+                        [state.completion.matched_prefix.len()..],
                 )?;
             },
         }

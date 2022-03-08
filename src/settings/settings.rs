@@ -1,7 +1,7 @@
 use mlua::{Table, Value};
 
 #[derive(Debug)]
-pub struct Config {
+pub struct Settings {
     /// Whether to automatically show the completion menu every time there are
     /// completion items available.
     pub autoshow_menu: bool,
@@ -13,15 +13,15 @@ pub struct Config {
     pub show_hints: bool,
 }
 
-impl Config {
+impl Settings {
     fn field_names() -> &'static [&'static str] {
         &["autoshow_menu", "enable_default_mappings", "show_hints"]
     }
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
+impl Default for Settings {
+    fn default() -> Settings {
+        Settings {
             autoshow_menu: true,
             enable_default_mappings: false,
             show_hints: false,
@@ -30,7 +30,7 @@ impl Default for Config {
 }
 
 pub enum Error {
-    Conversion {
+    FailedConversion {
         option: &'static str,
         expected: &'static str,
     },
@@ -48,11 +48,11 @@ impl From<mlua::Error> for Error {
     }
 }
 
-impl<'a> TryFrom<Option<Table<'a>>> for Config {
+impl<'a> TryFrom<Option<Table<'a>>> for Settings {
     type Error = Error;
 
     fn try_from(preferences: Option<Table>) -> Result<Self, Error> {
-        let mut config = Config::default();
+        let mut config = Settings::default();
 
         let preferences = match preferences {
             Some(table) => table,
@@ -61,16 +61,19 @@ impl<'a> TryFrom<Option<Table<'a>>> for Config {
 
         for pair in preferences.clone().pairs::<String, Value>() {
             let (key, _) = pair?;
-            if !Config::field_names().contains(&key.as_str()) {
+            if !Settings::field_names().contains(&key.as_str()) {
                 return Err(Error::OptionDoesntExist { option: key });
             }
         }
+
+        // TODO: use a proc macro to derive some trait in `Config` to help
+        // avoiding some of this boilerplate. Might need help for that.
 
         match preferences.get("autoshow_menu")? {
             Value::Nil => {},
             Value::Boolean(bool) => config.autoshow_menu = bool,
             _ => {
-                return Err(Error::Conversion {
+                return Err(Error::FailedConversion {
                     option: "autoshow_menu",
                     expected: "boolean",
                 })
@@ -81,7 +84,7 @@ impl<'a> TryFrom<Option<Table<'a>>> for Config {
             Value::Nil => {},
             Value::Boolean(bool) => config.enable_default_mappings = bool,
             _ => {
-                return Err(Error::Conversion {
+                return Err(Error::FailedConversion {
                     option: "enable_default_mappings",
                     expected: "boolean",
                 })
@@ -92,7 +95,7 @@ impl<'a> TryFrom<Option<Table<'a>>> for Config {
             Value::Nil => {},
             Value::Boolean(bool) => config.show_hints = bool,
             _ => {
-                return Err(Error::Conversion {
+                return Err(Error::FailedConversion {
                     option: "show_hints",
                     expected: "boolean",
                 })

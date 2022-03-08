@@ -1,10 +1,10 @@
 use mlua::{Lua, Result, Table};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 mod api;
 mod completion;
-mod config;
 mod nvim;
+mod settings;
 mod state;
 mod ui;
 
@@ -13,39 +13,71 @@ use state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    // TODO: right now everything is sync and we're blocking on every single
+    // TODOs
+
+    // 0. BUG: `this is a f<Super-Left><Super-Right>roo<Alt-BS>` -> foo is
+    //    still visible.
+
+    // 1. Color matching chars.
+
+    // 2. Create custom highlight groups for `CompleetUnselectedItem`,
+    // `CompleetSelectedItem`, `CompleetMatchingCharsSelected`,
+    // `CompleetMatchingCharsUnselected`, or something like that.
+
+    // 3. Show bottom indicator with something like `item 1 of 3`, and
+    // some other message when no item is selected.
+
+    // 4. Add config option to set the maximum height of the completion
+    // menu.
+
+    // 5. Scroll buffer to keep selected completion visible if number of
+    // completions is bigger than the completion menu's max height.
+
+    // 6. Handle geometry for completion menu, i.e. show it above the
+    // current line if there's not enough space below it. Also handle
+    // horizontal constraints.
+
+    // 7. Implement details pane.
+
+    // 8. Handle geometry for details pane.
+
+    // 9. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
+
+    // 10. Make the core logic as neovim-agnostic as possible.
+
+    // 11. Right now everything is sync and we're blocking on every single
     // event we listen to. This will be a problem when we start dealing with
     // possibly thousands of completion results from LSPs.
-    // Can we leverage async on the Rust end w/ tokyo? Also look into `:h
+    //
+    // Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
     // vim.loop` and `:h lua-loop-threading`.
 
-    // TODO: bazooka then ALT-BS stops at baz?
-
     let nvim = Nvim::new(lua)?;
-    let state = State::new(&nvim)?;
+    let state = Arc::new(Mutex::new(State::new(&nvim)?));
 
-    let completion_state = Arc::clone(&state.completion);
+    let _state = Arc::clone(&state);
     let has_completions = lua.create_function(move |lua, ()| {
-        api::has_completions(lua, &mut completion_state.lock().unwrap())
+        api::has_completions(lua, &mut _state.lock().unwrap().completion)
     })?;
 
-    let ui_state = Arc::clone(&state.ui);
+    let _state = Arc::clone(&state);
     let is_completion_selected = lua.create_function(move |_, ()| {
-        Ok(api::is_completion_item_selected(&ui_state.lock().unwrap()))
+        Ok(_state.lock().unwrap().ui.completion_menu.is_item_selected())
     })?;
 
-    let ui_state = Arc::clone(&state.ui);
+    let _state = Arc::clone(&state);
     let is_hint_visible = lua.create_function(move |_, ()| {
-        Ok(api::is_completion_hint_visible(&ui_state.lock().unwrap()))
+        Ok(_state.lock().unwrap().ui.completion_hint.is_visible())
     })?;
 
-    let ui_state = Arc::clone(&state.ui);
+    let _state = Arc::clone(&state);
     let is_menu_visible = lua.create_function(move |_, ()| {
-        Ok(api::is_completion_menu_visible(&ui_state.lock().unwrap()))
+        Ok(_state.lock().unwrap().ui.completion_menu.is_visible())
     })?;
 
-    let setup = lua
-        .create_function(move |lua, config| api::setup(lua, &state, config))?;
+    let setup = lua.create_function(move |lua, preferences| {
+        api::setup(lua, &state, preferences)
+    })?;
 
     let exports = lua.create_table_with_capacity(0, 5)?;
     exports.set("has_completions", has_completions)?;

@@ -1,26 +1,19 @@
 use mlua::{Lua, Result};
 
-use crate::state::{CompletionState, UIState};
+use crate::state::State;
 use crate::Nvim;
 
-pub fn show_completions(
-    lua: &Lua,
-    completion_state: &CompletionState,
-    ui_state: &mut UIState,
-) -> Result<()> {
-    let nvim = Nvim::new(lua)?;
-
-    if ui_state.completion_menu.is_visible()
-        || completion_state.completion_items.is_empty()
+pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
+    if !state.ui.completion_menu.is_visible()
+        && !state.completion.completion_items.is_empty()
     {
-        return Ok(());
+        let nvim = Nvim::new(lua)?;
+        state.ui.completion_menu.show_completions(
+            &nvim,
+            lua,
+            &state.completion.completion_items,
+        )?;
     }
-
-    ui_state.completion_menu.show_completions(
-        &nvim,
-        lua,
-        &completion_state.completion_items,
-    )?;
 
     Ok(())
 }
