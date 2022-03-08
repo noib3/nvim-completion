@@ -2,11 +2,10 @@ use super::CompletionItem;
 
 pub fn get_matched_prefix(line: &str, bytes_before_cursor: usize) -> &'_ str {
     let bytes_to_take = line[..bytes_before_cursor]
-        .chars()
+        .bytes()
         .rev()
-        .take_while(|&char| !char.is_whitespace())
-        .collect::<String>()
-        .len();
+        .take_while(|&byte| !byte.is_ascii_whitespace())
+        .count();
 
     &line[(bytes_before_cursor - bytes_to_take)..bytes_before_cursor]
 }

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::settings::{Error, Settings};
 use crate::{Nvim, State};
 
-const COMPLEET_AUGROUP_NAME: &'static str = "compleet";
+const COMPLEET_AUGROUP_NAME: &'static str = "Compleet";
 
 pub fn setup(
     lua: &Lua,
@@ -13,7 +13,7 @@ pub fn setup(
 ) -> Result<()> {
     let nvim = Nvim::new(lua)?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let settings = &mut _state.lock().unwrap().settings;
 
     *settings = match Settings::try_from(preferences) {
@@ -71,17 +71,17 @@ fn setup_augroups(
     nvim: &Nvim,
     state: &Arc<Mutex<State>>,
 ) -> Result<()> {
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let cleanup = lua.create_function(move |lua, ()| {
         super::cleanup_ui(lua, &mut _state.lock().unwrap().ui)
     })?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let maybe_show_hint = lua.create_function(move |lua, ()| {
         super::maybe_show_hint(lua, &mut _state.lock().unwrap())
     })?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let text_changed = lua.create_function(move |lua, ()| {
         super::text_changed(lua, &mut _state.lock().unwrap())
     })?;
@@ -115,7 +115,7 @@ fn setup_augroups(
 
 fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
     // Insert the currently hinted completion
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
         if let Some(index) = _state.ui.completion_hint.hinted_index {
@@ -125,7 +125,7 @@ fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
     })?;
 
     // Insert the currently selected completion
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let insert_selected_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
         if let Some(index) = _state.ui.completion_menu.selected_index {
@@ -136,14 +136,14 @@ fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
 
     // Select either the previous or next completion in the completion menu
     // based on the value of `step`.
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let select_completion = lua.create_function(move |lua, step| {
         super::select_completion(lua, &mut _state.lock().unwrap(), step)
     })?;
 
     // Show the completion menu with all the currently available completion
     // candidates.
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let show_completions = lua.create_function(move |lua, ()| {
         super::show_completions(lua, &mut _state.lock().unwrap())
     })?;
@@ -202,7 +202,7 @@ fn enable_default_mappings(
     // Insert mode mapping for `<Tab>`. If the completion menu is visible
     // select the next completion, if it isn't but there are completions to be
     // displayed show the completion menu, else just return `<Tab>`.
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let tab = lua.create_function(move |lua, ()| -> Result<&'static str> {
         let _state = &mut _state.lock().unwrap();
         if _state.ui.completion_menu.is_visible() {
@@ -216,7 +216,7 @@ fn enable_default_mappings(
 
     // Insert mode mapping for `<Tab>`. If the completion menu is visible
     // select the previous completion, else just return `<S-Tab>`.
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let s_tab = lua.create_function(move |_, ()| -> Result<&'static str> {
         if _state.lock().unwrap().ui.completion_menu.is_visible() {
             Ok("<Plug>(compleet-prev-completion)")
@@ -227,7 +227,7 @@ fn enable_default_mappings(
 
     // Insert mode mapping for `<Tab>`. If a completion item in the completion
     // menu is currently selected insert it, else just return `<CR>`.
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let cr = lua.create_function(move |_, ()| -> Result<&'static str> {
         if _state.lock().unwrap().ui.completion_menu.is_item_selected() {
             Ok("<Plug>(compleet-insert-selected-completion)")

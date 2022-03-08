@@ -19,6 +19,12 @@ pub struct CompletionMenu {
     /// The handle of the floating window used to show the completion items, or
     /// `None` if the completion menu is not currently visible.
     winid: Option<usize>,
+
+    /// TODO: document
+    selected_item_ns_id: usize,
+
+    /// TODO: document
+    matched_chars_ns_id: usize,
 }
 
 impl CompletionMenu {
@@ -28,6 +34,10 @@ impl CompletionMenu {
             _max_height: None,
             selected_index: None,
             winid: None,
+            selected_item_ns_id: nvim
+                .create_namespace("CompleetSelectedItem")?,
+            matched_chars_ns_id: nvim
+                .create_namespace("CompleetMatchedChars")?,
         })
     }
 }
@@ -57,7 +67,7 @@ impl CompletionMenu {
         match self.selected_index {
             Some(old) => nvim.buf_clear_namespace(
                 self.bufnr,
-                -1,
+                self.selected_item_ns_id.try_into().unwrap_or(-1),
                 old,
                 (old + 1).try_into().unwrap_or(-1), // TODO: this is bad
             )?,
@@ -66,7 +76,14 @@ impl CompletionMenu {
 
         match new_selected_index {
             Some(new) => {
-                nvim.buf_add_highlight(self.bufnr, -1, "Visual", new, 0, -1)?;
+                nvim.buf_add_highlight(
+                    self.bufnr,
+                    self.selected_item_ns_id.try_into().unwrap_or(-1),
+                    "Visual",
+                    new,
+                    0,
+                    -1,
+                )?;
             },
             None => {},
         };
@@ -80,15 +97,15 @@ impl CompletionMenu {
         &mut self,
         nvim: &Nvim,
         lua: &Lua,
-        completion_items: &[CompletionItem],
+        completions: &[CompletionItem],
     ) -> Result<()> {
-        let max_width = completion_items
+        let max_width = completions
             .iter()
             .map(|item| item.text.len())
             .max()
             .unwrap_or(0);
 
-        let lines = completion_items
+        let lines = completions
             .iter()
             .map(|item| item.format(max_width))
             .collect::<Vec<String>>();
@@ -106,6 +123,33 @@ impl CompletionMenu {
         config.set("noautocmd", true)?;
 
         self.winid = Some(nvim.open_win(self.bufnr, false, config)?);
+
+        let opts = lua.create_table_with_capacity(0, 4)?;
+        opts.set("hl_group", "ErrorMsg")?;
+
+        // TODO: look into `:h nvim_set_decoration_provider` + `ephemeral`
+        // option. What do they do? This seems to work fine w/o them but
+        // nvim-cmp uses them.
+        for (line, completion) in completions.iter().enumerate() {
+            for byte_range in &completion.matched_byte_ranges {
+                // The `+1` to the byte range start and end is needed because
+                // of the space prepended to every completion item by
+                // `CompletionItem::format`.
+                let _opts = opts.clone();
+                // TODO: the id has to be unique not only for every line but
+                // also for every range. Find a way to combine the two.
+                _opts.set("id", line + 1)?;
+                _opts.set("end_row", line)?;
+                _opts.set("end_col", byte_range.end + 1)?;
+                nvim.buf_set_extmark(
+                    self.bufnr,
+                    self.matched_chars_ns_id,
+                    line,
+                    byte_range.start + 1,
+                    _opts,
+                )?;
+            }
+        }
 
         Ok(())
     }

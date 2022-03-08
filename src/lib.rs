@@ -13,29 +13,28 @@ use state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    // TODOs
+    // BUG: `this is a f<Super-Left><Super-Right>roo<Alt-BS>` -> foo is still
+    // visible. See https://github.com/neovim/neovim/issues/17652
 
-    // 0. BUG: `this is a f<Super-Left><Super-Right>roo<Alt-BS>` -> foo is
-    //    still visible.
+    // TODOs
 
     // 1. Color matching chars.
 
     // 2. Create custom highlight groups for `CompleetUnselectedItem`,
-    // `CompleetSelectedItem`, `CompleetMatchingCharsSelected`,
-    // `CompleetMatchingCharsUnselected`, or something like that.
+    //    `CompleetSelectedItem`, `CompleetMatchingCharsSelected`,
+    //    `CompleetMatchingCharsUnselected`, or something like that.
 
-    // 3. Show bottom indicator with something like `item 1 of 3`, and
-    // some other message when no item is selected.
+    // 3. Add config option to set the maximum height of the completion menu.
 
-    // 4. Add config option to set the maximum height of the completion
-    // menu.
+    // 4. Scroll buffer to keep selected completion visible if number of
+    //    completions is bigger than the completion menu's max height.
 
-    // 5. Scroll buffer to keep selected completion visible if number of
-    // completions is bigger than the completion menu's max height.
+    // 5. Show scroll indicator if number of completions is bigger than the
+    //    completion menu's max height.
 
-    // 6. Handle geometry for completion menu, i.e. show it above the
-    // current line if there's not enough space below it. Also handle
-    // horizontal constraints.
+    // 6. Handle geometry for completion menu, i.e. show it above the current
+    //    line if there's not enough space below it. Also handle horizontal
+    //    constraints.
 
     // 7. Implement details pane.
 
@@ -45,9 +44,13 @@ fn compleet(lua: &Lua) -> Result<Table> {
 
     // 10. Make the core logic as neovim-agnostic as possible.
 
-    // 11. Right now everything is sync and we're blocking on every single
-    // event we listen to. This will be a problem when we start dealing with
-    // possibly thousands of completion results from LSPs.
+    // 11. We're querying the cursor position and the entire line the cursor is
+    //     on on every single `CursorMovedI` and `TextChangedI` event. Is there
+    //     a way not to? Also look into `nvim_buf_attach`.
+
+    // 12. Right now everything is sync and we're blocking on every single
+    //     event we listen to. This will be a problem when we start dealing
+    //     with possibly thousands of completion results from LSPs.
     //
     // Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
     // vim.loop` and `:h lua-loop-threading`.
@@ -55,22 +58,22 @@ fn compleet(lua: &Lua) -> Result<Table> {
     let nvim = Nvim::new(lua)?;
     let state = Arc::new(Mutex::new(State::new(&nvim)?));
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let has_completions = lua.create_function(move |lua, ()| {
         api::has_completions(lua, &mut _state.lock().unwrap().completion)
     })?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let is_completion_selected = lua.create_function(move |_, ()| {
         Ok(_state.lock().unwrap().ui.completion_menu.is_item_selected())
     })?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let is_hint_visible = lua.create_function(move |_, ()| {
         Ok(_state.lock().unwrap().ui.completion_hint.is_visible())
     })?;
 
-    let _state = Arc::clone(&state);
+    let _state = state.clone();
     let is_menu_visible = lua.create_function(move |_, ()| {
         Ok(_state.lock().unwrap().ui.completion_menu.is_visible())
     })?;
