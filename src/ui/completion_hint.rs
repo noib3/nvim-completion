@@ -46,7 +46,7 @@ impl CompletionHint {
     ) -> Result<()> {
         let opts = lua.create_table_with_capacity(0, 3)?;
         opts.set("id", 1)?;
-        opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "Comment"]])?;
+        opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
         let row = nvim.win_get_cursor(0)?.0 - 1;

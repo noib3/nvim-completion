@@ -5,8 +5,8 @@ pub struct CompletionItem {
     /// selected.
     pub text: String,
 
-    /// A vector of ranges representing indices of the bytes of the `text`
-    /// field that are matched by the current completion prefix.
+    /// A vector of ranges representing indices of bytes of the `text` field
+    /// that are matched by the current completion prefix.
     pub matched_byte_ranges: Vec<Range<usize>>,
 }
 

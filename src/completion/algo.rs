@@ -15,7 +15,20 @@ pub fn complete(matched_prefix: &str) -> Vec<CompletionItem> {
         return Vec::new();
     }
 
-    let entries = ["foo", "bar", "baz", "bazooka"];
+    let entries = [
+        "foo",
+        "bar",
+        "baz",
+        "bam",
+        "bazooka",
+        "baroo",
+        "barometer",
+        "beard",
+        "bear",
+        "bamm",
+        "bamboozled",
+        "bambi",
+    ];
 
     entries
         .iter()

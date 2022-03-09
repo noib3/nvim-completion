@@ -79,7 +79,7 @@ impl CompletionMenu {
                 nvim.buf_add_highlight(
                     self.bufnr,
                     self.selected_item_ns_id.try_into().unwrap_or(-1),
-                    "Visual",
+                    "CompleetMenuSelected",
                     new,
                     0,
                     -1,
@@ -122,15 +122,17 @@ impl CompletionMenu {
         config.set("style", "minimal")?;
         config.set("noautocmd", true)?;
 
-        self.winid = Some(nvim.open_win(self.bufnr, false, config)?);
+        let winid = nvim.open_win(self.bufnr, false, config)?;
+        nvim.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
+        self.winid = Some(winid);
 
         let opts = lua.create_table_with_capacity(0, 4)?;
-        opts.set("hl_group", "ErrorMsg")?;
+        opts.set("hl_group", "CompleetMenuMatchingChars")?;
 
         // TODO: look into `:h nvim_set_decoration_provider` + `ephemeral`
         // option. What do they do? This seems to work fine w/o them but
         // nvim-cmp uses them.
-        for (line, completion) in completions.iter().enumerate() {
+        for (row, completion) in completions.iter().enumerate() {
             for byte_range in &completion.matched_byte_ranges {
                 // The `+1` to the byte range start and end is needed because
                 // of the space prepended to every completion item by
@@ -138,13 +140,13 @@ impl CompletionMenu {
                 let _opts = opts.clone();
                 // TODO: the id has to be unique not only for every line but
                 // also for every range. Find a way to combine the two.
-                _opts.set("id", line + 1)?;
-                _opts.set("end_row", line)?;
+                _opts.set("id", row + 1)?;
+                _opts.set("end_row", row)?;
                 _opts.set("end_col", byte_range.end + 1)?;
                 nvim.buf_set_extmark(
                     self.bufnr,
                     self.matched_chars_ns_id,
-                    line,
+                    row,
                     byte_range.start + 1,
                     _opts,
                 )?;

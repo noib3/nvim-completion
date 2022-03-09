@@ -4,6 +4,7 @@ use crate::completion;
 use crate::state::CompletionState;
 use crate::Nvim;
 
+/// Executed on every call to `require("compleet").has_completions()`.
 pub fn has_completions(
     lua: &Lua,
     completion_state: &mut CompletionState,

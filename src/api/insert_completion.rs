@@ -3,6 +3,8 @@ use mlua::{Lua, Result};
 use crate::state::CompletionState;
 use crate::Nvim;
 
+/// Executed on both `<Plug>(compleet-insert-hinted-completion)` and
+/// `<Plug>(compleet-insert-selected-completion)`.
 pub fn insert_completion(
     lua: &Lua,
     completion_state: &mut CompletionState,
@@ -48,7 +50,7 @@ pub fn insert_completion(
     let new_column = completion_state.bytes_before_cursor
         + shift_the_cursor_this_many_bytes;
 
-    nvim.win_set_cursor(0, &[current_row, new_column])?;
+    nvim.win_set_cursor(0, current_row, new_column)?;
 
     completion_state.completion_items.clear();
 

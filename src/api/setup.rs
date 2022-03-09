@@ -6,6 +6,7 @@ use crate::{Nvim, State};
 
 const COMPLEET_AUGROUP_NAME: &'static str = "Compleet";
 
+/// Executed on every call to `require("compleet").setup({..})`.
 pub fn setup(
     lua: &Lua,
     state: &Arc<Mutex<State>>,
@@ -57,6 +58,7 @@ pub fn setup(
     // print.call::<_, ()>(format!("{:?}", &config))?;
 
     setup_augroups(lua, &nvim, state)?;
+    setup_hlgroups(lua, &nvim)?;
     setup_mappings(lua, state)?;
 
     if settings.enable_default_mappings {
@@ -109,6 +111,39 @@ fn setup_augroups(
         opts_w_callback(maybe_show_hint)?,
     )?;
     nvim.create_autocmd(&["TextChangedI"], opts_w_callback(text_changed)?)?;
+
+    Ok(())
+}
+
+fn setup_hlgroups(lua: &Lua, nvim: &Nvim) -> Result<()> {
+    // TODO: make something like this work
+    // nvim.set_hl(0, "CompleetMenu", lua.t! { link = "NormalFloat" })?;
+
+    // `CompleetMenu`
+    // Used to highlight the completion menu.
+    let opts = lua.create_table_from([("link", "NormalFloat")])?;
+    nvim.set_hl(0, "CompleetMenu", opts)?;
+
+    // `CompleetHint`
+    // Used to highlight the completion hint.
+    let opts = lua.create_table_from([("link", "Comment")])?;
+    nvim.set_hl(0, "CompleetHint", opts)?;
+
+    // `CompleetDetails`
+    // Used to highlight the details window.
+    let opts = lua.create_table_from([("link", "NormalFloat")])?;
+    nvim.set_hl(0, "CompleetDetails", opts)?;
+
+    // `CompleetMenuSelected`
+    // Used to highlight the currently selected completion item.
+    let opts = lua.create_table_from([("link", "PmenuSel")])?;
+    nvim.set_hl(0, "CompleetMenuSelected", opts)?;
+
+    // `CompleetMenuMatchingChars`
+    // Used to highlight the characters where a completion item matches the
+    // current prefix.
+    let opts = lua.create_table_from([("link", "Statement")])?;
+    nvim.set_hl(0, "CompleetMenuMatchingChars", opts)?;
 
     Ok(())
 }

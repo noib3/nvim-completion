@@ -3,6 +3,8 @@ use mlua::{Lua, Result};
 use crate::state::State;
 use crate::Nvim;
 
+/// Executed on `<Plug>(compleet-next-completion)` and
+/// `<Plug>(compleet-prev-completion)`.
 pub fn select_completion(
     lua: &Lua,
     state: &mut State,

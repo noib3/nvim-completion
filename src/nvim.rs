@@ -1,4 +1,19 @@
-use mlua::{Function, Lua, Result, Table};
+use mlua::{Function, Lua, Result, Table, ToLua};
+
+// macro_rules! t {
+//     ($( $k:ident = $v:expr ),*) => {{
+//         let mut t: HashMap<&str, mlua::Value> = HashMap::new();
+//         // t.insert("ciao", mlua::Value::String());
+//         // let mut t: HashMap<&str, Box<dyn ToLua>> = HashMap::new();
+//         // t.insert("ciao", Box::new(1));
+//         t
+//     }};
+// }
+
+// fn _ciao() -> Result<()> {
+//     let _t = t! {a =   "b"};
+//     Ok(())
+// }
 
 pub struct Nvim<'a>(pub Table<'a>);
 
@@ -286,6 +301,27 @@ impl<'a> Nvim<'a> {
             .call::<_, usize>((bufnr, enter, config))?)
     }
 
+    /// Binding to `vim.api.nvim_set_hl`
+    ///
+    /// Sets a highlight group
+    ///
+    /// # Arguments
+    ///
+    /// * `ns_id`  Namespace to use, or 0 to set a highlight group in the global namespace
+    /// * `name`   Highlight group name
+    /// * `opts`   Optional parameters. See `:h nvim_set_hl` for  details
+    pub fn set_hl<V: ToLua<'a>>(
+        &self,
+        ns_id: usize,
+        name: &str,
+        opts: V,
+    ) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_set_hl")?
+            .call::<_, ()>((ns_id, name, opts))?)
+    }
+
     /// Binding to `nvim_get_cursor`
     ///
     /// Returns the (1,0)-indexed cursor position as a tuple.
@@ -316,18 +352,46 @@ impl<'a> Nvim<'a> {
             .call::<_, ()>(winid)?)
     }
 
-    /// Binding to `nvim_set_cursor`
+    /// Binding to `nvim_win_set_cursor`
     ///
     /// Sets the (1,0)-indexed cursor position in the window.
     ///
     /// # Arguments
     ///
     /// * `winid`  Window handle, or 0 for current window
-    /// * `pos`    `&[row, col]` slice representing the new cursor position
-    pub fn win_set_cursor(&self, winid: usize, pos: &[usize]) -> Result<()> {
+    /// * `row`    Row number (1-indexed).
+    /// * `col`    Column number (0-indexed).
+    pub fn win_set_cursor(
+        &self,
+        winid: usize,
+        row: usize,
+        col: usize,
+    ) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_set_cursor")?
-            .call::<_, ()>((winid, pos))?)
+            .call::<_, ()>((winid, [row, col]))?)
+    }
+
+    /// Binding to `nvim_win_set_option`
+    ///
+    /// Sets a window option value. Passing `None` as a value deletes the
+    /// option (only works if there's a global fallback).
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window
+    /// * `name`   Option name
+    /// * `value`  Option value
+    pub fn win_set_option<V: ToLua<'a>>(
+        &self,
+        winid: usize,
+        name: &str,
+        value: V,
+    ) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_set_option")?
+            .call::<_, ()>((winid, name, value))?)
     }
 }

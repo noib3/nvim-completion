@@ -13,44 +13,38 @@ use state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    // BUG: `this is a f<Super-Left><Super-Right>roo<Alt-BS>` -> foo is still
-    // visible. See https://github.com/neovim/neovim/issues/17652
+    // TODOs: On Hold
+    //
+    // 1. Show scroll indicator if number of completions is bigger than the
+    //    completion menu's max height. This needs floating windows to support
+    //    scrollbars. See `:h api-floatwin`.
 
     // TODOs
 
-    // 1. Color matching chars.
+    // 1. Add config option to set the maximum height of the completion menu.
 
-    // 2. Create custom highlight groups for `CompleetUnselectedItem`,
-    //    `CompleetSelectedItem`, `CompleetMatchingCharsSelected`,
-    //    `CompleetMatchingCharsUnselected`, or something like that.
-
-    // 3. Add config option to set the maximum height of the completion menu.
-
-    // 4. Scroll buffer to keep selected completion visible if number of
+    // 2. Scroll buffer to keep selected completion visible if number of
     //    completions is bigger than the completion menu's max height.
 
-    // 5. Show scroll indicator if number of completions is bigger than the
-    //    completion menu's max height.
+    // 3. Implement details pane.
+
+    // 4. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
+
+    // 5. We're querying the cursor position and the entire line the cursor is
+    //    on on every single `CursorMovedI` and `TextChangedI` event. Is there
+    //    a way not to? Also look into `nvim_buf_attach`.
 
     // 6. Handle geometry for completion menu, i.e. show it above the current
     //    line if there's not enough space below it. Also handle horizontal
     //    constraints.
 
-    // 7. Implement details pane.
+    // 7. Handle geometry for details pane.
 
-    // 8. Handle geometry for details pane.
+    // 8. Make the core logic as neovim-agnostic as possible.
 
-    // 9. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
-
-    // 10. Make the core logic as neovim-agnostic as possible.
-
-    // 11. We're querying the cursor position and the entire line the cursor is
-    //     on on every single `CursorMovedI` and `TextChangedI` event. Is there
-    //     a way not to? Also look into `nvim_buf_attach`.
-
-    // 12. Right now everything is sync and we're blocking on every single
-    //     event we listen to. This will be a problem when we start dealing
-    //     with possibly thousands of completion results from LSPs.
+    // 9. Right now everything is sync and we're blocking on every single event
+    //    we listen to. This will be a problem when we start dealing with
+    //    possibly thousands of completion results from LSPs.
     //
     // Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
     // vim.loop` and `:h lua-loop-threading`.
