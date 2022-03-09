@@ -21,28 +21,26 @@ fn compleet(lua: &Lua) -> Result<Table> {
 
     // TODOs
 
-    // 1. Add config option to set the maximum height of the completion menu.
-
-    // 2. Scroll buffer to keep selected completion visible if number of
+    // 1. Scroll buffer to keep selected completion visible if number of
     //    completions is bigger than the completion menu's max height.
 
-    // 3. Implement details pane.
+    // 2. Implement details pane.
 
-    // 4. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
+    // 3. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
 
-    // 5. We're querying the cursor position and the entire line the cursor is
+    // 4. We're querying the cursor position and the entire line the cursor is
     //    on on every single `CursorMovedI` and `TextChangedI` event. Is there
     //    a way not to? Also look into `nvim_buf_attach`.
 
-    // 6. Handle geometry for completion menu, i.e. show it above the current
+    // 5. Handle geometry for completion menu, i.e. show it above the current
     //    line if there's not enough space below it. Also handle horizontal
     //    constraints.
 
-    // 7. Handle geometry for details pane.
+    // 6. Handle geometry for details pane.
 
-    // 8. Make the core logic as neovim-agnostic as possible.
+    // 7. Make the core logic as neovim-agnostic as possible.
 
-    // 9. Right now everything is sync and we're blocking on every single event
+    // 8. Right now everything is sync and we're blocking on every single event
     //    we listen to. This will be a problem when we start dealing with
     //    possibly thousands of completion results from LSPs.
     //

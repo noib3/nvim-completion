@@ -10,7 +10,7 @@ pub struct CompletionMenu {
 
     /// The maximum height of the completion menu, or `None` if no max height
     /// has been set by the user.
-    _max_height: Option<usize>,
+    pub max_height: Option<usize>,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.
@@ -31,7 +31,7 @@ impl CompletionMenu {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionMenu {
             bufnr: nvim.create_buf(false, true)?,
-            _max_height: None,
+            max_height: None,
             selected_index: None,
             winid: None,
             selected_item_ns_id: nvim
@@ -112,10 +112,15 @@ impl CompletionMenu {
 
         nvim.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
+        let height = match self.max_height {
+            None => lines.len(),
+            Some(height) => cmp::min(height, lines.len()),
+        };
+
         let config = lua.create_table_with_capacity(0, 8)?;
         config.set("relative", "cursor")?;
         config.set("width", max_width + 2)?;
-        config.set("height", cmp::min(lines.len(), 7))?;
+        config.set("height", height)?;
         config.set("row", 1)?;
         config.set("col", 0)?;
         config.set("focusable", false)?;

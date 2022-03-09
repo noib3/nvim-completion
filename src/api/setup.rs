@@ -15,9 +15,9 @@ pub fn setup(
     let nvim = Nvim::new(lua)?;
 
     let _state = state.clone();
-    let settings = &mut _state.lock().unwrap().settings;
+    let _state = &mut _state.lock().unwrap();
 
-    *settings = match Settings::try_from(preferences) {
+    _state.settings = match Settings::try_from(preferences) {
         Ok(settings) => settings,
         Err(e) => match e {
             Error::OptionDoesntExist { option } => {
@@ -25,7 +25,7 @@ pub fn setup(
                     &[
                         &["[nvim-compleet]: ", "ErrorMsg"],
                         &["Config option '"],
-                        &[&option, "TSWarning"],
+                        &[&option, "Statement"],
                         &["' doesn't exist!"],
                     ],
                     true,
@@ -40,8 +40,23 @@ pub fn setup(
                     &[
                         &["[nvim-compleet]: ", "ErrorMsg"],
                         &["Error parsing config option '"],
-                        &[option, "TSWarning"],
+                        &[option, "Statement"],
                         &[&format!("': expected a {expected}.")],
+                    ],
+                    true,
+                    &[],
+                )?;
+
+                return Ok(());
+            },
+
+            Error::InvalidValue { option, reason } => {
+                nvim.echo(
+                    &[
+                        &["[nvim-compleet]: ", "ErrorMsg"],
+                        &["Invalid value for config option '"],
+                        &[&option, "Statement"],
+                        &[&format!("': {reason}.")],
                     ],
                     true,
                     &[],
@@ -57,11 +72,13 @@ pub fn setup(
     // let print = lua.globals().get::<&str, Function>("print")?;
     // print.call::<_, ()>(format!("{:?}", &config))?;
 
+    _state.ui.completion_menu.max_height = _state.settings.max_menu_height;
+
     setup_augroups(lua, &nvim, state)?;
     setup_hlgroups(lua, &nvim)?;
     setup_mappings(lua, state)?;
 
-    if settings.enable_default_mappings {
+    if _state.settings.enable_default_mappings {
         enable_default_mappings(lua, state)?;
     }
 

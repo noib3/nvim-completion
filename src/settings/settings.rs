@@ -9,13 +9,22 @@ pub struct Settings {
     /// Enable insert mode mappings for `<Tab>`, `<S-Tab>` and `<CR>`.
     pub enable_default_mappings: bool,
 
+    /// The maximum number of rows the completion menu can take up.
+    pub max_menu_height: Option<usize>,
+
     /// Whether to show completion hints.
     pub show_hints: bool,
 }
 
 impl Settings {
+    // TODO: this is annoying to maintain.
     fn field_names() -> &'static [&'static str] {
-        &["autoshow_menu", "enable_default_mappings", "show_hints"]
+        &[
+            "autoshow_menu",
+            "enable_default_mappings",
+            "max_menu_height",
+            "show_hints",
+        ]
     }
 }
 
@@ -24,15 +33,22 @@ impl Default for Settings {
         Settings {
             autoshow_menu: true,
             enable_default_mappings: false,
+            max_menu_height: None,
             show_hints: false,
         }
     }
 }
 
 pub enum Error {
+    // TODO: add `found` field with the value of the value that was passed in.
     FailedConversion {
         option: &'static str,
         expected: &'static str,
+    },
+
+    InvalidValue {
+        option: &'static str,
+        reason: &'static str,
     },
 
     OptionDoesntExist {
@@ -87,6 +103,25 @@ impl<'a> TryFrom<Option<Table<'a>>> for Settings {
                 return Err(Error::FailedConversion {
                     option: "enable_default_mappings",
                     expected: "boolean",
+                })
+            },
+        }
+
+        match preferences.get("max_menu_height")? {
+            Value::Nil => {},
+            Value::Integer(height) => {
+                if height < 1 {
+                    return Err(Error::InvalidValue {
+                        option: "max_menu_height",
+                        reason: "the maximum menu height should be at least 1",
+                    });
+                }
+                config.max_menu_height = Some(height as usize);
+            },
+            _ => {
+                return Err(Error::FailedConversion {
+                    option: "max_menu_height",
+                    expected: "positive integer",
                 })
             },
         }
