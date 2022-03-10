@@ -59,6 +59,21 @@ impl<'a> Nvim<'a> {
             ))?)
     }
 
+    /// Binding to `nvim_buf_call`.
+    ///
+    /// Calls a function with `bufnr` as the temporary current buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `bufnr`   Buffer handle, or 0 for current buffer
+    /// * `fun`     Function to call inside the buffer
+    pub fn buf_call(&self, bufnr: usize, fun: Function) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_buf_call")?
+            .call::<_, ()>((bufnr, fun))?)
+    }
+
     /// Binding to `nvim_buf_clear_namespace`.
     ///
     /// Clears namespaced objects (highlights, extmarks, virtual text) from a
@@ -123,6 +138,10 @@ impl<'a> Nvim<'a> {
     /// * `end`              Last line index (zero-indexed and exclusive)
     /// * `strict_indexing`  Whether out-of-bounds should be an error
     /// * `replacement`      Slice of lines to use as replacement
+    //
+    // TODO: make replacement generic over `AsRef<str>` by implementing `ToLua`
+    // for it.
+    // pub fn buf_set_lines<L: AsRef<str>>(
     pub fn buf_set_lines(
         &self,
         bufnr: usize,
@@ -177,6 +196,20 @@ impl<'a> Nvim<'a> {
                 end_col,
                 replacement,
             ))?)
+    }
+
+    /// Binding to `nvim_command`.
+    ///
+    /// Executes and ex-command.
+    ///
+    /// # Arguments
+    ///
+    /// * `cmd`  The command to execute
+    pub fn command(&self, cmd: &str) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_command")?
+            .call::<_, ()>(cmd)?)
     }
 
     /// Binding to `nvim_create_augroup`.

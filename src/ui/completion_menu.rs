@@ -1,3 +1,4 @@
+use core::ops::Range;
 use mlua::{Lua, Result};
 use std::cmp;
 
@@ -5,94 +6,173 @@ use crate::completion::CompletionItem;
 use crate::Nvim;
 
 pub struct CompletionMenu {
-    /// The handle of the buffer used to show the completion items.
+    /// The handle of the buffer used to show the completion items. It is set
+    /// once on initialization and never changes.
     bufnr: usize,
+
+    /// TODO: docs
+    visible_range: Option<Range<usize>>,
+
+    /// A namespace id used to handle the highlighting of characters matching
+    /// the current completion prefix. It is set once on initialization and
+    /// never changed.
+    matched_chars_nsid: usize,
 
     /// The maximum height of the completion menu, or `None` if no max height
     /// has been set by the user.
     pub max_height: Option<usize>,
 
     /// The index of the currently selected completion item, or `None` if no
-    /// completion is selected.
-    pub selected_index: Option<usize>,
+    /// completion is selected. If `Some` it ranges from 0 to
+    /// `completion_items.len() - 1`.
+    pub selected_completion: Option<usize>,
+
+    /// A namespace id used to handle the highlighting of the currently
+    /// selected completion item. It is set once on initialization and never
+    /// changed.
+    selected_completion_nsid: usize,
 
     /// The handle of the floating window used to show the completion items, or
     /// `None` if the completion menu is not currently visible.
     winid: Option<usize>,
-
-    /// TODO: document
-    selected_item_ns_id: usize,
-
-    /// TODO: document
-    matched_chars_ns_id: usize,
 }
 
 impl CompletionMenu {
     pub fn new(nvim: &Nvim) -> Result<Self> {
         Ok(CompletionMenu {
             bufnr: nvim.create_buf(false, true)?,
-            max_height: None,
-            selected_index: None,
-            winid: None,
-            selected_item_ns_id: nvim
-                .create_namespace("CompleetSelectedItem")?,
-            matched_chars_ns_id: nvim
+            visible_range: None,
+            matched_chars_nsid: nvim
                 .create_namespace("CompleetMatchedChars")?,
+            max_height: None,
+            selected_completion: None,
+            selected_completion_nsid: nvim
+                .create_namespace("CompleetSelectedItem")?,
+            winid: None,
         })
     }
 }
 
 impl CompletionMenu {
+    /// Clears the highlighting of a row of the completion menu from being
+    /// marked as selected.
+    fn clear_selected_completion(
+        &self,
+        nvim: &Nvim,
+        row: usize,
+    ) -> Result<()> {
+        nvim.buf_clear_namespace(
+            self.bufnr,
+            self.selected_completion_nsid.try_into().unwrap_or(-1),
+            row,
+            (row + 1).try_into().unwrap_or(-1),
+        )
+    }
+
+    /// TODO: docs
+    fn create_floatwin(
+        &self,
+        lua: &Lua,
+        nvim: &Nvim,
+        width: usize,
+        height: usize,
+    ) -> Result<usize> {
+        let config = lua.create_table_with_capacity(0, 8)?;
+        config.set("relative", "cursor")?;
+        config.set("width", width)?;
+        config.set("height", height)?;
+        config.set("row", 1)?;
+        config.set("col", 0)?;
+        config.set("focusable", false)?;
+        config.set("style", "minimal")?;
+        config.set("noautocmd", true)?;
+
+        let winid = nvim.open_win(self.bufnr, false, config)?;
+        nvim.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
+        nvim.win_set_option(winid, "scrolloff", 0)?;
+        Ok(winid)
+    }
+
+    /// TODO: docs
     pub fn hide(&mut self, nvim: &Nvim) -> Result<()> {
         if let Some(winid) = &self.winid {
             nvim.win_hide(*winid)?;
             self.winid = None;
         }
+        // TODO: for now we reset the selected completion to `None` every time
+        // the completion menu is hidden. We might want not to do this if we
+        // can manage to differentiate a `move completion window` from a `close
+        // completion window` commands.
+        self.visible_range = None;
+        self.selected_completion = None;
         Ok(())
     }
 
+    /// TODO: docs
     pub fn is_item_selected(&self) -> bool {
-        self.selected_index.is_some()
+        self.selected_completion.is_some()
     }
 
+    /// TODO: docs
     pub fn is_visible(&self) -> bool {
         self.winid.is_some()
     }
 
+    /// Adds highlighting to a row of the completion menu to mark it as
+    /// selected.
+    fn mark_completion_as_selected(
+        &self,
+        nvim: &Nvim,
+        row: usize,
+    ) -> Result<()> {
+        nvim.buf_add_highlight(
+            self.bufnr,
+            self.selected_completion_nsid.try_into().unwrap_or(-1),
+            "CompleetMenuSelected",
+            row,
+            0,
+            -1,
+        )?;
+        Ok(())
+    }
+
+    /// TODO: docs
     pub fn select_completion(
         &mut self,
+        lua: &Lua,
         nvim: &Nvim,
-        new_selected_index: Option<usize>,
+        new_selected_completion: Option<usize>,
     ) -> Result<()> {
-        match self.selected_index {
-            Some(old) => nvim.buf_clear_namespace(
-                self.bufnr,
-                self.selected_item_ns_id.try_into().unwrap_or(-1),
-                old,
-                (old + 1).try_into().unwrap_or(-1), // TODO: this is bad
-            )?,
-            None => {},
-        };
+        // Remove the highlighting from the previous selected completion.
+        if let Some(old) = self.selected_completion {
+            self.clear_selected_completion(nvim, old)?;
+        }
 
-        match new_selected_index {
-            Some(new) => {
-                nvim.buf_add_highlight(
-                    self.bufnr,
-                    self.selected_item_ns_id.try_into().unwrap_or(-1),
-                    "CompleetMenuSelected",
-                    new,
-                    0,
-                    -1,
-                )?;
-            },
-            None => {},
-        };
+        // Set the highlighting for the new selected completion.
+        if let Some(new) = new_selected_completion {
+            self.mark_completion_as_selected(nvim, new)?;
+        }
 
-        self.selected_index = new_selected_index;
+        // Check if we need to scroll the buffer to keep the selected
+        // completion visible.
+        if let Some(range) = &mut self.visible_range {
+            if is_scroll_needed(range, new_selected_completion) {
+                put_row_at_top(lua, nvim, self.bufnr, range.start)?;
+            }
+        }
+
+        self.selected_completion = new_selected_completion;
 
         Ok(())
     }
 
+    /// TODO: docs
+    // fn set_lines<L: AsRef<str>>(
+    fn set_lines(&self, nvim: &Nvim, lines: &[String]) -> Result<()> {
+        nvim.buf_set_lines(self.bufnr, 0, -1, false, lines)
+    }
+
+    /// TODO: docs
     pub fn show_completions(
         &mut self,
         nvim: &Nvim,
@@ -105,38 +185,41 @@ impl CompletionMenu {
             .max()
             .unwrap_or(0);
 
+        let height = match self.max_height {
+            None => completions.len(),
+            Some(height) => cmp::min(height, completions.len()),
+        };
+
+        // TODO: we don't need to render all the lines, just the ones that will
+        // be visible. Or maybe we do.
         let lines = completions
             .iter()
             .map(|item| item.format(max_width))
             .collect::<Vec<String>>();
 
-        nvim.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
+        let width = max_width + 2;
 
-        let height = match self.max_height {
-            None => lines.len(),
-            Some(height) => cmp::min(height, lines.len()),
-        };
+        self.set_lines(nvim, &lines)?;
+        self.winid = Some(self.create_floatwin(lua, nvim, width, height)?);
 
-        let config = lua.create_table_with_capacity(0, 8)?;
-        config.set("relative", "cursor")?;
-        config.set("width", max_width + 2)?;
-        config.set("height", height)?;
-        config.set("row", 1)?;
-        config.set("col", 0)?;
-        config.set("focusable", false)?;
-        config.set("style", "minimal")?;
-        config.set("noautocmd", true)?;
+        // We only track the visible range if we have some constraints on
+        // `self.max_height` which we'll need to consider when selecting
+        // completions.
+        if self.max_height.is_some() {
+            self.visible_range = Some(Range {
+                start: 0,
+                end: height,
+            });
+        }
 
-        let winid = nvim.open_win(self.bufnr, false, config)?;
-        nvim.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
-        self.winid = Some(winid);
-
-        let opts = lua.create_table_with_capacity(0, 4)?;
-        opts.set("hl_group", "CompleetMenuMatchingChars")?;
-
+        // TODO: make this into its own method.
+        //
         // TODO: look into `:h nvim_set_decoration_provider` + `ephemeral`
         // option. What do they do? This seems to work fine w/o them but
         // nvim-cmp uses them.
+        //
+        let opts = lua.create_table_with_capacity(0, 4)?;
+        opts.set("hl_group", "CompleetMenuMatchingChars")?;
         for (row, completion) in completions.iter().enumerate() {
             for byte_range in &completion.matched_byte_ranges {
                 // The `+1` to the byte range start and end is needed because
@@ -150,7 +233,7 @@ impl CompletionMenu {
                 _opts.set("end_col", byte_range.end + 1)?;
                 nvim.buf_set_extmark(
                     self.bufnr,
-                    self.matched_chars_ns_id,
+                    self.matched_chars_nsid,
                     row,
                     byte_range.start + 1,
                     _opts,
@@ -160,6 +243,42 @@ impl CompletionMenu {
 
         Ok(())
     }
+}
+
+/// TODO: docs
+fn is_scroll_needed(
+    range: &mut Range<usize>,
+    new_selected_index: Option<usize>,
+) -> bool {
+    if let Some(index) = new_selected_index {
+        if range.contains(&index) {
+            return false;
+        } else if index < range.start {
+            range.end -= range.start - index;
+            range.start = index;
+        } else if index >= range.end {
+            range.start += index + 1 - range.end;
+            range.end = index + 1;
+        }
+        return true;
+    }
+
+    false
+}
+
+/// TODO: docs
+fn put_row_at_top(
+    lua: &Lua,
+    nvim: &Nvim,
+    bufnr: usize,
+    row: usize,
+) -> Result<()> {
+    let fun = lua.create_function(move |lua, ()| {
+        let _nvim = Nvim::new(lua)?;
+        _nvim.command(&format!("normal! {}zt", row + 1))
+    })?;
+
+    nvim.buf_call(bufnr, fun)
 }
 
 impl CompletionItem {

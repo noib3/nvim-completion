@@ -180,7 +180,7 @@ fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
     let _state = state.clone();
     let insert_selected_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
-        if let Some(index) = _state.ui.completion_menu.selected_index {
+        if let Some(index) = _state.ui.completion_menu.selected_completion {
             super::insert_completion(lua, &mut _state.completion, index)?;
         }
         Ok(())
