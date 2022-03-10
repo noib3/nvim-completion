@@ -16,26 +16,32 @@ pub fn complete(matched_prefix: &str) -> Vec<CompletionItem> {
     }
 
     let entries = [
-        "foo",
-        "bar",
-        "baz",
-        "bam",
-        "bazooka",
-        "baroo",
-        "barometer",
-        "beard",
-        "bear",
-        "bamm",
-        "bamboozled",
-        "bambi",
+        ("foo", Some("A foo")),
+        ("bar", Some("A bar")),
+        ("baz", Some("A baz")),
+        ("bam", None),
+        ("bazooka", None),
+        ("baroo", None),
+        ("barometer", None),
+        ("beard", None),
+        ("bear", None),
+        ("bamm", None),
+        ("bamboozled", None),
+        ("bambi", None),
     ];
 
     entries
         .iter()
         .filter(|&&entry| {
-            entry.starts_with(matched_prefix) && entry != matched_prefix
+            entry.0.starts_with(matched_prefix) && entry.0 != matched_prefix
         })
-        .map(|entry| CompletionItem::new(entry.to_string(), matched_prefix))
+        .map(|entry| {
+            CompletionItem::new(
+                entry.0.to_string(),
+                entry.1.map(|d| d.into()),
+                matched_prefix,
+            )
+        })
         .collect::<Vec<CompletionItem>>()
 }
 

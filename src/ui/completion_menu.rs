@@ -5,6 +5,11 @@ use std::cmp;
 use crate::completion::CompletionItem;
 use crate::Nvim;
 
+pub enum MenuPosition {
+    /// TODO: docs
+    Below(usize),
+}
+
 pub struct CompletionMenu {
     /// The handle of the buffer used to show the completion items. It is set
     /// once on initialization and never changes.
@@ -22,6 +27,9 @@ pub struct CompletionMenu {
     /// has been set by the user.
     pub max_height: Option<usize>,
 
+    /// TODO: docs
+    pub position: Option<MenuPosition>,
+
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected. If `Some` it ranges from 0 to
     /// `completion_items.len() - 1`.
@@ -34,7 +42,7 @@ pub struct CompletionMenu {
 
     /// The handle of the floating window used to show the completion items, or
     /// `None` if the completion menu is not currently visible.
-    winid: Option<usize>,
+    pub winid: Option<usize>,
 }
 
 impl CompletionMenu {
@@ -45,6 +53,7 @@ impl CompletionMenu {
             matched_chars_nsid: nvim
                 .create_namespace("CompleetMatchedChars")?,
             max_height: None,
+            position: None,
             selected_completion: None,
             selected_completion_nsid: nvim
                 .create_namespace("CompleetSelectedItem")?,
@@ -95,16 +104,17 @@ impl CompletionMenu {
 
     /// TODO: docs
     pub fn hide(&mut self, nvim: &Nvim) -> Result<()> {
-        if let Some(winid) = &self.winid {
-            nvim.win_hide(*winid)?;
+        if let Some(winid) = self.winid {
+            nvim.win_hide(winid)?;
             self.winid = None;
         }
         // TODO: for now we reset the selected completion to `None` every time
         // the completion menu is hidden. We might want not to do this if we
         // can manage to differentiate a `move completion window` from a `close
         // completion window` commands.
-        self.visible_range = None;
+        self.position = None;
         self.selected_completion = None;
+        self.visible_range = None;
         Ok(())
     }
 
@@ -175,12 +185,13 @@ impl CompletionMenu {
     /// TODO: docs
     pub fn show_completions(
         &mut self,
-        nvim: &Nvim,
         lua: &Lua,
+        nvim: &Nvim,
         completions: &[CompletionItem],
     ) -> Result<()> {
         let max_width = completions
             .iter()
+            // TODO: Should use len of grapheme clusters, not bytes.
             .map(|item| item.text.len())
             .max()
             .unwrap_or(0);
@@ -190,8 +201,6 @@ impl CompletionMenu {
             Some(height) => cmp::min(height, completions.len()),
         };
 
-        // TODO: we don't need to render all the lines, just the ones that will
-        // be visible. Or maybe we do.
         let lines = completions
             .iter()
             .map(|item| item.format(max_width))
@@ -201,6 +210,7 @@ impl CompletionMenu {
 
         self.set_lines(nvim, &lines)?;
         self.winid = Some(self.create_floatwin(lua, nvim, width, height)?);
+        self.position = Some(MenuPosition::Below(width));
 
         // We only track the visible range if we have some constraints on
         // `self.max_height` which we'll need to consider when selecting

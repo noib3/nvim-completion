@@ -7,10 +7,10 @@ use crate::Nvim;
 
 /// Executed on every `TextChangedI` event.
 pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
-    let nvim = Nvim::new(lua)?;
+    let nvim = &Nvim::new(lua)?;
 
-    state.completion.update_bytes_before_cursor(&nvim)?;
-    state.completion.update_current_line(&nvim)?;
+    state.completion.update_bytes_before_cursor(nvim)?;
+    state.completion.update_current_line(nvim)?;
 
     state.completion.matched_prefix =
         String::from(completion::get_matched_prefix(
@@ -37,8 +37,8 @@ pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
 
     if state.settings.autoshow_menu {
         state.ui.completion_menu.show_completions(
-            &nvim,
             lua,
+            nvim,
             &state.completion.completion_items,
         )?;
     }
@@ -51,7 +51,7 @@ pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
     {
         state.ui.completion_hint.set(
             lua,
-            &nvim,
+            nvim,
             0,
             state.completion.bytes_before_cursor,
             &state.completion.completion_items[0].text

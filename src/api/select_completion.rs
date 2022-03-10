@@ -14,17 +14,22 @@ pub fn select_completion(
         return Ok(());
     }
 
-    let last_index = state.completion.completion_items.len() - 1;
+    let hint = &mut state.ui.completion_hint;
+    let menu = &mut state.ui.completion_menu;
+    let details = &mut state.ui.details_pane;
+    let completions = &state.completion.completion_items;
+
+    let last_index = completions.len() - 1;
     let new_selected_index = match step {
         // Selecting the next completion
-        1 => match state.ui.completion_menu.selected_completion {
+        1 => match menu.selected_completion {
             Some(index) if index == last_index => None,
             Some(index) => Some(index + 1),
             None => Some(0),
         },
 
         // Selecting the previous completion
-        -1 => match state.ui.completion_menu.selected_completion {
+        -1 => match menu.selected_completion {
             Some(index) if index == 0 => None,
             Some(index) => Some(index - 1),
             None => Some(last_index),
@@ -33,27 +38,45 @@ pub fn select_completion(
         _ => unreachable!(),
     };
 
-    let nvim = Nvim::new(lua)?;
-    state.ui.completion_menu.select_completion(
-        lua,
-        &nvim,
-        new_selected_index,
-    )?;
+    let nvim = &Nvim::new(lua)?;
 
-    if state.completion.cursor_is_at_eol() && state.settings.show_hints {
-        match new_selected_index {
-            None => state.ui.completion_hint.erase(&nvim)?,
-            Some(index) => {
-                state.ui.completion_hint.set(
+    // Update the completion menu
+    menu.select_completion(lua, nvim, new_selected_index)?;
+
+    match new_selected_index {
+        None => {
+            hint.erase(nvim)?;
+            details.hide(nvim)?;
+        },
+
+        Some(index) => {
+            let completion = &completions[index];
+
+            // Update the completion hint.
+            if state.settings.show_hints && state.completion.cursor_is_at_eol()
+            {
+                hint.set(
                     lua,
-                    &nvim,
+                    nvim,
                     index,
                     state.completion.bytes_before_cursor,
-                    &state.completion.completion_items[index].text
-                        [state.completion.matched_prefix.len()..],
+                    &completion.text[state.completion.matched_prefix.len()..],
                 )?;
-            },
-        }
+            }
+
+            // Update the details pane.
+            match &completion.details {
+                None => details.hide(nvim)?,
+                Some(lines) => details.show(
+                    lua,
+                    nvim,
+                    lines,
+                    menu.position
+                        .as_ref()
+                        .expect("The menu is visible so it has a position"),
+                )?,
+            }
+        },
     }
 
     Ok(())
