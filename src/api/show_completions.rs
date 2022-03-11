@@ -1,17 +1,17 @@
 use mlua::{Lua, Result};
+use neovim::Neovim;
 
 use crate::state::State;
-use crate::Nvim;
 
 /// Executed on `<Plug>(compleet-show-completions)`.
 pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
     if !state.ui.completion_menu.is_visible()
         && !state.completion.completion_items.is_empty()
     {
-        let nvim = &Nvim::new(lua)?;
+        let api = &Neovim::new(lua)?.api;
         state.ui.completion_menu.show_completions(
             lua,
-            nvim,
+            api,
             &state.completion.completion_items,
         )?;
     }

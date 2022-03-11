@@ -1,8 +1,8 @@
 use mlua::Result;
+use neovim::Neovim;
 
 use super::CompletionState;
 use super::UIState;
-use crate::nvim::Nvim;
 use crate::settings::Settings;
 
 pub struct State {
@@ -17,7 +17,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(nvim: &Nvim) -> Result<Self> {
+    pub fn new(nvim: &Neovim) -> Result<Self> {
         Ok(State {
             completion: CompletionState::new(),
             settings: Settings::default(),

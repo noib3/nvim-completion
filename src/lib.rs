@@ -1,14 +1,13 @@
 use mlua::{Lua, Result, Table};
+use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
 mod api;
 mod completion;
-mod nvim;
 mod settings;
 mod state;
 mod ui;
 
-use nvim::Nvim;
 use state::State;
 
 #[mlua::lua_module]
@@ -21,28 +20,26 @@ fn compleet(lua: &Lua) -> Result<Table> {
 
     // TODOs
 
-    // 1. Move nvim to its own crate, call via `nvim.api`, `nvim.keymap`, etc.
-
-    // 2. We're querying the cursor position and the entire line the cursor is
+    // 1. We're querying the cursor position and the entire line the cursor is
     //    on on every single `CursorMovedI` and `TextChangedI` event. Is there
     //    a way not to? Also look into `nvim_buf_attach`.
 
-    // 3. Handle geometry for completion menu, i.e. show it above the current
+    // 2. Handle geometry for completion menu, i.e. show it above the current
     //    line if there's not enough space below it. Same for horizontal
     //    constraints.
 
-    // 4. Handle geometry for details pane.
+    // 3. Handle geometry for details pane.
 
-    // 5. Make the core logic as neovim-agnostic as possible.
+    // 4. Make the core logic as neovim-agnostic as possible.
 
-    // 6. Right now everything is sync and we're blocking on every single event
+    // 5. Right now everything is sync and we're blocking on every single event
     //    we listen to. This will be a problem when we start dealing with
     //    possibly thousands of completion results from LSPs.
     //
     // Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
     // vim.loop` and `:h lua-loop-threading`.
 
-    let nvim = Nvim::new(lua)?;
+    let nvim = Neovim::new(lua)?;
     let state = Arc::new(Mutex::new(State::new(&nvim)?));
 
     let _state = state.clone();

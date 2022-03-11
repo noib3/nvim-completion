@@ -1,7 +1,7 @@
 use mlua::{Lua, Result};
+use neovim::Neovim;
 
 use crate::state::State;
-use crate::Nvim;
 
 /// Executed on `<Plug>(compleet-next-completion)` and
 /// `<Plug>(compleet-prev-completion)`.
@@ -38,15 +38,15 @@ pub fn select_completion(
         _ => unreachable!(),
     };
 
-    let nvim = &Nvim::new(lua)?;
+    let api = &Neovim::new(lua)?.api;
 
     // Update the completion menu
-    menu.select_completion(lua, nvim, new_selected_index)?;
+    menu.select_completion(lua, api, new_selected_index)?;
 
     match new_selected_index {
         None => {
-            hint.erase(nvim)?;
-            details.hide(nvim)?;
+            hint.erase(api)?;
+            details.hide(api)?;
         },
 
         Some(index) => {
@@ -57,7 +57,7 @@ pub fn select_completion(
             {
                 hint.set(
                     lua,
-                    nvim,
+                    api,
                     index,
                     state.completion.bytes_before_cursor,
                     &completion.text[state.completion.matched_prefix.len()..],
@@ -66,10 +66,10 @@ pub fn select_completion(
 
             // Update the details pane.
             match &completion.details {
-                None => details.hide(nvim)?,
+                None => details.hide(api)?,
                 Some(lines) => details.show(
                     lua,
-                    nvim,
+                    api,
                     lines,
                     menu.position
                         .as_ref()

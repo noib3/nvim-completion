@@ -1,7 +1,7 @@
 use mlua::Result;
+use neovim::Api;
 
 use crate::completion::{self, CompletionItem};
-use crate::Nvim;
 
 // TODO: maybe rename this to a `LineState` and remove `completion_items`?
 pub struct CompletionState {
@@ -35,13 +35,13 @@ impl CompletionState {
         self.bytes_before_cursor == self.current_line.len()
     }
 
-    pub fn update_bytes_before_cursor(&mut self, nvim: &Nvim) -> Result<()> {
-        self.bytes_before_cursor = nvim.win_get_cursor(0)?.1;
+    pub fn update_bytes_before_cursor(&mut self, api: &Api) -> Result<()> {
+        self.bytes_before_cursor = api.win_get_cursor(0)?.1;
         Ok(())
     }
 
-    pub fn update_current_line(&mut self, nvim: &Nvim) -> Result<()> {
-        self.current_line = nvim.get_current_line()?;
+    pub fn update_current_line(&mut self, api: &Api) -> Result<()> {
+        self.current_line = api.get_current_line()?;
         Ok(())
     }
 

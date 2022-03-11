@@ -1,24 +1,24 @@
 use mlua::{Lua, Result};
+use neovim::Neovim;
 
 use crate::state::UIState;
-use crate::Nvim;
 
 /// Executed on both `CursorMovedI` and `InsertLeft`.
 pub fn cleanup_ui(lua: &Lua, ui: &mut UIState) -> Result<()> {
-    let nvim = &Nvim::new(lua)?;
+    let api = &Neovim::new(lua)?.api;
 
     if ui.completion_menu.is_visible() {
-        ui.completion_menu.hide(nvim)?;
+        ui.completion_menu.hide(api)?;
 
         // The details pane can only be visible if the completion menu is
         // visible.
         if ui.details_pane.is_visible() {
-            ui.details_pane.hide(nvim)?;
+            ui.details_pane.hide(api)?;
         }
     }
 
     if ui.completion_hint.is_visible() {
-        ui.completion_hint.erase(nvim)?;
+        ui.completion_hint.erase(api)?;
     }
 
     Ok(())

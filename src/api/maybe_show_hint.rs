@@ -1,8 +1,8 @@
 use mlua::{Lua, Result};
+use neovim::Neovim;
 
 use crate::completion;
 use crate::state::State;
-use crate::Nvim;
 
 /// Executed on both `CursorMovedI` and `InsertEnter`.
 pub fn maybe_show_hint(lua: &Lua, state: &mut State) -> Result<()> {
@@ -10,10 +10,10 @@ pub fn maybe_show_hint(lua: &Lua, state: &mut State) -> Result<()> {
         return Ok(());
     }
 
-    let nvim = &Nvim::new(lua)?;
+    let api = &Neovim::new(lua)?.api;
 
-    state.completion.update_bytes_before_cursor(nvim)?;
-    state.completion.update_current_line(nvim)?;
+    state.completion.update_bytes_before_cursor(api)?;
+    state.completion.update_current_line(api)?;
 
     // If hints are enabled and the cursor is at the end of the line, check if
     // there are completions to be shown.
@@ -25,7 +25,7 @@ pub fn maybe_show_hint(lua: &Lua, state: &mut State) -> Result<()> {
         if let Some(item) = state.completion.completion_items.first() {
             state.ui.completion_hint.set(
                 lua,
-                nvim,
+                api,
                 0,
                 state.completion.bytes_before_cursor,
                 &item.text[state.completion.matched_prefix.len()..],

@@ -1,6 +1,5 @@
 use mlua::{Lua, Result};
-
-use crate::Nvim;
+use neovim::Api;
 
 pub struct CompletionHint {
     /// The Neovim namespace id associated to the completion hint.
@@ -11,18 +10,18 @@ pub struct CompletionHint {
 }
 
 impl CompletionHint {
-    pub fn new(nvim: &Nvim) -> Result<Self> {
+    pub fn new(api: &Api) -> Result<Self> {
         Ok(CompletionHint {
-            ns_id: nvim.create_namespace("compleet_completion_hint")?,
+            ns_id: api.create_namespace("compleet_completion_hint")?,
             hinted_index: None,
         })
     }
 }
 
 impl CompletionHint {
-    pub fn erase(&mut self, nvim: &Nvim) -> Result<()> {
+    pub fn erase(&mut self, api: &Api) -> Result<()> {
         // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
-        nvim.buf_clear_namespace(
+        api.buf_clear_namespace(
             0,
             (self.ns_id).try_into().unwrap_or(-1), // TODO: this is bad
             0,
@@ -39,7 +38,7 @@ impl CompletionHint {
     pub fn set(
         &mut self,
         lua: &Lua,
-        nvim: &Nvim,
+        api: &Api,
         hinted_index: usize,
         col: usize,
         hint: &str,
@@ -49,8 +48,8 @@ impl CompletionHint {
         opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
-        let row = nvim.win_get_cursor(0)?.0 - 1;
-        nvim.buf_set_extmark(0, self.ns_id, row, col, opts)?;
+        let row = api.win_get_cursor(0)?.0 - 1;
+        api.buf_set_extmark(0, self.ns_id, row, col, opts)?;
         self.hinted_index = Some(hinted_index);
 
         Ok(())

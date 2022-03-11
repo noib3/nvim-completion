@@ -1,7 +1,7 @@
 use mlua::Result;
+use neovim::Neovim;
 
 use crate::ui::{CompletionHint, CompletionMenu, DetailsPane};
-use crate::Nvim;
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
 pub struct UIState {
@@ -18,11 +18,11 @@ pub struct UIState {
 }
 
 impl UIState {
-    pub fn new(nvim: &Nvim) -> Result<Self> {
+    pub fn new(nvim: &Neovim) -> Result<Self> {
         Ok(UIState {
-            completion_menu: CompletionMenu::new(nvim)?,
-            completion_hint: CompletionHint::new(nvim)?,
-            details_pane: DetailsPane::new(nvim)?,
+            completion_menu: CompletionMenu::new(&nvim.api)?,
+            completion_hint: CompletionHint::new(&nvim.api)?,
+            details_pane: DetailsPane::new(&nvim.api)?,
         })
     }
 }

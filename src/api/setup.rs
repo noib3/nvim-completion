@@ -1,8 +1,9 @@
 use mlua::{Function, Lua, Result, Table};
+use neovim::{Api, Keymap, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::settings::{Error, Settings};
-use crate::{Nvim, State};
+use crate::State;
 
 const COMPLEET_AUGROUP_NAME: &'static str = "Compleet";
 
@@ -12,54 +13,52 @@ pub fn setup(
     state: &Arc<Mutex<State>>,
     preferences: Option<Table>,
 ) -> Result<()> {
-    let nvim = Nvim::new(lua)?;
-
     let _state = state.clone();
     let _state = &mut _state.lock().unwrap();
+
+    let nvim = Neovim::new(lua)?;
+    let api = &nvim.api;
 
     _state.settings = match Settings::try_from(preferences) {
         Ok(settings) => settings,
         Err(e) => match e {
             Error::OptionDoesntExist { option } => {
-                nvim.echo(
+                api.echo(
                     &[
-                        &["[nvim-compleet]: ", "ErrorMsg"],
-                        &["Config option '"],
-                        &[&option, "Statement"],
-                        &["' doesn't exist!"],
+                        ("[nvim-compleet]: ", "ErrorMsg"),
+                        ("Config option '", ""),
+                        (&option, "Statement"),
+                        ("", "' doesn't exist!"),
                     ],
                     true,
-                    &[],
                 )?;
 
                 return Ok(());
             },
 
             Error::FailedConversion { option, expected } => {
-                nvim.echo(
+                api.echo(
                     &[
-                        &["[nvim-compleet]: ", "ErrorMsg"],
-                        &["Error parsing config option '"],
-                        &[option, "Statement"],
-                        &[&format!("': expected a {expected}.")],
+                        ("[nvim-compleet]: ", "ErrorMsg"),
+                        ("Error parsing config option '", ""),
+                        (option, "Statement"),
+                        (&format!("': expected a {expected}."), ""),
                     ],
                     true,
-                    &[],
                 )?;
 
                 return Ok(());
             },
 
             Error::InvalidValue { option, reason } => {
-                nvim.echo(
+                api.echo(
                     &[
-                        &["[nvim-compleet]: ", "ErrorMsg"],
-                        &["Invalid value for config option '"],
-                        &[&option, "Statement"],
-                        &[&format!("': {reason}.")],
+                        ("[nvim-compleet]: ", "ErrorMsg"),
+                        ("Invalid value for config option '", ""),
+                        (&option, "Statement"),
+                        (&format!("': {reason}."), ""),
                     ],
                     true,
-                    &[],
                 )?;
 
                 return Ok(());
@@ -69,17 +68,16 @@ pub fn setup(
         },
     };
 
-    // let print = lua.globals().get::<&str, Function>("print")?;
-    // print.call::<_, ()>(format!("{:?}", &config))?;
+    // nvim.print(format!("{:?}", &config))?;
 
     _state.ui.completion_menu.max_height = _state.settings.max_menu_height;
 
-    setup_augroups(lua, &nvim, state)?;
-    setup_hlgroups(lua, &nvim)?;
-    setup_mappings(lua, state)?;
+    setup_augroups(lua, api, state)?;
+    setup_hlgroups(lua, api)?;
+    setup_mappings(lua, &nvim.keymap, state)?;
 
     if _state.settings.enable_default_mappings {
-        enable_default_mappings(lua, state)?;
+        enable_default_mappings(lua, &nvim.keymap, state)?;
     }
 
     Ok(())
@@ -87,7 +85,7 @@ pub fn setup(
 
 fn setup_augroups(
     lua: &Lua,
-    nvim: &Nvim,
+    api: &Api,
     state: &Arc<Mutex<State>>,
 ) -> Result<()> {
     let _state = state.clone();
@@ -107,7 +105,7 @@ fn setup_augroups(
 
     let opts = lua.create_table_with_capacity(0, 1)?;
     opts.set("clear", true)?;
-    let _group_id = nvim.create_augroup(COMPLEET_AUGROUP_NAME, opts)?;
+    let _group_id = api.create_augroup(COMPLEET_AUGROUP_NAME, opts)?;
 
     let opts_w_callback = |callback: Function| -> Result<Table> {
         let opts = lua.create_table_with_capacity(0, 2)?;
@@ -119,53 +117,57 @@ fn setup_augroups(
         Ok(opts)
     };
 
-    nvim.create_autocmd(
+    api.create_autocmd(
         &["CursorMovedI", "InsertLeave"],
         opts_w_callback(cleanup)?,
     )?;
-    nvim.create_autocmd(
+    api.create_autocmd(
         &["CursorMovedI", "InsertEnter"],
         opts_w_callback(maybe_show_hint)?,
     )?;
-    nvim.create_autocmd(&["TextChangedI"], opts_w_callback(text_changed)?)?;
+    api.create_autocmd(&["TextChangedI"], opts_w_callback(text_changed)?)?;
 
     Ok(())
 }
 
-fn setup_hlgroups(lua: &Lua, nvim: &Nvim) -> Result<()> {
+fn setup_hlgroups(lua: &Lua, api: &Api) -> Result<()> {
     // TODO: make something like this work
     // nvim.set_hl(0, "CompleetMenu", lua.t! { link = "NormalFloat" })?;
 
     // `CompleetMenu`
     // Used to highlight the completion menu.
     let opts = lua.create_table_from([("link", "NormalFloat")])?;
-    nvim.set_hl(0, "CompleetMenu", opts)?;
+    api.set_hl(0, "CompleetMenu", opts)?;
 
     // `CompleetHint`
     // Used to highlight the completion hint.
     let opts = lua.create_table_from([("link", "Comment")])?;
-    nvim.set_hl(0, "CompleetHint", opts)?;
+    api.set_hl(0, "CompleetHint", opts)?;
 
     // `CompleetDetails`
     // Used to highlight the details window.
     let opts = lua.create_table_from([("link", "NormalFloat")])?;
-    nvim.set_hl(0, "CompleetDetails", opts)?;
+    api.set_hl(0, "CompleetDetails", opts)?;
 
     // `CompleetMenuSelected`
     // Used to highlight the currently selected completion item.
     let opts = lua.create_table_from([("link", "PmenuSel")])?;
-    nvim.set_hl(0, "CompleetMenuSelected", opts)?;
+    api.set_hl(0, "CompleetMenuSelected", opts)?;
 
     // `CompleetMenuMatchingChars`
     // Used to highlight the characters where a completion item matches the
     // current prefix.
     let opts = lua.create_table_from([("link", "Statement")])?;
-    nvim.set_hl(0, "CompleetMenuMatchingChars", opts)?;
+    api.set_hl(0, "CompleetMenuMatchingChars", opts)?;
 
     Ok(())
 }
 
-fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
+fn setup_mappings(
+    lua: &Lua,
+    keymap: &Keymap,
+    state: &Arc<Mutex<State>>,
+) -> Result<()> {
     // Insert the currently hinted completion
     let _state = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
@@ -200,55 +202,50 @@ fn setup_mappings(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
         super::show_completions(lua, &mut _state.lock().unwrap())
     })?;
 
-    let set_keymap = lua
-        .globals()
-        .get::<&str, Table>("vim")?
-        .get::<&str, Table>("keymap")?
-        .get::<&str, Function>("set")?;
-
     let opts = lua.create_table_with_capacity(0, 1)?;
     opts.set("silent", true)?;
 
-    set_keymap.call::<_, ()>((
+    keymap.set(
         "i",
         "<Plug>(compleet-insert-hinted-completion)",
         insert_hinted_completion,
-        opts.clone(),
-    ))?;
+        Some(opts.clone()),
+    )?;
 
-    set_keymap.call::<_, ()>((
+    keymap.set(
         "i",
         "<Plug>(compleet-insert-selected-completion)",
         insert_selected_completion,
-        opts.clone(),
-    ))?;
+        Some(opts.clone()),
+    )?;
 
-    set_keymap.call::<_, ()>((
+    keymap.set(
         "i",
         "<Plug>(compleet-next-completion)",
         select_completion.bind(1)?,
-        opts.clone(),
-    ))?;
+        Some(opts.clone()),
+    )?;
 
-    set_keymap.call::<_, ()>((
+    keymap.set(
         "i",
         "<Plug>(compleet-prev-completion)",
         select_completion.bind(-1)?,
-        opts.clone(),
-    ))?;
+        Some(opts.clone()),
+    )?;
 
-    set_keymap.call::<_, ()>((
+    keymap.set(
         "i",
         "<Plug>(compleet-show-completions)",
         show_completions,
-        opts.clone(),
-    ))?;
+        Some(opts.clone()),
+    )?;
 
     Ok(())
 }
 
 fn enable_default_mappings(
     lua: &Lua,
+    keymap: &Keymap,
     state: &Arc<Mutex<State>>,
 ) -> Result<()> {
     // Insert mode mapping for `<Tab>`. If the completion menu is visible
@@ -288,19 +285,13 @@ fn enable_default_mappings(
         }
     })?;
 
-    let set_keymap = lua
-        .globals()
-        .get::<&str, Table>("vim")?
-        .get::<&str, Table>("keymap")?
-        .get::<&str, Function>("set")?;
-
     let opts = lua.create_table_with_capacity(0, 2)?;
     opts.set("expr", true)?;
     opts.set("remap", true)?;
 
-    set_keymap.call::<_, ()>(("i", "<Tab>", tab, opts.clone()))?;
-    set_keymap.call::<_, ()>(("i", "<S-Tab>", s_tab, opts.clone()))?;
-    set_keymap.call::<_, ()>(("i", "<CR>", cr, opts.clone()))?;
+    keymap.set("i", "<Tab>", tab, Some(opts.clone()))?;
+    keymap.set("i", "<S-Tab>", s_tab, Some(opts.clone()))?;
+    keymap.set("i", "<CR>", cr, Some(opts.clone()))?;
 
     Ok(())
 }

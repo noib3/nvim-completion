@@ -1,7 +1,7 @@
 use mlua::{Lua, Result};
+use neovim::Neovim;
 
 use crate::state::CompletionState;
-use crate::Nvim;
 
 /// Executed on both `<Plug>(compleet-insert-hinted-completion)` and
 /// `<Plug>(compleet-insert-selected-completion)`.
@@ -10,7 +10,7 @@ pub fn insert_completion(
     completion_state: &mut CompletionState,
     selected_index: usize,
 ) -> Result<()> {
-    let nvim = Nvim::new(lua)?;
+    let api = Neovim::new(lua)?.api;
 
     // TODO: this doesn't work for right-to-left languages.
     let line_after_cursor =
@@ -32,9 +32,9 @@ pub fn insert_completion(
     let shift_the_cursor_this_many_bytes =
         selected_completion.text.len() - completion_state.matched_prefix.len();
 
-    let current_row = nvim.win_get_cursor(0)?.0;
+    let current_row = api.win_get_cursor(0)?.0;
 
-    nvim.buf_set_text(
+    api.buf_set_text(
         0,
         current_row - 1,
         start_col,
@@ -50,7 +50,7 @@ pub fn insert_completion(
     let new_column = completion_state.bytes_before_cursor
         + shift_the_cursor_this_many_bytes;
 
-    nvim.win_set_cursor(0, current_row, new_column)?;
+    api.win_set_cursor(0, current_row, new_column)?;
 
     completion_state.completion_items.clear();
 

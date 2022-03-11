@@ -1,16 +1,11 @@
 [package]
-name = "compleet"
+name = "neovim"
 version = "0.1.0"
 authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
-description = "A Neovim autocompletion framework written in Rust"
-repository = "https://github.com/noib3/nvim-compleet"
+description = "Rust bindings to Neovim Lua functions"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 mlua = { version = "0.7", features = ["luajit", "vendored", "module"] }
-neovim = { path = "./neovim" }
