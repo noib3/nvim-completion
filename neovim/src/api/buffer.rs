@@ -9,8 +9,8 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `bufnr`   Buffer handle, or 0 for current buffer
-    /// * `fun`     Function to call inside the buffer
+    /// * `bufnr`   Buffer handle, or 0 for current buffer.
+    /// * `fun`     Function to call inside the buffer.
     pub fn buf_call(&self, bufnr: usize, fun: Function) -> Result<()> {
         Ok(self
             .0
@@ -25,11 +25,11 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `bufnr`            Buffer handle, or 0 for current buffer
-    /// * `start`            First line index (zero-indexed)
-    /// * `end`              Last line index (zero-indexed and exclusive)
-    /// * `strict_indexing`  Whether out-of-bounds should be an error
-    /// * `replacement`      Slice of lines to use as replacement
+    /// * `bufnr`            Buffer handle, or 0 for current buffer.
+    /// * `start`            First line index (zero-indexed).
+    /// * `end`              Last line index (zero-indexed and exclusive).
+    /// * `strict_indexing`  Whether out-of-bounds should be an error.
+    /// * `replacement`      Slice of lines to use as replacement.
     pub fn buf_set_lines<L: AsRef<str>>(
         &self,
         bufnr: usize,
@@ -61,12 +61,12 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `bufnr`        Buffer handle, or 0 for current buffer
-    /// * `start_row`    First line index (zero-indexed)
-    /// * `start_col`    First column index (byte-indexed)
-    /// * `end_row`      Last line index (zero-indexed and exclusive)
-    /// * `end_col`      Last column index (byte-indexed and exclusive)
-    /// * `replacement`  Slice of lines to use as replacement
+    /// * `bufnr`        Buffer handle, or 0 for current buffer.
+    /// * `start_row`    First line index (zero-indexed).
+    /// * `start_col`    First column index (byte-indexed).
+    /// * `end_row`      Last line index (zero-indexed and exclusive).
+    /// * `end_col`      Last column index (byte-indexed and exclusive).
+    /// * `replacement`  Slice of lines to use as replacement.
     pub fn buf_set_text<L: AsRef<str>>(
         &self,
         bufnr: usize,

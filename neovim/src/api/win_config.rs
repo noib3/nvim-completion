@@ -9,8 +9,8 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `bufnr`   Buffer to display, or 0 for current buffer
-    /// * `enter`   Whether to enter the newly created window, making it the current window
+    /// * `bufnr`   Buffer to display, or 0 for current buffer.
+    /// * `enter`   Whether to enter the newly created window, making it the current window.
     /// * `config`  Map defining the window configuration. See `:h nvim_open_win` for details.
     pub fn open_win(
         &self,

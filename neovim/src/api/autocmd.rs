@@ -10,8 +10,8 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `name`  The name of the augroup to create
-    /// * `opts`  Optional parameters. See `:h nvim_create_augroup` for  details
+    /// * `name`  The name of the augroup to create.
+    /// * `opts`  Optional parameters. See `:h nvim_create_augroup` for  details.
     pub fn create_augroup(&self, name: &str, opts: Table) -> Result<usize> {
         Ok(self
             .0
@@ -25,8 +25,8 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `events`  A slice of strings reprenting event names
-    /// * `opts`    Optional parameters. See `:h nvim_create_autocmd` for  details
+    /// * `events`  A slice of strings reprenting event names.
+    /// * `opts`    Optional parameters. See `:h nvim_create_autocmd` for  details.
     pub fn create_autocmd(
         &self,
         events: &[&str],

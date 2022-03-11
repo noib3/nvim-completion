@@ -9,7 +9,7 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `cmd`  The command to execute
+    /// * `cmd`  The command to execute.
     pub fn command(&self, cmd: &str) -> Result<()> {
         Ok(self
             .0

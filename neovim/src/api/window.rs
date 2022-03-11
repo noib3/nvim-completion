@@ -9,7 +9,7 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `winid`  Window handle, or 0 for current window
+    /// * `winid`  Window handle, or 0 for current window.
     pub fn win_get_cursor(&self, winid: usize) -> Result<(usize, usize)> {
         let position = self
             .0
@@ -25,7 +25,7 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `winid`  Window handle, or 0 for current window
+    /// * `winid`  Window handle, or 0 for current window.
     pub fn win_hide(&self, winid: usize) -> Result<()> {
         Ok(self
             .0
@@ -39,7 +39,7 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `winid`  Window handle, or 0 for current window
+    /// * `winid`  Window handle, or 0 for current window.
     /// * `row`    Row number (1-indexed).
     /// * `col`    Column number (0-indexed).
     pub fn win_set_cursor(
@@ -61,9 +61,9 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `winid`  Window handle, or 0 for current window
-    /// * `name`   Option name
-    /// * `value`  Option value
+    /// * `winid`  Window handle, or 0 for current window.
+    /// * `name`   Option name.
+    /// * `value`  Option value.
     pub fn win_set_option<V: ToLua<'a>>(
         &self,
         winid: usize,

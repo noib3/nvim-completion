@@ -10,7 +10,7 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `listed`   Whether to set `buflisted`
+    /// * `listed`   Whether to set `buflisted`.
     /// * `scratch`  Whether the new buffer is a "throwaway" (`:h scratch-buffer`) buffer used for temporary work.
     pub fn create_buf(&self, listed: bool, scratch: bool) -> Result<usize> {
         Ok(self
@@ -26,13 +26,21 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `chunks`   A slice of `(text, hlgroup)` tuples, each representing a
-    /// text chunk with specified highlight.
-    /// * `history`  Whether to add the message to the message history
-    pub fn echo(&self, chunks: &[(&str, &str)], history: bool) -> Result<()> {
+    /// text chunk with specified highlight. The `hl_group` element can be
+    /// set to `None` for no highlight.
+    /// * `history`  Whether to add the message to the message history.
+    pub fn echo(
+        &self,
+        chunks: &[(&str, Option<&str>)],
+        history: bool,
+    ) -> Result<()> {
         let chunks = chunks
             .iter()
-            .map(|c| [c.0, c.1])
-            .collect::<Vec<[&str; 2]>>();
+            .map(|c| match c.1 {
+                Some(hl_group) => vec![c.0, hl_group],
+                None => vec![c.0],
+            })
+            .collect::<Vec<Vec<&str>>>();
 
         Ok(self.0.get::<&str, Function>("nvim_echo")?.call::<_, ()>((
             chunks,
@@ -57,9 +65,9 @@ impl<'a> Api<'a> {
     ///
     /// # Arguments
     ///
-    /// * `ns_id`  Namespace to use, or 0 to set a highlight group in the global namespace
-    /// * `name`   Highlight group name
-    /// * `opts`   Optional parameters. See `:h nvim_set_hl` for  details
+    /// * `ns_id`  Namespace to use, or 0 to set a highlight group in the global namespace.
+    /// * `name`   Highlight group name.
+    /// * `opts`   Optional parameters. See `:h nvim_set_hl` for  details.
     pub fn set_hl(&self, ns_id: usize, name: &str, opts: Table) -> Result<()> {
         Ok(self
             .0

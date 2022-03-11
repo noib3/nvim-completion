@@ -25,10 +25,10 @@ pub fn setup(
             Error::OptionDoesntExist { option } => {
                 api.echo(
                     &[
-                        ("[nvim-compleet]: ", "ErrorMsg"),
-                        ("Config option '", ""),
-                        (&option, "Statement"),
-                        ("", "' doesn't exist!"),
+                        ("[nvim-compleet]: ", Some("ErrorMsg")),
+                        ("Config option '", None),
+                        (&option, Some("Statement")),
+                        ("' doesn't exist!", None),
                     ],
                     true,
                 )?;
@@ -39,10 +39,10 @@ pub fn setup(
             Error::FailedConversion { option, expected } => {
                 api.echo(
                     &[
-                        ("[nvim-compleet]: ", "ErrorMsg"),
-                        ("Error parsing config option '", ""),
-                        (option, "Statement"),
-                        (&format!("': expected a {expected}."), ""),
+                        ("[nvim-compleet]: ", Some("ErrorMsg")),
+                        ("Error parsing config option '", None),
+                        (option, Some("Statement")),
+                        (&format!("': expected a {expected}."), None),
                     ],
                     true,
                 )?;
@@ -53,10 +53,10 @@ pub fn setup(
             Error::InvalidValue { option, reason } => {
                 api.echo(
                     &[
-                        ("[nvim-compleet]: ", "ErrorMsg"),
-                        ("Invalid value for config option '", ""),
-                        (&option, "Statement"),
-                        (&format!("': {reason}."), ""),
+                        ("[nvim-compleet]: ", Some("ErrorMsg")),
+                        ("Invalid value for config option '", None),
+                        (&option, Some("Statement")),
+                        (&format!("': {reason}."), None),
                     ],
                     true,
                 )?;
@@ -68,7 +68,7 @@ pub fn setup(
         },
     };
 
-    // nvim.print(format!("{:?}", &config))?;
+    // nvim.print(format!("{:?}", &_state.settings))?;
 
     _state.ui.completion_menu.max_height = _state.settings.max_menu_height;
 
