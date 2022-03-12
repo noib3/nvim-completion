@@ -173,7 +173,7 @@ fn setup_mappings(
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
         if let Some(index) = _state.ui.completion_hint.hinted_index {
-            super::insert_completion(lua, &mut _state.completion, index)?;
+            super::insert_completion(lua, _state, index)?;
         }
         Ok(())
     })?;
@@ -183,7 +183,7 @@ fn setup_mappings(
     let insert_selected_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
         if let Some(index) = _state.ui.completion_menu.selected_completion {
-            super::insert_completion(lua, &mut _state.completion, index)?;
+            super::insert_completion(lua, _state, index)?;
         }
         Ok(())
     })?;
@@ -256,7 +256,7 @@ fn enable_default_mappings(
         let _state = &mut _state.lock().unwrap();
         if _state.ui.completion_menu.is_visible() {
             Ok("<Plug>(compleet-next-completion)")
-        } else if super::has_completions(lua, &mut _state.completion)? {
+        } else if super::has_completions(lua, _state)? {
             Ok("<Plug>(compleet-show-completions)")
         } else {
             Ok("<Tab>")

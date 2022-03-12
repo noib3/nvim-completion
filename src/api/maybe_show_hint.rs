@@ -12,23 +12,22 @@ pub fn maybe_show_hint(lua: &Lua, state: &mut State) -> Result<()> {
 
     let api = &Neovim::new(lua)?.api;
 
-    state.completion.update_bytes_before_cursor(api)?;
-    state.completion.update_current_line(api)?;
+    state.line.update_bytes_before_cursor(api)?;
+    state.line.update_text(api)?;
 
     // If hints are enabled and the cursor is at the end of the line, check if
     // there are completions to be shown.
-    if state.completion.cursor_is_at_eol() {
-        state.completion.update_matched_prefix()?;
-        state.completion.completion_items =
-            completion::complete(&state.completion.matched_prefix);
+    if state.line.cursor_is_at_eol() {
+        state.line.update_matched_prefix()?;
+        state.completions = completion::complete(&state.line.matched_prefix);
 
-        if let Some(item) = state.completion.completion_items.first() {
+        if let Some(item) = state.completions.first() {
             state.ui.completion_hint.set(
                 lua,
                 api,
                 0,
-                state.completion.bytes_before_cursor,
-                &item.text[state.completion.matched_prefix.len()..],
+                state.line.bytes_before_cursor,
+                &item.text[state.line.matched_prefix.len()..],
             )?;
         }
     }

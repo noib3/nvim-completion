@@ -44,7 +44,7 @@ fn compleet(lua: &Lua) -> Result<Table> {
 
     let _state = state.clone();
     let has_completions = lua.create_function(move |lua, ()| {
-        api::has_completions(lua, &mut _state.lock().unwrap().completion)
+        api::has_completions(lua, &mut _state.lock().unwrap())
     })?;
 
     let _state = state.clone();

@@ -1,36 +1,35 @@
 use mlua::{Lua, Result};
 use neovim::Neovim;
 
-use crate::state::CompletionState;
+use crate::state::State;
 
 /// Executed on both `<Plug>(compleet-insert-hinted-completion)` and
 /// `<Plug>(compleet-insert-selected-completion)`.
 pub fn insert_completion(
     lua: &Lua,
-    completion_state: &mut CompletionState,
+    state: &mut State,
     selected_index: usize,
 ) -> Result<()> {
     let api = Neovim::new(lua)?.api;
+    let line = &state.line;
+    let completions = &mut state.completions;
 
     // TODO: this doesn't work for right-to-left languages.
-    let line_after_cursor =
-        &completion_state.current_line[completion_state.bytes_before_cursor..];
+    let line_after_cursor = &line.text[line.bytes_before_cursor..];
 
-    let selected_completion =
-        &completion_state.completion_items[selected_index];
+    let selected_completion = &completions[selected_index];
 
     let (start_col, replacement) = get_completion(
-        &completion_state.matched_prefix,
+        &line.matched_prefix,
         line_after_cursor,
         &selected_completion.text,
     );
 
-    let start_col = completion_state.bytes_before_cursor
-        - completion_state.matched_prefix.len()
-        + start_col;
+    let start_col =
+        line.bytes_before_cursor - line.matched_prefix.len() + start_col;
 
     let shift_the_cursor_this_many_bytes =
-        selected_completion.text.len() - completion_state.matched_prefix.len();
+        selected_completion.text.len() - line.matched_prefix.len();
 
     let current_row = api.win_get_cursor(0)?.0;
 
@@ -43,20 +42,20 @@ pub fn insert_completion(
         // bytes from the beginning of the line, not characters) is
         // always equal to `bytes_before_cursor`, meaning we never
         // mangle the text after the current cursor position.
-        completion_state.bytes_before_cursor,
+        line.bytes_before_cursor,
         &[replacement],
     )?;
 
-    let new_column = completion_state.bytes_before_cursor
-        + shift_the_cursor_this_many_bytes;
+    let new_column =
+        line.bytes_before_cursor + shift_the_cursor_this_many_bytes;
 
     api.win_set_cursor(0, current_row, new_column)?;
 
-    completion_state.completion_items.clear();
+    completions.clear();
 
     // We don't do any UI cleanup here (e.g. `completion_menu.hide()`, etc.)
     // since inserting a completion will move the cursor, triggering a
-    // `CursorMovedI` event, which in turn executes `api::cursor_moved` where
+    // `CursorMovedI` event, which in turn executes `api::cleanup_ui` where
     // the cleanup happens.
 
     Ok(())

@@ -1,7 +1,7 @@
-mod completion_state;
+mod line;
 mod state;
-mod ui_state;
+mod ui;
 
-pub use completion_state::CompletionState;
+pub use line::Line;
 pub use state::State;
-pub use ui_state::UIState;
+pub use ui::UI;

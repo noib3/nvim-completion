@@ -9,19 +9,17 @@ use crate::state::State;
 pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
     let api = &Neovim::new(lua)?.api;
 
-    state.completion.update_bytes_before_cursor(api)?;
-    state.completion.update_current_line(api)?;
+    state.line.update_bytes_before_cursor(api)?;
+    state.line.update_text(api)?;
 
-    state.completion.matched_prefix =
-        String::from(completion::get_matched_prefix(
-            &state.completion.current_line,
-            state.completion.bytes_before_cursor,
-        ));
+    state.line.matched_prefix = String::from(completion::get_matched_prefix(
+        &state.line.text,
+        state.line.bytes_before_cursor,
+    ));
 
-    state.completion.completion_items =
-        completion::complete(&state.completion.matched_prefix);
+    state.completions = completion::complete(&state.line.matched_prefix);
 
-    if state.completion.completion_items.is_empty() {
+    if state.completions.is_empty() {
         state.ui.completion_menu.selected_completion = None;
         return Ok(());
     }
@@ -39,23 +37,21 @@ pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
         state.ui.completion_menu.show_completions(
             lua,
             api,
-            &state.completion.completion_items,
+            &state.completions,
         )?;
     }
 
     // Only show a completion hint if there's no text in the line beyond the
     // current cursor position (and if hints are enabled, ofc).
-    if (state.completion.bytes_before_cursor
-        == state.completion.current_line.len())
+    if (state.line.bytes_before_cursor == state.line.text.len())
         && state.settings.show_hints
     {
         state.ui.completion_hint.set(
             lua,
             api,
             0,
-            state.completion.bytes_before_cursor,
-            &state.completion.completion_items[0].text
-                [state.completion.matched_prefix.len()..],
+            state.line.bytes_before_cursor,
+            &state.completions[0].text[state.line.matched_prefix.len()..],
         )?;
     }
 

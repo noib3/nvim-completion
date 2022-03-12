@@ -1,10 +1,10 @@
 use mlua::{Lua, Result};
 use neovim::Neovim;
 
-use crate::state::UIState;
+use crate::state::UI;
 
 /// Executed on both `CursorMovedI` and `InsertLeft`.
-pub fn cleanup_ui(lua: &Lua, ui: &mut UIState) -> Result<()> {
+pub fn cleanup_ui(lua: &Lua, ui: &mut UI) -> Result<()> {
     let api = &Neovim::new(lua)?.api;
 
     if ui.completion_menu.is_visible() {

@@ -2,26 +2,17 @@ use mlua::{Lua, Result};
 use neovim::Neovim;
 
 use crate::completion;
-use crate::state::CompletionState;
+use crate::state::State;
 
 /// Executed on every call to `require("compleet").has_completions()`.
-pub fn has_completions(
-    lua: &Lua,
-    completion_state: &mut CompletionState,
-) -> Result<bool> {
+pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
     let api = Neovim::new(lua)?.api;
 
-    completion_state.current_line = api.get_current_line()?;
-    completion_state.bytes_before_cursor = api.win_get_cursor(0)?.1;
+    state.line.update_bytes_before_cursor(&api)?;
+    state.line.update_text(&api)?;
+    state.line.update_matched_prefix()?;
 
-    completion_state.matched_prefix =
-        String::from(completion::get_matched_prefix(
-            &completion_state.current_line,
-            completion_state.bytes_before_cursor,
-        ));
+    state.completions = completion::complete(&state.line.matched_prefix);
 
-    completion_state.completion_items =
-        completion::complete(&completion_state.matched_prefix);
-
-    Ok(!completion_state.completion_items.is_empty())
+    Ok(!state.completions.is_empty())
 }

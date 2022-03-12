@@ -17,7 +17,7 @@ pub fn select_completion(
     let hint = &mut state.ui.completion_hint;
     let menu = &mut state.ui.completion_menu;
     let details = &mut state.ui.details_pane;
-    let completions = &state.completion.completion_items;
+    let completions = &state.completions;
 
     let last_index = completions.len() - 1;
     let new_selected_index = match step {
@@ -53,14 +53,13 @@ pub fn select_completion(
             let completion = &completions[index];
 
             // Update the completion hint.
-            if state.settings.show_hints && state.completion.cursor_is_at_eol()
-            {
+            if state.settings.show_hints && state.line.cursor_is_at_eol() {
                 hint.set(
                     lua,
                     api,
                     index,
-                    state.completion.bytes_before_cursor,
-                    &completion.text[state.completion.matched_prefix.len()..],
+                    state.line.bytes_before_cursor,
+                    &completion.text[state.line.matched_prefix.len()..],
                 )?;
             }
 

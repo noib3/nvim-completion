@@ -5,14 +5,13 @@ use crate::state::State;
 
 /// Executed on `<Plug>(compleet-show-completions)`.
 pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
-    if !state.ui.completion_menu.is_visible()
-        && !state.completion.completion_items.is_empty()
+    if !state.ui.completion_menu.is_visible() && !state.completions.is_empty()
     {
-        let api = &Neovim::new(lua)?.api;
+        let api = Neovim::new(lua)?.api;
         state.ui.completion_menu.show_completions(
             lua,
-            api,
-            &state.completion.completion_items,
+            &api,
+            &state.completions,
         )?;
     }
 

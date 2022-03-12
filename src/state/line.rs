@@ -1,38 +1,33 @@
 use mlua::Result;
 use neovim::Api;
 
-use crate::completion::{self, CompletionItem};
+use crate::completion;
 
-// TODO: maybe rename this to a `LineState` and remove `completion_items`?
-pub struct CompletionState {
+pub struct Line {
     /// Number of bytes before (usually to be read as left-of, except for
     /// right-to-left languages).
     pub bytes_before_cursor: usize,
 
-    /// The completion candidates computed by `completion::algo::complete`.
-    pub completion_items: Vec<CompletionItem>,
-
     /// The text in the line at the current cursor position.
-    pub current_line: String,
+    pub text: String,
 
     /// The string we're using to find completion candidates.
     pub matched_prefix: String,
 }
 
-impl CompletionState {
+impl Line {
     pub fn new() -> Self {
-        CompletionState {
-            current_line: "".to_string(),
+        Line {
             bytes_before_cursor: 0,
+            text: "".to_string(),
             matched_prefix: "".to_string(),
-            completion_items: Vec::new(),
         }
     }
 }
 
-impl CompletionState {
+impl Line {
     pub fn cursor_is_at_eol(&self) -> bool {
-        self.bytes_before_cursor == self.current_line.len()
+        self.bytes_before_cursor == self.text.len()
     }
 
     pub fn update_bytes_before_cursor(&mut self, api: &Api) -> Result<()> {
@@ -40,14 +35,14 @@ impl CompletionState {
         Ok(())
     }
 
-    pub fn update_current_line(&mut self, api: &Api) -> Result<()> {
-        self.current_line = api.get_current_line()?;
+    pub fn update_text(&mut self, api: &Api) -> Result<()> {
+        self.text = api.get_current_line()?;
         Ok(())
     }
 
     pub fn update_matched_prefix(&mut self) -> Result<()> {
         self.matched_prefix = completion::get_matched_prefix(
-            &self.current_line,
+            &self.text,
             self.bytes_before_cursor,
         )
         .to_string();
