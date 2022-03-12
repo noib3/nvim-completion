@@ -11,6 +11,7 @@ pub fn insert_completion(
     selected_index: usize,
 ) -> Result<()> {
     let api = Neovim::new(lua)?.api;
+
     let line = &state.line;
     let completions = &mut state.completions;
 
@@ -38,7 +39,7 @@ pub fn insert_completion(
         current_row - 1,
         start_col,
         current_row - 1,
-        // The end column (which `Nvim::buf_set_text` interprets to be
+        // The end column (which `Api::buf_set_text` interprets to be
         // bytes from the beginning of the line, not characters) is
         // always equal to `bytes_before_cursor`, meaning we never
         // mangle the text after the current cursor position.

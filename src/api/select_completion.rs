@@ -38,15 +38,17 @@ pub fn select_completion(
         _ => unreachable!(),
     };
 
-    let api = &Neovim::new(lua)?.api;
+    let api = Neovim::new(lua)?.api;
 
-    // Update the completion menu
-    menu.select_completion(lua, api, new_selected_index)?;
+    // Update the completion menu.
+    menu.select_completion(lua, &api, new_selected_index)?;
 
     match new_selected_index {
+        // No selected completion -> clear the completion hint and close the
+        // details window.
         None => {
-            hint.erase(api)?;
-            details.hide(api)?;
+            hint.erase(&api)?;
+            details.hide(&api)?;
         },
 
         Some(index) => {
@@ -56,19 +58,19 @@ pub fn select_completion(
             if state.settings.show_hints && state.line.cursor_is_at_eol() {
                 hint.set(
                     lua,
-                    api,
+                    &api,
                     index,
                     state.line.bytes_before_cursor,
                     &completion.text[state.line.matched_prefix.len()..],
                 )?;
             }
 
-            // Update the details pane.
+            // Update the details window.
             match &completion.details {
-                None => details.hide(api)?,
+                None => details.hide(&api)?,
                 Some(lines) => details.show(
                     lua,
-                    api,
+                    &api,
                     lines,
                     menu.position
                         .as_ref()

@@ -3,7 +3,10 @@ use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
 mod api;
+mod autocmds;
 mod completion;
+mod hlgroups;
+mod mappings;
 mod settings;
 mod state;
 mod ui;
