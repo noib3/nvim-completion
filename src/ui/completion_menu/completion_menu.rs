@@ -4,12 +4,8 @@ use std::cmp;
 
 use neovim::{Api, Neovim};
 
+use super::MenuPosition;
 use crate::completion::CompletionItem;
-
-pub enum MenuPosition {
-    /// TODO: docs
-    Below(usize),
-}
 
 pub struct CompletionMenu {
     /// The handle of the buffer used to show the completion items. It is set
@@ -64,8 +60,8 @@ impl CompletionMenu {
 }
 
 impl CompletionMenu {
-    /// Clears the highlighting of a row of the completion menu from being
-    /// marked as selected.
+    /// Clears the highlighting from a row of the completion menu to no longer
+    /// mark it as selected.
     fn clear_selected_completion(&self, api: &Api, row: usize) -> Result<()> {
         api.buf_clear_namespace(
             self.bufnr,
@@ -73,30 +69,6 @@ impl CompletionMenu {
             row,
             (row + 1).try_into().unwrap_or(-1),
         )
-    }
-
-    /// TODO: docs
-    fn create_floatwin(
-        &self,
-        lua: &Lua,
-        api: &Api,
-        width: usize,
-        height: usize,
-    ) -> Result<usize> {
-        let config = lua.create_table_with_capacity(0, 8)?;
-        config.set("relative", "cursor")?;
-        config.set("width", width)?;
-        config.set("height", height)?;
-        config.set("row", 1)?;
-        config.set("col", 0)?;
-        config.set("focusable", false)?;
-        config.set("style", "minimal")?;
-        config.set("noautocmd", true)?;
-
-        let winid = api.open_win(self.bufnr, false, config)?;
-        api.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
-        api.win_set_option(winid, "scrolloff", 0)?;
-        Ok(winid)
     }
 
     /// TODO: docs
@@ -150,12 +122,12 @@ impl CompletionMenu {
         api: &Api,
         new_selected_completion: Option<usize>,
     ) -> Result<()> {
-        // Remove the highlighting from the previous selected completion.
+        // Remove the highlighting from the currently selected completion.
         if let Some(old) = self.selected_completion {
             self.clear_selected_completion(api, old)?;
         }
 
-        // Set the highlighting for the new selected completion.
+        // Set the highlighting for the newly selected completion.
         if let Some(new) = new_selected_completion {
             self.mark_completion_as_selected(api, new)?;
         }
@@ -173,12 +145,7 @@ impl CompletionMenu {
         Ok(())
     }
 
-    /// TODO: docs
-    // fn set_lines<L: AsRef<str>>(
-    fn set_lines(&self, api: &Api, lines: &[String]) -> Result<()> {
-        api.buf_set_lines(self.bufnr, 0, -1, false, lines)
-    }
-
+    // TODO: refactor
     /// TODO: docs
     pub fn show_completions(
         &mut self,
@@ -205,9 +172,13 @@ impl CompletionMenu {
 
         let width = max_width + 2;
 
-        self.set_lines(api, &lines)?;
-        self.winid = Some(self.create_floatwin(lua, api, width, height)?);
-        self.position = Some(MenuPosition::Below(width));
+        api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
+
+        let (winid, position) =
+            super::create_menu_window(lua, api, self.bufnr, width, height)?;
+
+        self.winid = Some(winid);
+        self.position = Some(position);
 
         // We only track the visible range if we have some constraints on
         // `self.max_height` which we'll need to consider when selecting
@@ -281,15 +252,9 @@ fn put_row_at_top(
     row: usize,
 ) -> Result<()> {
     let fun = lua.create_function(move |lua, ()| {
-        let _nvim = Neovim::new(lua)?;
-        _nvim.api.command(&format!("normal! {}zt", row + 1))
+        let nvim = Neovim::new(lua)?;
+        nvim.api.command(&format!("normal! {}zt", row + 1))
     })?;
 
     api.buf_call(bufnr, fun)
-}
-
-impl CompletionItem {
-    fn format(&self, padding: usize) -> String {
-        format!(" {: <padding$} ", self.text)
-    }
 }

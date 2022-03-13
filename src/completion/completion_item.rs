@@ -28,3 +28,9 @@ impl CompletionItem {
         }
     }
 }
+
+impl CompletionItem {
+    pub fn format(&self, right_padding: usize) -> String {
+        format!(" {: <right_padding$} ", self.text)
+    }
+}

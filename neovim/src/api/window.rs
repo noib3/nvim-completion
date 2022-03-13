@@ -19,6 +19,20 @@ impl<'a> Api<'a> {
         Ok((position.get(1)?, position.get(2)?))
     }
 
+    /// Binding to `vim.api.nvim_get_height`
+    ///
+    /// Returns the window height as a count of rows.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window.
+    pub fn win_get_height(&self, winid: usize) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_get_height")?
+            .call::<_, usize>(winid)?)
+    }
+
     /// Binding to `vim.api.nvim_win_hide`.
     ///
     /// Closes the window and hides the buffer it contains.

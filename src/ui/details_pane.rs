@@ -33,15 +33,18 @@ impl DetailsPane {
         height: usize,
         menu_position: &MenuPosition,
     ) -> Result<usize> {
-        let col = match menu_position {
-            MenuPosition::Below(width) => *width,
+        let (row, col): (isize, usize) = match menu_position {
+            MenuPosition::Above { width, height } => {
+                (-isize::try_from(*height).unwrap(), *width)
+            },
+            MenuPosition::Below { width } => (1, *width),
         };
 
         let config = lua.create_table_with_capacity(0, 8)?;
         config.set("relative", "cursor")?;
         config.set("width", width)?;
         config.set("height", height)?;
-        config.set("row", 1)?;
+        config.set("row", row)?;
         config.set("col", col)?;
         config.set("focusable", false)?;
         config.set("style", "minimal")?;
@@ -68,12 +71,6 @@ impl DetailsPane {
     }
 
     /// TODO: docs
-    // fn set_lines<L: AsRef<str>>(
-    fn set_lines(&self, api: &Api, lines: &[String]) -> Result<()> {
-        api.buf_set_lines(self.bufnr, 0, -1, false, lines)
-    }
-
-    /// TODO: docs
     pub fn show(
         &mut self,
         lua: &Lua,
@@ -93,7 +90,7 @@ impl DetailsPane {
         let width = cmp::min(max_width, 79);
         let height = lines.len();
 
-        self.set_lines(api, lines)?;
+        api.buf_set_lines(self.bufnr, 0, -1, false, lines)?;
         self.winid = Some(self.create_floatwin(
             lua,
             api,
@@ -101,9 +98,6 @@ impl DetailsPane {
             height,
             completion_menu_position,
         )?);
-
-        // let print = lua.globals().get::<&str, mlua::Function>("print")?;
-        // print.call::<_, ()>(format!("{:?}", self.winid))?;
 
         Ok(())
     }
