@@ -12,17 +12,28 @@ pub fn setup(
     state: &Arc<Mutex<State>>,
     preferences: Option<Table>,
 ) -> Result<()> {
+    let nvim = Neovim::new(lua)?;
+
+    if !nvim.api.call_function::<_, usize>("has", &["nvim-0.7"])? == 1 {
+        nvim.api.echo(
+            &[
+                ("[nvim-compleet]: ", Some("ErrorMsg")),
+                ("Neovim v0.7+ is required.", None),
+            ],
+            true,
+        )?;
+
+        return Ok(());
+    }
+
     let _state = state.clone();
     let _state = &mut _state.lock().unwrap();
-
-    let nvim = Neovim::new(lua)?;
-    let api = &nvim.api;
 
     _state.settings = match Settings::try_from(preferences) {
         Ok(settings) => settings,
         Err(e) => match e {
             Error::OptionDoesntExist { option } => {
-                api.echo(
+                nvim.api.echo(
                     &[
                         ("[nvim-compleet]: ", Some("ErrorMsg")),
                         ("Config option '", None),
@@ -36,7 +47,7 @@ pub fn setup(
             },
 
             Error::FailedConversion { option, expected } => {
-                api.echo(
+                nvim.api.echo(
                     &[
                         ("[nvim-compleet]: ", Some("ErrorMsg")),
                         ("Error parsing config option '", None),
@@ -50,7 +61,7 @@ pub fn setup(
             },
 
             Error::InvalidValue { option, reason } => {
-                api.echo(
+                nvim.api.echo(
                     &[
                         ("[nvim-compleet]: ", Some("ErrorMsg")),
                         ("Invalid value for config option '", None),
@@ -71,8 +82,8 @@ pub fn setup(
 
     _state.ui.completion_menu.max_height = _state.settings.max_menu_height;
 
-    autocmds::setup(lua, api, state)?;
-    hlgroups::setup(lua, api)?;
+    autocmds::setup(lua, &nvim.api, state)?;
+    hlgroups::setup(lua, &nvim.api)?;
     mappings::setup(lua, &nvim.keymap, state)?;
 
     if _state.settings.enable_default_mappings {

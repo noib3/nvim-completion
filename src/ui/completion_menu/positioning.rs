@@ -18,18 +18,16 @@ pub fn create_menu_window(
     width: usize,
     height: usize,
 ) -> Result<(usize, MenuPosition)> {
-    let (row, col, position): (isize, isize, MenuPosition);
+    let (row, position): (isize, MenuPosition);
 
     // Plan A: Is there space below? -> Put it below.
     // Plan B: Is there space above? -> Put it above.
     // Plan C: Fuck.
     if is_there_space_below(api, height)? {
         row = 1;
-        col = 0;
         position = MenuPosition::Below { width };
     } else if is_there_space_above(api, height)? {
         row = -isize::try_from(height).unwrap();
-        col = 0;
         position = MenuPosition::Above { width, height };
     } else {
         // TODO
@@ -41,7 +39,7 @@ pub fn create_menu_window(
     opts.set("width", width)?;
     opts.set("height", height)?;
     opts.set("row", row)?;
-    opts.set("col", col)?;
+    opts.set("col", 0)?;
     opts.set("focusable", false)?;
     opts.set("style", "minimal")?;
     opts.set("noautocmd", true)?;
@@ -54,16 +52,14 @@ pub fn create_menu_window(
 }
 
 fn is_there_space_above(api: &Api, height: usize) -> Result<bool> {
-    let screen_line =
-        api.call_function::<_, usize>("winline", Vec::<u8>::new())?;
+    let screen_line = api.call_function::<u8, usize>("winline", &[])?;
 
     Ok(height <= screen_line - 1)
 }
 
 fn is_there_space_below(api: &Api, height: usize) -> Result<bool> {
     let window_height = api.win_get_height(0)?;
-    let screen_line =
-        api.call_function::<_, usize>("winline", Vec::<u8>::new())?;
+    let screen_line = api.call_function::<u8, usize>("winline", &[])?;
 
     Ok(height <= window_height - screen_line)
 }
