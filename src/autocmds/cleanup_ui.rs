@@ -1,7 +1,7 @@
 use mlua::{Lua, Result};
 use neovim::Neovim;
 
-use crate::state::UI;
+use crate::ui::UI;
 
 /// Executed on both `CursorMovedI` and `InsertLeft`.
 pub fn cleanup_ui(lua: &Lua, ui: &mut UI) -> Result<()> {

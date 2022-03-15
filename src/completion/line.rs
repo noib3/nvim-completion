@@ -1,6 +1,7 @@
 use mlua::Result;
 use neovim::Api;
 
+#[derive(Debug)]
 pub struct Line {
     /// Number of bytes before (usually to be read as left-of, except for
     /// right-to-left languages).

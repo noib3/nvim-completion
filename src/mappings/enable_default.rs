@@ -47,7 +47,7 @@ pub fn enable_default(
         }
     })?;
 
-    let opts = lua.create_table_from([("silent", true), ("remap", true)])?;
+    let opts = lua.create_table_from([("expr", true), ("remap", true)])?;
 
     keymap.set("i", "<Tab>", tab, Some(opts.clone()))?;
     keymap.set("i", "<S-Tab>", s_tab, Some(opts.clone()))?;

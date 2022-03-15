@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use crate::settings::{Error, Settings};
 use crate::state::State;
-use crate::{autocmds, hlgroups, mappings};
+use crate::{autocmds, commands, hlgroups, mappings};
 
-/// Executed on every call to `require("compleet").setup({..})`.
+/// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
     state: &Arc<Mutex<State>>,
@@ -14,6 +14,8 @@ pub fn setup(
 ) -> Result<()> {
     let nvim = Neovim::new(lua)?;
 
+    // If the Neovim version isn't >= 0.7 we echo an error message and return
+    // early.
     if !nvim.api.call_function::<_, usize>("has", &["nvim-0.7"])? == 1 {
         nvim.api.echo(
             &[
@@ -31,64 +33,58 @@ pub fn setup(
 
     _state.settings = match Settings::try_from(preferences) {
         Ok(settings) => settings,
-        Err(e) => match e {
-            Error::OptionDoesntExist { option } => {
-                nvim.api.echo(
-                    &[
-                        ("[nvim-compleet]: ", Some("ErrorMsg")),
-                        ("Config option '", None),
-                        (&option, Some("Statement")),
-                        ("' doesn't exist!", None),
-                    ],
-                    true,
-                )?;
 
-                return Ok(());
-            },
+        Err(e) => {
+            let mut chunks = match e {
+                Error::OptionDoesntExist { option } => vec![
+                    ("Config option '".into(), None),
+                    (option, Some("Statement")),
+                    ("' doesn't exist!".into(), None),
+                ],
 
-            Error::FailedConversion { option, expected } => {
-                nvim.api.echo(
-                    &[
-                        ("[nvim-compleet]: ", Some("ErrorMsg")),
-                        ("Error parsing config option '", None),
-                        (option, Some("Statement")),
-                        (&format!("': expected a {expected}."), None),
-                    ],
-                    true,
-                )?;
+                Error::FailedConversion { option, expected } => vec![
+                    ("Config option '".into(), None),
+                    ("Error parsing config option '".into(), None),
+                    (option.into(), Some("Statement")),
+                    (format!("': expected a {expected}."), None),
+                ],
 
-                return Ok(());
-            },
+                Error::InvalidValue { option, reason } => vec![
+                    ("Invalid value for config option '".into(), None),
+                    (option.into(), Some("Statement")),
+                    (format!("': {reason}."), None),
+                ],
 
-            Error::InvalidValue { option, reason } => {
-                nvim.api.echo(
-                    &[
-                        ("[nvim-compleet]: ", Some("ErrorMsg")),
-                        ("Invalid value for config option '", None),
-                        (&option, Some("Statement")),
-                        (&format!("': {reason}."), None),
-                    ],
-                    true,
-                )?;
+                Error::Lua(e) => return Err(e),
+            };
 
-                return Ok(());
-            },
+            chunks.insert(0, ("[nvim-compleet]: ".into(), Some("ErrorMsg")));
+            nvim.api.echo(&chunks, true)?;
 
-            Error::Lua(e) => return Err(e),
+            return Ok(());
         },
     };
 
+    // Used for debugging.
     // nvim.print(format!("{:?}", &_state.settings))?;
 
-    _state.ui.completion_menu.max_height = _state.settings.max_menu_height;
+    // TODO: explain
+    _state.augroup_id = Some(autocmds::setup(lua, &nvim.api, state)?);
 
-    autocmds::setup(lua, &nvim.api, state)?;
+    commands::setup(lua, &nvim.api, state)?;
     hlgroups::setup(lua, &nvim.api)?;
     mappings::setup(lua, &nvim.keymap, state)?;
 
     if _state.settings.enable_default_mappings {
         mappings::enable_default(lua, &nvim.keymap, state)?;
     }
+
+    // See how many times the state has been cloned across all the various
+    // functions.
+    // nvim.print(format!(
+    //     "State cloned {} times in total!",
+    //     Arc::<Mutex<State>>::strong_count(state)
+    // ))?;
 
     Ok(())
 }

@@ -5,4 +5,4 @@ mod keymap;
 pub use keymap::Keymap;
 
 pub mod neovim;
-pub use neovim::Neovim;
+pub use neovim::{LogLevel, Neovim};

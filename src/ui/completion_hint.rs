@@ -1,6 +1,7 @@
 use mlua::{Lua, Result};
 use neovim::Api;
 
+#[derive(Debug)]
 pub struct CompletionHint {
     /// The Neovim namespace id associated to the completion hint.
     ns_id: usize,

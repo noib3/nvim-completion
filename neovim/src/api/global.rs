@@ -3,6 +3,28 @@ use mlua::{Function, Result, Table};
 use super::Api;
 
 impl<'a> Api<'a> {
+    // TODO: make `command` accept strings.
+    /// Binding to `vim.api.nvim_add_user_command`.
+    ///
+    /// Creates a new user command.
+    ///
+    /// # Arguments
+    ///
+    /// * `name`     Name of the new user command. Must begin with an uppercase letter.
+    /// * `command`  Replacement command to execute when this user command is executed.
+    /// * `opts`     Optional parameters. See `:h nvim_add_user_command` for  details.
+    pub fn add_user_command(
+        &self,
+        name: &str,
+        command: Function,
+        opts: Table,
+    ) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_add_user_command")?
+            .call::<_, ()>((name, command, opts))?)
+    }
+
     /// Binding to `vim.api.nvim_create_buf`.
     ///
     /// Creates a new, empty, unnamed buffer. Returns the new buffer handle, or
@@ -29,16 +51,16 @@ impl<'a> Api<'a> {
     /// text chunk with specified highlight. The `hl_group` element can be
     /// set to `None` for no highlight.
     /// * `history`  Whether to add the message to the message history.
-    pub fn echo(
+    pub fn echo<M: AsRef<str>>(
         &self,
-        chunks: &[(&str, Option<&str>)],
+        chunks: &[(M, Option<&str>)],
         history: bool,
     ) -> Result<()> {
         let chunks = chunks
             .iter()
             .map(|c| match c.1 {
-                Some(hl_group) => vec![c.0, hl_group],
-                None => vec![c.0],
+                Some(hl_group) => vec![c.0.as_ref(), hl_group],
+                None => vec![c.0.as_ref()],
             })
             .collect::<Vec<Vec<&str>>>();
 

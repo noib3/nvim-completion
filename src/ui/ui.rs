@@ -4,6 +4,7 @@ use neovim::Neovim;
 use crate::ui::{CompletionHint, CompletionMenu, DetailsPane};
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
+#[derive(Debug)]
 pub struct UI {
     /// A completion menu used to show all the available completion candidates.
     pub completion_menu: CompletionMenu,

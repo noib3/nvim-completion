@@ -4,6 +4,7 @@ use std::cmp;
 
 use crate::ui::MenuPosition;
 
+#[derive(Debug)]
 pub struct DetailsPane {
     /// The handle of the buffer used to show details for the currently
     /// selected completion items.

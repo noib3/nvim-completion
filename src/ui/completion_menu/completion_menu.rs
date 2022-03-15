@@ -7,6 +7,7 @@ use neovim::{Api, Neovim};
 use super::MenuPosition;
 use crate::completion::CompletionItem;
 
+#[derive(Debug)]
 pub struct CompletionMenu {
     /// The handle of the buffer used to show the completion items. It is set
     /// once on initialization and never changes.
@@ -19,10 +20,6 @@ pub struct CompletionMenu {
     /// the current completion prefix. It is set once on initialization and
     /// never changed.
     matched_chars_nsid: usize,
-
-    /// The maximum height of the completion menu, or `None` if no max height
-    /// has been set by the user.
-    pub max_height: Option<usize>,
 
     /// TODO: docs
     pub position: Option<MenuPosition>,
@@ -49,7 +46,6 @@ impl CompletionMenu {
             visible_range: None,
             matched_chars_nsid: api
                 .create_namespace("CompleetMatchedChars")?,
-            max_height: None,
             position: None,
             selected_completion: None,
             selected_completion_nsid: api
@@ -152,6 +148,7 @@ impl CompletionMenu {
         lua: &Lua,
         api: &Api,
         completions: &[CompletionItem],
+        max_height: Option<usize>,
     ) -> Result<()> {
         let max_width = completions
             .iter()
@@ -160,7 +157,7 @@ impl CompletionMenu {
             .max()
             .unwrap_or(0);
 
-        let height = match self.max_height {
+        let height = match max_height {
             None => completions.len(),
             Some(height) => cmp::min(height, completions.len()),
         };
@@ -181,9 +178,9 @@ impl CompletionMenu {
         self.position = Some(position);
 
         // We only track the visible range if we have some constraints on
-        // `self.max_height` which we'll need to consider when selecting
+        // `max_height` which we'll need to consider when selecting
         // completions.
-        if self.max_height.is_some() {
+        if max_height.is_some() {
             self.visible_range = Some(Range {
                 start: 0,
                 end: height,

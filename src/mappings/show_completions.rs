@@ -12,6 +12,7 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
             lua,
             &api,
             &state.completions,
+            state.settings.max_menu_height,
         )?;
     }
 

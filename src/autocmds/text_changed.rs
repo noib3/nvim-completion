@@ -24,8 +24,12 @@ pub fn text_changed(lua: &Lua, state: &mut State) -> Result<()> {
 
     // Update the completion menu.
     if state.settings.autoshow_menu {
-        ui.completion_menu
-            .show_completions(lua, &api, &completions)?;
+        ui.completion_menu.show_completions(
+            lua,
+            &api,
+            &completions,
+            state.settings.max_menu_height,
+        )?;
     }
 
     // If hints are enabled and the cursor is at the end of the line, show the

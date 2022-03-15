@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 mod api;
 mod autocmds;
+mod commands;
 mod completion;
 mod hlgroups;
 mod mappings;

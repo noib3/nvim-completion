@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+#[derive(Debug)]
 pub struct CompletionItem {
     /// TODO: docs
     pub details: Option<Vec<String>>,

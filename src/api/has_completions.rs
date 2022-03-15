@@ -4,7 +4,7 @@ use neovim::Neovim;
 use crate::completion;
 use crate::state::State;
 
-/// Executed on every call to `require("compleet").has_completions()`.
+/// Executed by the `require("compleet").has_completions` Lua function.
 pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
     let api = Neovim::new(lua)?.api;
 

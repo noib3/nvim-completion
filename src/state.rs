@@ -1,12 +1,15 @@
 use mlua::Result;
 use neovim::Neovim;
 
-use super::Line;
-use super::UI;
-use crate::completion::CompletionItem;
+use crate::completion::{CompletionItem, Line};
 use crate::settings::Settings;
+use crate::ui::UI;
 
+#[derive(Debug)]
 pub struct State {
+    /// TODO: docs
+    pub augroup_id: Option<usize>,
+
     /// The currently available completion items computed by
     /// `completion::algo::complete`.
     pub completions: Vec<CompletionItem>,
@@ -24,6 +27,7 @@ pub struct State {
 impl State {
     pub fn new(nvim: &Neovim) -> Result<Self> {
         Ok(State {
+            augroup_id: None,
             completions: Vec::new(),
             line: Line::new(),
             settings: Settings::default(),
