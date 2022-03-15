@@ -4,7 +4,7 @@ use std::cmp;
 
 use neovim::{Api, Neovim};
 
-use super::MenuPosition;
+use super::positioning::{self, menu::MenuPosition, Error};
 use crate::completion::CompletionItem;
 
 #[derive(Debug)]
@@ -162,23 +162,38 @@ impl CompletionMenu {
             Some(height) => cmp::min(height, completions.len()),
         };
 
+        let width = max_width + 2;
+
+        // Creating the completion menu might fail if the current window is not
+        // big enough (either vertically, horizontally, or both) to contain it.
+        match positioning::menu::create_window(
+            lua, api, self.bufnr, width, height,
+        ) {
+            Ok((winid, position)) => {
+                self.winid = Some(winid);
+                self.position = Some(position);
+            },
+
+            Err(err) => match err {
+                Error::Lua(e) => return Err(e),
+
+                // TODO: this should return err bc if we couldn't draw the menu
+                // then we shouldn't try to draw the details.
+
+                // We don't really care why it failed, we just return early.
+                _ => return Ok(()),
+            },
+        }
+
         let lines = completions
             .iter()
             .map(|item| item.format(max_width))
             .collect::<Vec<String>>();
 
-        let width = max_width + 2;
-
         api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
-        let (winid, position) =
-            super::create_menu_window(lua, api, self.bufnr, width, height)?;
-
-        self.winid = Some(winid);
-        self.position = Some(position);
-
         // We only track the visible range if we have some constraints on
-        // `max_height` which we'll need to consider when selecting
+        // `max_height`, which we'll need to consider when scrolling through
         // completions.
         if max_height.is_some() {
             self.visible_range = Some(Range {

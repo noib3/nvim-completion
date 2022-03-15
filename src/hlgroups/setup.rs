@@ -2,9 +2,6 @@ use mlua::{Lua, Result};
 use neovim::Api;
 
 pub fn setup(lua: &Lua, api: &Api) -> Result<()> {
-    // TODO: make something like this work
-    // nvim.set_hl(0, "CompleetMenu", lua.t! { link = "NormalFloat" })?;
-
     // `CompleetMenu`
     // Used to highlight the completion menu.
     let opts = lua.create_table_from([("link", "NormalFloat")])?;
@@ -27,7 +24,7 @@ pub fn setup(lua: &Lua, api: &Api) -> Result<()> {
 
     // `CompleetMenuMatchingChars`
     // Used to highlight the characters where a completion item matches the
-    // current prefix.
+    // current completion prefix.
     let opts = lua.create_table_from([("link", "Statement")])?;
     api.set_hl(0, "CompleetMenuMatchingChars", opts)?;
 

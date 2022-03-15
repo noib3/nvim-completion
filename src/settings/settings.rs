@@ -6,7 +6,8 @@ pub struct Settings {
     /// completion items available.
     pub autoshow_menu: bool,
 
-    /// Enable insert mode mappings for `<Tab>`, `<S-Tab>` and `<CR>`.
+    /// Enable the default insert mode mappings for `<Tab>`, `<S-Tab>` and
+    /// `<CR>`.
     pub enable_default_mappings: bool,
 
     /// The maximum number of rows the completion menu can take up.
@@ -39,6 +40,7 @@ impl Default for Settings {
     }
 }
 
+/// TODO: docs
 pub enum Error {
     // TODO: add `found` field with the value of the value that was passed in.
     FailedConversion {

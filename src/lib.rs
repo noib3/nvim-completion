@@ -28,15 +28,11 @@ fn compleet(lua: &Lua) -> Result<Table> {
     //    on on every single `CursorMovedI` and `TextChangedI` event. Is there
     //    a way not to? Also look into `nvim_buf_attach`.
 
-    // 2. Handle geometry for completion menu, i.e. show it above the current
-    //    line if there's not enough space below it. Same for horizontal
-    //    constraints.
+    // 2. Handle geometry for details pane.
 
-    // 3. Handle geometry for details pane.
+    // 3. Make the core logic as neovim-agnostic as possible.
 
-    // 4. Make the core logic as neovim-agnostic as possible.
-
-    // 5. Right now everything is sync and we're blocking on every single event
+    // 4. Right now everything is sync and we're blocking on every single event
     //    we listen to. This will be a problem when we start dealing with
     //    possibly thousands of completion results from LSPs.
     //

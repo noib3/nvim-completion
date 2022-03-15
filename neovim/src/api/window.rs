@@ -3,7 +3,7 @@ use mlua::{Function, Result, Table, ToLua};
 use super::Api;
 
 impl<'a> Api<'a> {
-    /// Binding to `vim.api.nvim_get_cursor`
+    /// Binding to `vim.api.nvim_win_get_cursor`
     ///
     /// Returns the (1,0)-indexed cursor position as a tuple.
     ///
@@ -19,7 +19,21 @@ impl<'a> Api<'a> {
         Ok((position.get(1)?, position.get(2)?))
     }
 
-    /// Binding to `vim.api.nvim_get_height`
+    /// Binding to `vim.api.nvim_win_get_width`
+    ///
+    /// Returns the window width as a count of columns.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window.
+    pub fn win_get_width(&self, winid: usize) -> Result<usize> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_get_width")?
+            .call::<_, usize>(winid)?)
+    }
+
+    /// Binding to `vim.api.nvim_win_get_width`
     ///
     /// Returns the window height as a count of rows.
     ///

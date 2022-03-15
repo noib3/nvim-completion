@@ -2,7 +2,7 @@ use mlua::{Lua, Result};
 use neovim::Api;
 use std::cmp;
 
-use crate::ui::MenuPosition;
+use super::positioning::menu::MenuPosition;
 
 #[derive(Debug)]
 pub struct DetailsPane {
@@ -38,6 +38,7 @@ impl DetailsPane {
             MenuPosition::Above { width, height } => {
                 (-isize::try_from(*height).unwrap(), *width)
             },
+
             MenuPosition::Below { width } => (1, *width),
         };
 
