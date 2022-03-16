@@ -24,6 +24,11 @@ pub fn setup(
         super::text_changed(lua, &mut _state.lock().unwrap())
     })?;
 
+    let _state = state.clone();
+    let maybe_attach = lua.create_function(move |lua, ()| {
+        super::maybe_attach(lua, &mut _state.lock().unwrap())
+    })?;
+
     let opts = lua.create_table_from([("clear", true)])?;
     let augroup_id = api.create_augroup("Compleet", opts)?;
 
@@ -33,10 +38,13 @@ pub fn setup(
     api.create_autocmd(&["CursorMovedI", "InsertLeave"], opts.clone())?;
 
     opts.set("callback", maybe_show_hint)?;
-    api.create_autocmd(&["CursorMovedI", "InsertEnter"], opts.clone())?;
+    api.create_autocmd(&["CursorMovedI"], opts.clone())?;
 
     opts.set("callback", text_changed)?;
     api.create_autocmd(&["TextChangedI"], opts.clone())?;
+
+    opts.set("callback", maybe_attach)?;
+    api.create_autocmd(&["BufEnter"], opts.clone())?;
 
     Ok(augroup_id)
 }

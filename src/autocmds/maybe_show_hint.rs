@@ -4,7 +4,7 @@ use neovim::Neovim;
 use crate::completion;
 use crate::state::State;
 
-/// Executed on both `CursorMovedI` and `InsertEnter`.
+/// Executed on every `CursorMovedI` event.
 pub fn maybe_show_hint(lua: &Lua, state: &mut State) -> Result<()> {
     if !state.settings.show_hints {
         return Ok(());
