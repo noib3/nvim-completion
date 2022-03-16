@@ -72,8 +72,9 @@ pub fn select_completion(
                     lua,
                     &api,
                     lines,
-                    menu.position
-                        .as_ref()
+                    menu.winid
+                        .expect("The menu is visible so it has a window id"),
+                    menu.dimensions
                         .expect("The menu is visible so it has a position"),
                 )?,
             }

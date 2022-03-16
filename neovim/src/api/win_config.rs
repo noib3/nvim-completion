@@ -23,4 +23,18 @@ impl<'a> Api<'a> {
             .get::<&str, Function>("nvim_open_win")?
             .call::<_, usize>((bufnr, enter, config))?)
     }
+
+    /// Binding to `vim.api.nvim_win_get_config`.
+    ///
+    /// Gets the window configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`   Window handle, or 0 for current buffer.
+    pub fn win_get_config(&self, winid: usize) -> Result<Table> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_get_config")?
+            .call::<_, Table>(winid)?)
+    }
 }

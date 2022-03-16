@@ -2,7 +2,7 @@ use mlua::{Lua, Result};
 use neovim::Api;
 use std::cmp;
 
-use super::positioning::menu::MenuPosition;
+use super::positioning::{self, Error};
 
 #[derive(Debug)]
 pub struct DetailsPane {
@@ -26,39 +26,6 @@ impl DetailsPane {
 
 impl DetailsPane {
     /// TODO: docs
-    fn create_floatwin(
-        &self,
-        lua: &Lua,
-        api: &Api,
-        width: usize,
-        height: usize,
-        menu_position: &MenuPosition,
-    ) -> Result<usize> {
-        let (row, col): (isize, usize) = match menu_position {
-            MenuPosition::Above { width, height } => {
-                (-isize::try_from(*height).unwrap(), *width)
-            },
-
-            MenuPosition::Below { width } => (1, *width),
-        };
-
-        let config = lua.create_table_with_capacity(0, 8)?;
-        config.set("relative", "cursor")?;
-        config.set("width", width)?;
-        config.set("height", height)?;
-        config.set("row", row)?;
-        config.set("col", col)?;
-        config.set("focusable", false)?;
-        config.set("style", "minimal")?;
-        config.set("noautocmd", true)?;
-
-        let winid = api.open_win(self.bufnr, false, config)?;
-        api.win_set_option(winid, "winhl", "Normal:CompleetDetails")?;
-        api.win_set_option(winid, "scrolloff", 0)?;
-        Ok(winid)
-    }
-
-    /// TODO: docs
     pub fn hide(&mut self, api: &Api) -> Result<()> {
         if let Some(winid) = self.winid {
             api.win_hide(winid)?;
@@ -78,7 +45,8 @@ impl DetailsPane {
         lua: &Lua,
         api: &Api,
         lines: &[String],
-        completion_menu_position: &MenuPosition,
+        completion_menu_winid: usize,
+        completion_menu_dimensions: (usize, usize),
     ) -> Result<()> {
         self.hide(api)?;
 
@@ -93,13 +61,24 @@ impl DetailsPane {
         let height = lines.len();
 
         api.buf_set_lines(self.bufnr, 0, -1, false, lines)?;
-        self.winid = Some(self.create_floatwin(
+        self.winid = match positioning::details::create_floatwin(
             lua,
             api,
+            self.bufnr,
             width,
             height,
-            completion_menu_position,
-        )?);
+            completion_menu_winid,
+            completion_menu_dimensions,
+        ) {
+            Ok(winid) => Some(winid),
+
+            Err(err) => match err {
+                Error::Lua(e) => return Err(e),
+
+                // We don't really care why it failed, we just return early.
+                _ => return Ok(()),
+            },
+        };
 
         Ok(())
     }

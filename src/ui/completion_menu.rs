@@ -4,7 +4,7 @@ use std::cmp;
 
 use neovim::{Api, Neovim};
 
-use super::positioning::{self, menu::MenuPosition, Error};
+use super::positioning::{self, Error};
 use crate::completion::CompletionItem;
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ pub struct CompletionMenu {
     matched_chars_nsid: usize,
 
     /// TODO: docs
-    pub position: Option<MenuPosition>,
+    pub dimensions: Option<(usize, usize)>,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected. If `Some` it ranges from 0 to
@@ -46,7 +46,7 @@ impl CompletionMenu {
             visible_range: None,
             matched_chars_nsid: api
                 .create_namespace("CompleetMatchedChars")?,
-            position: None,
+            dimensions: None,
             selected_completion: None,
             selected_completion_nsid: api
                 .create_namespace("CompleetSelectedItem")?,
@@ -77,7 +77,7 @@ impl CompletionMenu {
         // the completion menu is hidden. We might want not to do this if we
         // can manage to differentiate a `move completion window` from a `close
         // completion window` commands.
-        self.position = None;
+        self.dimensions = None;
         self.selected_completion = None;
         self.visible_range = None;
         Ok(())
@@ -166,12 +166,12 @@ impl CompletionMenu {
 
         // Creating the completion menu might fail if the current window is not
         // big enough (either vertically, horizontally, or both) to contain it.
-        match positioning::menu::create_window(
+        match positioning::menu::create_floatwin(
             lua, api, self.bufnr, width, height,
         ) {
-            Ok((winid, position)) => {
+            Ok((winid, dimensions)) => {
                 self.winid = Some(winid);
-                self.position = Some(position);
+                self.dimensions = Some(dimensions);
             },
 
             Err(err) => match err {

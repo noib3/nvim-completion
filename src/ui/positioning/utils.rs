@@ -1,3 +1,4 @@
+use mlua::Table;
 use neovim::Api;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -5,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// TODO: docs
 pub enum Error {
     /// TODO: docs
-    WinTooNarrow(usize),
+    WinTooNarrow,
 
     /// TODO: docs
     WinTooShort,
@@ -52,4 +53,35 @@ pub fn is_there_space_below(api: &Api, height: usize) -> mlua::Result<bool> {
     let screen_line = api.call_function::<u8, usize>("winline", &[])?;
 
     Ok(height <= window_height - screen_line)
+}
+
+/// TODO: docs
+pub fn is_there_space_after_window(
+    api: &Api,
+    winid: usize,
+    width: usize,
+) -> mlua::Result<bool> {
+    let window_config = api.win_get_config(winid)?;
+
+    let columns_after_window = api.win_get_width(0)?
+        - window_config
+            .get::<_, Table>("col")?
+            .get::<_, usize>(false)?
+        - window_config.get::<_, usize>("width")?;
+
+    Ok(width <= columns_after_window)
+}
+
+/// TODO: docs
+pub fn is_there_space_before_window(
+    api: &Api,
+    winid: usize,
+    width: usize,
+) -> mlua::Result<bool> {
+    let columns_before_window = api
+        .win_get_config(winid)?
+        .get::<_, Table>("col")?
+        .get::<_, usize>(false)?;
+
+    Ok(width <= columns_before_window)
 }
