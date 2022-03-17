@@ -3,7 +3,7 @@ use neovim::Neovim;
 
 use crate::ui::UI;
 
-/// Executed on both `CursorMovedI` and `InsertLeft`.
+/// Executed on every `InsertLeft` event.
 pub fn cleanup_ui(lua: &Lua, ui: &mut UI) -> Result<()> {
     let api = &Neovim::new(lua)?.api;
 

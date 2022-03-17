@@ -24,7 +24,7 @@ impl CompletionHint {
         // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
         api.buf_clear_namespace(
             0,
-            (self.ns_id).try_into().unwrap_or(-1), // TODO: this is bad
+            isize::try_from(self.ns_id).unwrap_or(-1), // TODO: this is bad
             0,
             -1,
         )?;
@@ -40,7 +40,8 @@ impl CompletionHint {
         &mut self,
         lua: &Lua,
         api: &Api,
-        hinted_index: usize,
+        index: usize,
+        row: usize,
         col: usize,
         hint: &str,
     ) -> Result<()> {
@@ -49,9 +50,8 @@ impl CompletionHint {
         opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
-        let row = api.win_get_cursor(0)?.0 - 1;
         api.buf_set_extmark(0, self.ns_id, row, col, opts)?;
-        self.hinted_index = Some(hinted_index);
+        self.hinted_index = Some(index);
 
         Ok(())
     }

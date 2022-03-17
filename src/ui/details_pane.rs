@@ -2,7 +2,7 @@ use mlua::{Lua, Result};
 use neovim::Api;
 use std::cmp;
 
-use super::positioning::{self, Error};
+use super::positioning::{self, Error, WindowPosition};
 
 #[derive(Debug)]
 pub struct DetailsPane {
@@ -46,7 +46,7 @@ impl DetailsPane {
         api: &Api,
         lines: &[String],
         completion_menu_winid: usize,
-        completion_menu_dimensions: (usize, usize),
+        completion_menu_position: &WindowPosition,
     ) -> Result<()> {
         self.hide(api)?;
 
@@ -68,7 +68,7 @@ impl DetailsPane {
             width,
             height,
             completion_menu_winid,
-            completion_menu_dimensions,
+            completion_menu_position,
         ) {
             Ok(winid) => Some(winid),
 

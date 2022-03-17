@@ -13,10 +13,11 @@ pub fn setup(
     preferences: Option<Table>,
 ) -> Result<()> {
     let nvim = Neovim::new(lua)?;
+    let api = &nvim.api;
 
     // If the Neovim version isn't >= 0.7 we echo an error message and return
     // early.
-    if !nvim.api.call_function::<_, usize>("has", &["nvim-0.7"])? == 1 {
+    if !api.call_function::<_, usize>("has", vec!["nvim-0.7"])? == 1 {
         nvim.api.echo(
             &[
                 ("[nvim-compleet]: ", Some("ErrorMsg")),
@@ -59,7 +60,7 @@ pub fn setup(
             };
 
             chunks.insert(0, ("[nvim-compleet]: ".into(), Some("ErrorMsg")));
-            nvim.api.echo(&chunks, true)?;
+            api.echo(&chunks, true)?;
 
             return Ok(());
         },
@@ -69,18 +70,18 @@ pub fn setup(
     // nvim.print(format!("{:?}", &_state.settings))?;
 
     // TODO: explain
-    _state.augroup_id = Some(autocmds::setup(lua, &nvim.api, state)?);
+    _state.augroup_id = Some(autocmds::setup(lua, api, state)?);
 
-    commands::setup(lua, &nvim.api, state)?;
-    hlgroups::setup(lua, &nvim.api)?;
+    commands::setup(lua, api, state)?;
+    hlgroups::setup(lua, api)?;
     mappings::setup(lua, &nvim.keymap, state)?;
 
     if _state.settings.enable_default_mappings {
         mappings::enable_default(lua, &nvim.keymap, state)?;
     }
 
-    // See how many times the state has been cloned across all the various
-    // functions.
+    // // See how many times the state has been cloned across all the various
+    // // functions.
     // nvim.print(format!(
     //     "State cloned {} times in total!",
     //     Arc::<Mutex<State>>::strong_count(state)

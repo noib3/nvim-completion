@@ -11,15 +11,15 @@ impl<'a> Api<'a> {
     ///
     /// * `fun`    Name of the function to call.
     /// * `args`   Function arguments packed in a slice.
-    pub fn call_function<A: Clone + ToLua<'a>, R: FromLuaMulti<'a>>(
+    pub fn call_function<A: ToLua<'a>, R: FromLuaMulti<'a>>(
         &self,
         fun: &str,
-        args: &[A],
+        args: Vec<A>,
     ) -> Result<R> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_call_function")?
-            .call::<(_, Vec<A>), R>((fun, args.into()))?)
+            .call::<(_, Vec<A>), R>((fun, args))?)
     }
 
     /// Binding to `vim.api.nvim_command`.

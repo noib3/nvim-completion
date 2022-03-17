@@ -10,71 +10,62 @@ pub fn insert_completion(
     state: &mut State,
     selected_index: usize,
 ) -> Result<()> {
-    let api = Neovim::new(lua)?.api;
+    let buffer = &state.buffer;
+    let selected_completion = &state.completions[selected_index];
 
-    let line = &state.line;
-    let completions = &mut state.completions;
+    let new_column = buffer.at_bytes + selected_completion.text.len()
+        - selected_completion.matched_prefix_len;
 
-    // TODO: this doesn't work for right-to-left languages.
-    let line_after_cursor = &line.text[line.bytes_before_cursor..];
-
-    let selected_completion = &completions[selected_index];
-
-    let (start_col, replacement) = get_completion(
-        &line.matched_prefix,
-        line_after_cursor,
+    let replacement = get_completion(
+        selected_completion.matched_prefix_len,
+        &buffer.line[buffer.at_bytes..],
         &selected_completion.text,
     );
 
-    let start_col =
-        line.bytes_before_cursor - line.matched_prefix.len() + start_col;
+    // NOTE: Inserting the completion in the buffer right at this point
+    // triggers `completion::bytes_changed`, which causes the Mutex wrapping
+    // the global state to deadlock (I don't really understand why right now
+    // tbh).
+    //
+    // To avoid this we wrap the call to `api.buf_set_text` in a closure and
+    // pass it to `nvim.schedule`. This seems to solve the issue.
+    //
+    // TODO: Understand why this happens.
 
-    let shift_the_cursor_this_many_bytes =
-        selected_completion.text.len() - line.matched_prefix.len();
-
-    let current_row = api.win_get_cursor(0)?.0;
-
-    api.buf_set_text(
-        0,
-        current_row - 1,
-        start_col,
-        current_row - 1,
-        // The end column (which `Api::buf_set_text` interprets to be
-        // bytes from the beginning of the line, not characters) is
-        // always equal to `bytes_before_cursor`, meaning we never
-        // mangle the text after the current cursor position.
-        line.bytes_before_cursor,
-        &[replacement],
+    let insert_completion = lua.create_function(
+        move |lua, (row, col, text): (usize, usize, String)| {
+            let api = Neovim::new(lua)?.api;
+            api.buf_set_text(0, row, col, row, col, &[text])?;
+            api.win_set_cursor(0, row + 1, new_column)?;
+            Ok(())
+        },
     )?;
 
-    let new_column =
-        line.bytes_before_cursor + shift_the_cursor_this_many_bytes;
+    let nvim = Neovim::new(lua)?;
 
-    api.win_set_cursor(0, current_row, new_column)?;
+    nvim.schedule(insert_completion.bind((
+        buffer.row,
+        buffer.at_bytes,
+        replacement.to_string(),
+    ))?)?;
 
-    completions.clear();
-
-    // We don't do any UI cleanup here (e.g. `completion_menu.hide()`, etc.)
-    // since inserting a completion will move the cursor, triggering a
-    // `CursorMovedI` event, which in turn executes `api::cleanup_ui` where
-    // the cleanup happens.
+    state.completions.clear();
 
     Ok(())
 }
 
-// Time: O(min(completion.len() - matched_prefix.len(), line_after_cursor.len()))
-// Space: O(1)
+/// TODO: comment
 fn get_completion<'a>(
-    matched_prefix: &'a str,
+    matched_prefix_len: usize,
     line_after_cursor: &'a str,
     completion: &'a str,
-) -> (usize, &'a str) {
-    // We don't care about the first `matched_prefix.len()` bytes of the
+) -> &'a str {
+    // We don't care about the first `matched_prefix_len` bytes of the
     // completion text since we're not doing any error correction yet.
     //
     // NOTE: this should never panic since `completion` is expected to always
     // be strictly longer than `matched_prefix`.
-    let completion_wo_prefix = &completion[matched_prefix.len()..];
+    let completion_wo_prefix = &completion[matched_prefix_len..];
 
     let bytes_after_cursor = line_after_cursor.len();
     let bytes_rest_of_completion = completion_wo_prefix.len();
@@ -103,10 +94,7 @@ fn get_completion<'a>(
         }
     }
 
-    (
-        matched_prefix.len(),
-        &completion_wo_prefix[..take_this_many_bytes_from_completion],
-    )
+    &completion_wo_prefix[..take_this_many_bytes_from_completion]
 }
 
 #[cfg(test)]
@@ -122,7 +110,7 @@ mod tests {
     // Inserted: `bar`
     // Result: `foobar`
     fn foo1() {
-        assert_eq!((3, "bar"), get_completion("foo", "", "foobar"));
+        assert_eq!("bar", get_completion("foo".len(), "", "foobar"));
     }
 
     #[test]
@@ -132,7 +120,7 @@ mod tests {
     // Inserted: `bar`
     // Result: `foobarbaz`
     fn foo2() {
-        assert_eq!((3, "bar"), get_completion("foo", "baz", "foobar"));
+        assert_eq!("bar", get_completion("foo".len(), "baz", "foobar"));
     }
 
     #[test]
@@ -142,7 +130,7 @@ mod tests {
     // Inserted: `b`
     // Result: `foobar`
     fn foo3() {
-        assert_eq!((3, "b"), get_completion("foo", "ar", "foobar"));
+        assert_eq!("b", get_completion("foo".len(), "ar", "foobar"));
     }
 
     #[test]
@@ -152,7 +140,7 @@ mod tests {
     // Inserted: `b`
     // Result: `fööbár`
     fn foo4() {
-        assert_eq!((5, "b"), get_completion("föö", "ár", "fööbár"));
+        assert_eq!("b", get_completion("föö".len(), "ár", "fööbár"));
     }
 
     #[test]
@@ -162,7 +150,7 @@ mod tests {
     // Inserted: `b`
     // Result: `foobarbaz`
     fn foo5() {
-        assert_eq!((3, "b"), get_completion("foo", "arbaz", "foobar"));
+        assert_eq!("b", get_completion("foo".len(), "arbaz", "foobar"));
     }
 
     #[test]
@@ -172,7 +160,7 @@ mod tests {
     // Inserted: ``
     // Result: `foobar`
     fn foo6() {
-        assert_eq!((3, ""), get_completion("foo", "bar", "foobar"));
+        assert_eq!("", get_completion("foo".len(), "bar", "foobar"));
     }
 
     #[test]
@@ -182,7 +170,7 @@ mod tests {
     // Inserted: `ba`
     // Result: `foobar`
     fn foo7() {
-        assert_eq!((3, "ba"), get_completion("foo", "r", "foobar"));
+        assert_eq!("ba", get_completion("foo".len(), "r", "foobar"));
     }
 
     #[test]
@@ -192,7 +180,7 @@ mod tests {
     // Inserted: `oob`
     // Result: `foobar`
     fn foo8() {
-        assert_eq!((1, "oob"), get_completion("f", "ar", "foobar"));
+        assert_eq!("oob", get_completion("f".len(), "ar", "foobar"));
     }
 
     #[test]
@@ -202,7 +190,7 @@ mod tests {
     // Inserted: `ooba`
     // Result: `foobar`
     fn foo9() {
-        assert_eq!((1, "ooba"), get_completion("f", "r", "foobar"));
+        assert_eq!("ooba", get_completion("f".len(), "r", "foobar"));
     }
 
     #[test]
@@ -212,6 +200,6 @@ mod tests {
     // Inserted: `ooba`
     // Result: `foobarbaz`
     fn foo10() {
-        assert_eq!((1, "ooba"), get_completion("f", "rbaz", "foobar"));
+        assert_eq!("ooba", get_completion("f".len(), "rbaz", "foobar"));
     }
 }

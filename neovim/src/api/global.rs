@@ -81,6 +81,18 @@ impl<'a> Api<'a> {
             .call::<_, String>(())?)
     }
 
+    /// Binding to `vim.api.nvim_get_mode`
+    ///
+    /// Returns a `(mode, is_blocking)` tuple.
+    pub fn get_mode(&self) -> Result<(String, bool)> {
+        let t = self
+            .0
+            .get::<&str, Function>("nvim_get_mode")?
+            .call::<_, Table>(())?;
+
+        Ok((t.get("mode")?, t.get("blocking")?))
+    }
+
     /// Binding to `vim.api.nvim_set_hl`
     ///
     /// Sets a highlight group

@@ -1,7 +1,6 @@
-use mlua::Lua;
 use neovim::Api;
 
-use super::utils;
+use super::{utils, WindowPosition};
 
 // #[derive(Debug)]
 // pub enum MenuPosition {
@@ -13,13 +12,11 @@ use super::utils;
 // }
 
 /// TODO: docs
-pub fn create_floatwin(
-    lua: &Lua,
+pub fn get_winpos(
     api: &Api,
-    bufnr: usize,
     width: usize,
     height: usize,
-) -> super::Result<(usize, (usize, usize))> {
+) -> super::Result<WindowPosition> {
     // If the current window is narrower than the desired width of the
     // completion menu we just give up.
     let window_width = api.win_get_width(0)?;
@@ -54,19 +51,10 @@ pub fn create_floatwin(
         return Err(super::Error::WinTooShort);
     };
 
-    let opts = lua.create_table_with_capacity(0, 8)?;
-    opts.set("relative", "cursor")?;
-    opts.set("width", width)?;
-    opts.set("height", height)?;
-    opts.set("row", row)?;
-    opts.set("col", col)?;
-    opts.set("focusable", false)?;
-    opts.set("style", "minimal")?;
-    opts.set("noautocmd", true)?;
-
-    let winid = api.open_win(bufnr, false, opts)?;
-    api.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
-    api.win_set_option(winid, "scrolloff", 0)?;
-
-    Ok((winid, (width, height)))
+    Ok(WindowPosition {
+        width,
+        height,
+        row,
+        col,
+    })
 }

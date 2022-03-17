@@ -37,4 +37,20 @@ impl<'a> Api<'a> {
             .get::<&str, Function>("nvim_win_get_config")?
             .call::<_, Table>(winid)?)
     }
+
+    /// Binding to `vim.api.nvim_win_set_config`.
+    ///
+    /// Configures window layout. Currently only for floating and external
+    /// windows (including changing a split window to those layouts).
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`   Window handle, or 0 for current buffer.
+    /// * `config`  Map defining the window configuration. See `:h nvim_open_win` for details.
+    pub fn win_set_config(&self, winid: usize, config: Table) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_set_config")?
+            .call::<_, ()>((winid, config))?)
+    }
 }

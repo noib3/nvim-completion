@@ -45,6 +45,14 @@ pub enum LogLevel {
 
 impl<'a> Neovim<'a> {
     /// TODO: docs
+    pub fn inspect(&self, t: Table) -> Result<String> {
+        self.vim
+            .get::<&str, Table>("inspect")?
+            .get::<&str, Function>("inspect")?
+            .call::<_, String>(t)
+    }
+
+    /// TODO: docs
     pub fn notify<S: AsRef<str>>(
         &self,
         msg: S,
@@ -59,9 +67,16 @@ impl<'a> Neovim<'a> {
     }
 
     /// TODO: docs
-    pub fn print<S: AsRef<str>>(&self, msg: S) -> Result<()> {
+    pub fn print<S: std::fmt::Debug>(&self, msg: S) -> Result<()> {
         self._g
             .get::<&str, Function>("print")?
-            .call::<_, ()>(msg.as_ref())
+            .call::<_, ()>(format!("{:?}", msg))
+    }
+
+    /// TODO: docs
+    pub fn schedule(&self, callback: Function) -> Result<()> {
+        self.vim
+            .get::<&str, Function>("schedule")?
+            .call::<_, ()>(callback)
     }
 }

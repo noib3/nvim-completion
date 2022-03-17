@@ -1,9 +1,12 @@
 use std::ops::Range;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompletionItem {
     /// TODO: docs
     pub details: Option<Vec<String>>,
+
+    /// TODO: refactor
+    pub matched_prefix_len: usize,
 
     /// A vector of ranges representing indices of bytes of the `text` field
     /// that are matched by the current completion prefix.
@@ -18,13 +21,14 @@ impl CompletionItem {
     pub fn new(
         text: String,
         details: Option<String>,
-        matched_prefix: &str,
+        matched_prefix_len: usize,
     ) -> Self {
         CompletionItem {
             details: details.map(|lines| {
                 lines.lines().map(|line| line.into()).collect::<Vec<_>>()
             }),
-            matched_byte_ranges: vec![(0..matched_prefix.len())],
+            matched_prefix_len,
+            matched_byte_ranges: vec![(0..matched_prefix_len)],
             text,
         }
     }

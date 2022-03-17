@@ -3,6 +3,17 @@ use neovim::Api;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug, Clone)]
+pub struct WindowPosition {
+    pub width: usize,
+
+    pub height: usize,
+
+    pub row: isize,
+
+    pub col: isize,
+}
+
 /// TODO: docs
 pub enum Error {
     /// TODO: docs
@@ -30,18 +41,18 @@ pub fn is_there_space_after(
     width: usize,
 ) -> mlua::Result<(bool, usize)> {
     let window_width = api.win_get_width(0)?;
-    let screen_col = api.call_function::<u8, usize>("wincol", &[])?;
+    let screen_col = api.call_function::<u8, usize>("wincol", Vec::new())?;
 
     Ok((
-        width <= window_width - screen_col + 1,
-        window_width - screen_col + 1,
+        width <= window_width - screen_col,
+        window_width - screen_col,
     ))
 }
 
 /// Checks if there is enough vertical space *above* the current cursor
 /// position to display a floating window with a specific height.
 pub fn is_there_space_above(api: &Api, height: usize) -> mlua::Result<bool> {
-    let screen_line = api.call_function::<u8, usize>("winline", &[])?;
+    let screen_line = api.call_function::<u8, usize>("winline", Vec::new())?;
 
     Ok(height <= screen_line - 1)
 }
@@ -50,7 +61,7 @@ pub fn is_there_space_above(api: &Api, height: usize) -> mlua::Result<bool> {
 /// position to display a floating window with a specific height.
 pub fn is_there_space_below(api: &Api, height: usize) -> mlua::Result<bool> {
     let window_height = api.win_get_height(0)?;
-    let screen_line = api.call_function::<u8, usize>("winline", &[])?;
+    let screen_line = api.call_function::<u8, usize>("winline", Vec::new())?;
 
     Ok(height <= window_height - screen_line)
 }

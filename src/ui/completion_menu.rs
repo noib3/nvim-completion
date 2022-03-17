@@ -4,14 +4,14 @@ use std::cmp;
 
 use neovim::{Api, Neovim};
 
-use super::positioning::{self, Error};
+use super::positioning::{self, WindowPosition};
 use crate::completion::CompletionItem;
 
 #[derive(Debug)]
 pub struct CompletionMenu {
     /// The handle of the buffer used to show the completion items. It is set
     /// once on initialization and never changes.
-    bufnr: usize,
+    pub bufnr: usize,
 
     /// TODO: docs
     visible_range: Option<Range<usize>>,
@@ -19,10 +19,11 @@ pub struct CompletionMenu {
     /// A namespace id used to handle the highlighting of characters matching
     /// the current completion prefix. It is set once on initialization and
     /// never changed.
-    matched_chars_nsid: usize,
+    pub matched_chars_nsid: usize,
 
+    // TODO: this should belong w/ winid. They are Some and None together.
     /// TODO: docs
-    pub dimensions: Option<(usize, usize)>,
+    pub position: Option<WindowPosition>,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected. If `Some` it ranges from 0 to
@@ -46,7 +47,7 @@ impl CompletionMenu {
             visible_range: None,
             matched_chars_nsid: api
                 .create_namespace("CompleetMatchedChars")?,
-            dimensions: None,
+            position: None,
             selected_completion: None,
             selected_completion_nsid: api
                 .create_namespace("CompleetSelectedItem")?,
@@ -73,13 +74,14 @@ impl CompletionMenu {
             api.win_hide(winid)?;
             self.winid = None;
         }
+
         // TODO: for now we reset the selected completion to `None` every time
         // the completion menu is hidden. We might want not to do this if we
         // can manage to differentiate a `move completion window` from a `close
         // completion window` commands.
-        self.dimensions = None;
         self.selected_completion = None;
         self.visible_range = None;
+        self.position = None;
         Ok(())
     }
 
@@ -141,56 +143,27 @@ impl CompletionMenu {
         Ok(())
     }
 
-    // TODO: refactor
+    // TODO: rename
     /// TODO: docs
     pub fn show_completions(
         &mut self,
-        lua: &Lua,
         api: &Api,
         completions: &[CompletionItem],
         max_height: Option<usize>,
-    ) -> Result<()> {
+    ) -> Result<Option<WindowPosition>> {
         let max_width = completions
             .iter()
-            // TODO: Should use len of grapheme clusters, not bytes.
+            // TODO: Use length of grapheme clusters, not bytes.
             .map(|item| item.text.len())
             .max()
-            .unwrap_or(0);
+            .expect("There's at least one completion");
+
+        let width = max_width + 2;
 
         let height = match max_height {
             None => completions.len(),
             Some(height) => cmp::min(height, completions.len()),
         };
-
-        let width = max_width + 2;
-
-        // Creating the completion menu might fail if the current window is not
-        // big enough (either vertically, horizontally, or both) to contain it.
-        match positioning::menu::create_floatwin(
-            lua, api, self.bufnr, width, height,
-        ) {
-            Ok((winid, dimensions)) => {
-                self.winid = Some(winid);
-                self.dimensions = Some(dimensions);
-            },
-
-            Err(err) => match err {
-                Error::Lua(e) => return Err(e),
-
-                // TODO: this should return err bc if we couldn't draw the menu
-                // then we shouldn't try to draw the details.
-
-                // We don't really care why it failed, we just return early.
-                _ => return Ok(()),
-            },
-        }
-
-        let lines = completions
-            .iter()
-            .map(|item| item.format(max_width))
-            .collect::<Vec<String>>();
-
-        api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
         // We only track the visible range if we have some constraints on
         // `max_height`, which we'll need to consider when scrolling through
@@ -202,36 +175,23 @@ impl CompletionMenu {
             });
         }
 
-        // TODO: make this into its own method.
-        //
-        // TODO: look into `:h nvim_set_decoration_provider` + `ephemeral`
-        // option. What do they do? This seems to work fine w/o them but
-        // nvim-cmp uses them.
-        //
-        let opts = lua.create_table_with_capacity(0, 4)?;
-        opts.set("hl_group", "CompleetMenuMatchingChars")?;
-        for (row, completion) in completions.iter().enumerate() {
-            for byte_range in &completion.matched_byte_ranges {
-                // The `+1` to the byte range start and end is needed because
-                // of the space prepended to every completion item by
-                // `CompletionItem::format`.
-                let _opts = opts.clone();
-                // TODO: the id has to be unique not only for every line but
-                // also for every range. Find a way to combine the two.
-                _opts.set("id", row + 1)?;
-                _opts.set("end_row", row)?;
-                _opts.set("end_col", byte_range.end + 1)?;
-                api.buf_set_extmark(
-                    self.bufnr,
-                    self.matched_chars_nsid,
-                    row,
-                    byte_range.start + 1,
-                    _opts,
-                )?;
-            }
-        }
+        // Getting the completion position might fail if the current window is
+        // not big enough (either vertically, horizontally, or both) to contain
+        // it.
+        let position = match positioning::menu::get_winpos(api, width, height)
+        {
+            Ok(position) => position,
 
-        Ok(())
+            Err(err) => match err {
+                positioning::Error::Lua(e) => return Err(e),
+                _ => return Ok(None),
+            },
+        };
+
+        // TODO: get rid of this.
+        self.position = Some(position.clone());
+
+        Ok(Some(position))
     }
 }
 
@@ -269,4 +229,72 @@ fn put_row_at_top(
     })?;
 
     api.buf_call(bufnr, fun)
+}
+
+/// Creates the floating window for the completion menu, returning its window
+/// id.
+pub fn create_floatwin(
+    lua: &Lua,
+    api: &Api,
+    bufnr: usize,
+    position: &WindowPosition,
+) -> Result<usize> {
+    let opts = lua.create_table_with_capacity(0, 8)?;
+    opts.set("relative", "cursor")?;
+    opts.set("width", position.width)?;
+    opts.set("height", position.height)?;
+    opts.set("row", position.row)?;
+    opts.set("col", position.col)?;
+    opts.set("focusable", false)?;
+    opts.set("style", "minimal")?;
+    opts.set("noautocmd", true)?;
+
+    let winid = api.open_win(bufnr, false, opts)?;
+    api.win_set_option(winid, "winhl", "Normal:CompleetMenu")?;
+    api.win_set_option(winid, "scrolloff", 0)?;
+
+    Ok(winid)
+}
+
+pub fn fill_buffer(
+    lua: &Lua,
+    api: &Api,
+    bufnr: usize,
+    max_width: usize,
+    nsid: usize,
+    completions: &[CompletionItem],
+) -> Result<()> {
+    let lines = completions
+        .iter()
+        .map(|item| item.format(max_width))
+        .collect::<Vec<String>>();
+
+    api.buf_set_lines(bufnr, 0, -1, false, &lines)?;
+
+    // Finally, highlight the matched characters of every completion result.
+    let opts = lua.create_table_with_capacity(0, 4)?;
+    opts.set("hl_group", "CompleetMenuMatchingChars")?;
+
+    for (row, completion) in completions.iter().enumerate() {
+        for byte_range in &completion.matched_byte_ranges {
+            // The `+1` to the byte range start and end is needed
+            // because of the space prepended to every completion item
+            // by `CompletionItem::format`.
+            let _opts = opts.clone();
+            // TODO: the id has to be unique not only for every line
+            // but also for every range. Find a way to combine the two.
+            _opts.set("id", row + 1)?;
+            _opts.set("end_row", row)?;
+            _opts.set("end_col", byte_range.end + 1)?;
+            api.buf_set_extmark(
+                bufnr,
+                nsid,
+                row,
+                byte_range.start + 1,
+                _opts,
+            )?;
+        }
+    }
+
+    Ok(())
 }

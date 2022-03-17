@@ -8,11 +8,13 @@ use crate::state::State;
 pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
     let api = Neovim::new(lua)?.api;
 
-    state.line.update_bytes_before_cursor(&api)?;
-    state.line.update_text(&api)?;
-    state.line.update_matched_prefix()?;
+    let buffer = &mut state.buffer;
+    let completions = &mut state.completions;
 
-    state.completions = completion::complete(&state.line.matched_prefix);
+    buffer.get_bytes_before_cursor(&api)?;
+    buffer.get_text(&api)?;
 
-    Ok(!state.completions.is_empty())
+    *completions = completion::complete(&buffer.line, buffer.at_bytes);
+
+    Ok(!completions.is_empty())
 }

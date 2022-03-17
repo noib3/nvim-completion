@@ -1,7 +1,7 @@
 use mlua::Lua;
 use neovim::Api;
 
-use super::utils;
+use super::{utils, WindowPosition};
 
 // #[derive(Debug)]
 // pub enum DetailsPosition {
@@ -18,9 +18,9 @@ pub fn create_floatwin(
     width: usize,
     height: usize,
     menu_winid: usize,
-    menu_dimensions: (usize, usize), // (width, height)
+    menu_position: &WindowPosition, // (width, height)
 ) -> super::Result<usize> {
-    let menu_width = menu_dimensions.0;
+    let menu_width = menu_position.width;
 
     // Horizontal policy.
     //
@@ -29,7 +29,7 @@ pub fn create_floatwin(
     // that also fails we give up and return an error.
     let (col, anchor) =
         if utils::is_there_space_after_window(api, menu_winid, menu_width)? {
-            (menu_dimensions.0, "NW")
+            (menu_width, "NW")
         } else if utils::is_there_space_before_window(
             api, menu_winid, menu_width,
         )? {

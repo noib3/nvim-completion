@@ -1,7 +1,7 @@
 use mlua::Result;
 use neovim::Neovim;
 
-use crate::completion::{CompletionItem, Line};
+use crate::completion::{Buffer, CompletionItem};
 use crate::settings::Settings;
 use crate::ui::UI;
 
@@ -14,8 +14,8 @@ pub struct State {
     /// `completion::algo::complete`.
     pub completions: Vec<CompletionItem>,
 
-    /// Holds state about values used to compute the completion candidates.
-    pub line: Line,
+    /// Holds state about the current buffer.
+    pub buffer: Buffer,
 
     /// Used to store the current configuration.
     pub settings: Settings,
@@ -29,7 +29,7 @@ impl State {
         Ok(State {
             augroup_id: None,
             completions: Vec::new(),
-            line: Line::new(),
+            buffer: Buffer::new(),
             settings: Settings::default(),
             ui: UI::new(nvim)?,
         })

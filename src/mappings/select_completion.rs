@@ -55,13 +55,14 @@ pub fn select_completion(
             let completion = &completions[index];
 
             // Update the completion hint.
-            if state.settings.show_hints && state.line.cursor_is_at_eol() {
+            if state.settings.show_hints && state.buffer.cursor_is_at_eol() {
                 hint.set(
                     lua,
                     &api,
                     index,
-                    state.line.bytes_before_cursor,
-                    &completion.text[state.line.matched_prefix.len()..],
+                    state.buffer.row,
+                    state.buffer.at_bytes,
+                    &completion.text[completion.matched_prefix_len..],
                 )?;
             }
 
@@ -74,7 +75,8 @@ pub fn select_completion(
                     lines,
                     menu.winid
                         .expect("The menu is visible so it has a window id"),
-                    menu.dimensions
+                    menu.position
+                        .as_ref()
                         .expect("The menu is visible so it has a position"),
                 )?,
             }
