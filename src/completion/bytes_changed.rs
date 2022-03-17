@@ -93,28 +93,3 @@ fn get_current_line(api: &Api, current_row: usize) -> Result<String> {
 
     Ok(current_line)
 }
-
-// fn get_current_row(
-//     start_row: usize,
-//     rows_deleted: usize,
-//     rows_added: usize,
-// ) -> usize {
-//     start_row + if rows_deleted != 0 { 0 } else { rows_added }
-// }
-
-// fn get_bytes_before_cursor(
-//     current_line: &str,
-//     start_col: usize,
-//     rows_deleted: usize,
-//     bytes_deleted: usize,
-//     rows_added: usize,
-//     bytes_added: usize,
-// ) -> usize {
-//     if rows_deleted != 0 {
-//         current_line.len()
-//     } else if rows_added != 0 {
-//         0
-//     } else {
-//         start_col + if bytes_deleted != 0 { 0 } else { bytes_added }
-//     }
-// }

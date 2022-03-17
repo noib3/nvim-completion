@@ -19,16 +19,6 @@ pub fn setup(
         super::update_ui(lua, &mut _state.lock().unwrap())
     })?;
 
-    // let _state = state.clone();
-    // let maybe_show_hint = lua.create_function(move |lua, ()| {
-    //     super::maybe_show_hint(lua, &mut _state.lock().unwrap())
-    // })?;
-
-    // let _state = state.clone();
-    // let text_changed = lua.create_function(move |lua, ()| {
-    //     super::text_changed(lua, &mut _state.lock().unwrap())
-    // })?;
-
     let _state = state.clone();
     let try_buf_attach = lua
         .create_function(move |lua, ()| super::try_buf_attach(lua, &_state))?;
@@ -43,12 +33,6 @@ pub fn setup(
 
     opts.set("callback", maybe_show_completions)?;
     api.create_autocmd(&["CursorMovedI"], opts.clone())?;
-
-    // opts.set("callback", maybe_show_hint)?;
-    // api.create_autocmd(&["CursorMovedI"], opts.clone())?;
-
-    // opts.set("callback", text_changed)?;
-    // api.create_autocmd(&["TextChangedI"], opts.clone())?;
 
     opts.set("callback", try_buf_attach)?;
     api.create_autocmd(&["BufEnter"], opts.clone())?;
