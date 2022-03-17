@@ -10,17 +10,17 @@ pub fn insert_completion(
     state: &mut State,
     selected_index: usize,
 ) -> Result<()> {
-    let buffer = &state.buffer;
     let selected_completion = &state.completions[selected_index];
+    let buffer = &state.buffer;
 
-    let new_column = buffer.at_bytes + selected_completion.text.len()
-        - selected_completion.matched_prefix_len;
-
-    let replacement = get_completion(
+    let text_to_insert = get_text_to_insert(
         selected_completion.matched_prefix_len,
         &buffer.line[buffer.at_bytes..],
         &selected_completion.text,
     );
+
+    let end_column = buffer.at_bytes - selected_completion.matched_prefix_len
+        + selected_completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
     // triggers `completion::bytes_changed`, which causes the Mutex wrapping
@@ -36,7 +36,7 @@ pub fn insert_completion(
         move |lua, (row, col, text): (usize, usize, String)| {
             let api = Neovim::new(lua)?.api;
             api.buf_set_text(0, row, col, row, col, &[text])?;
-            api.win_set_cursor(0, row + 1, new_column)?;
+            api.win_set_cursor(0, row + 1, end_column)?;
             Ok(())
         },
     )?;
@@ -46,16 +46,17 @@ pub fn insert_completion(
     nvim.schedule(insert_completion.bind((
         buffer.row,
         buffer.at_bytes,
-        replacement.to_string(),
+        text_to_insert.to_string(),
     ))?)?;
-
-    state.completions.clear();
 
     Ok(())
 }
 
-/// TODO: comment
-fn get_completion<'a>(
+/// Returns the text that should be inserted into the buffer, taking into
+/// account what comes after the cursor. For example, if we have `f|o` and
+/// we're completing `foo` we only need to insert one `o`, since another one is
+/// already present in the buffer.
+fn get_text_to_insert<'a>(
     matched_prefix_len: usize,
     line_after_cursor: &'a str,
     completion: &'a str,
@@ -99,7 +100,7 @@ fn get_completion<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::get_completion;
+    use super::get_text_to_insert;
 
     // NOTE: the `|` in the following comments indicates the cursor position.
 
@@ -110,7 +111,7 @@ mod tests {
     // Inserted: `bar`
     // Result: `foobar`
     fn foo1() {
-        assert_eq!("bar", get_completion("foo".len(), "", "foobar"));
+        assert_eq!("bar", get_text_to_insert("foo".len(), "", "foobar"));
     }
 
     #[test]
@@ -120,7 +121,7 @@ mod tests {
     // Inserted: `bar`
     // Result: `foobarbaz`
     fn foo2() {
-        assert_eq!("bar", get_completion("foo".len(), "baz", "foobar"));
+        assert_eq!("bar", get_text_to_insert("foo".len(), "baz", "foobar"));
     }
 
     #[test]
@@ -130,7 +131,7 @@ mod tests {
     // Inserted: `b`
     // Result: `foobar`
     fn foo3() {
-        assert_eq!("b", get_completion("foo".len(), "ar", "foobar"));
+        assert_eq!("b", get_text_to_insert("foo".len(), "ar", "foobar"));
     }
 
     #[test]
@@ -140,7 +141,7 @@ mod tests {
     // Inserted: `b`
     // Result: `fööbár`
     fn foo4() {
-        assert_eq!("b", get_completion("föö".len(), "ár", "fööbár"));
+        assert_eq!("b", get_text_to_insert("föö".len(), "ár", "fööbár"));
     }
 
     #[test]
@@ -150,7 +151,7 @@ mod tests {
     // Inserted: `b`
     // Result: `foobarbaz`
     fn foo5() {
-        assert_eq!("b", get_completion("foo".len(), "arbaz", "foobar"));
+        assert_eq!("b", get_text_to_insert("foo".len(), "arbaz", "foobar"));
     }
 
     #[test]
@@ -160,7 +161,7 @@ mod tests {
     // Inserted: ``
     // Result: `foobar`
     fn foo6() {
-        assert_eq!("", get_completion("foo".len(), "bar", "foobar"));
+        assert_eq!("", get_text_to_insert("foo".len(), "bar", "foobar"));
     }
 
     #[test]
@@ -170,7 +171,7 @@ mod tests {
     // Inserted: `ba`
     // Result: `foobar`
     fn foo7() {
-        assert_eq!("ba", get_completion("foo".len(), "r", "foobar"));
+        assert_eq!("ba", get_text_to_insert("foo".len(), "r", "foobar"));
     }
 
     #[test]
@@ -180,7 +181,7 @@ mod tests {
     // Inserted: `oob`
     // Result: `foobar`
     fn foo8() {
-        assert_eq!("oob", get_completion("f".len(), "ar", "foobar"));
+        assert_eq!("oob", get_text_to_insert("f".len(), "ar", "foobar"));
     }
 
     #[test]
@@ -190,7 +191,7 @@ mod tests {
     // Inserted: `ooba`
     // Result: `foobar`
     fn foo9() {
-        assert_eq!("ooba", get_completion("f".len(), "r", "foobar"));
+        assert_eq!("ooba", get_text_to_insert("f".len(), "r", "foobar"));
     }
 
     #[test]
@@ -200,6 +201,6 @@ mod tests {
     // Inserted: `ooba`
     // Result: `foobarbaz`
     fn foo10() {
-        assert_eq!("ooba", get_completion("f".len(), "rbaz", "foobar"));
+        assert_eq!("ooba", get_text_to_insert("f".len(), "rbaz", "foobar"));
     }
 }

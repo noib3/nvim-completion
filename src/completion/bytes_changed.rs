@@ -27,7 +27,7 @@ pub fn bytes_changed(
     // If we've added a new line, deleted one or stayed in the same line but
     // deleted characters we don't do anything. We only do something when new
     // characters are added to the current line.
-    if rows_deleted != 0 || rows_added != 0 || bytes_deleted != 0 {
+    if rows_added != 0 || rows_deleted != 0 || bytes_deleted != 0 {
         return Ok(());
     }
 

@@ -1,5 +1,8 @@
 use super::CompletionItem;
 
+/// This is the main function responsible for the autocompletion. Given the
+/// current line and the cursor position as the number of bytes before the
+/// cursor, it generates a vector of completion results.
 pub fn complete(
     line: &str,
     bytes_before_cursor: usize,
@@ -51,8 +54,6 @@ fn get_matched_prefix(line: &str, bytes_before_cursor: usize) -> usize {
         .rev()
         .take_while(|&byte| !byte.is_ascii_whitespace())
         .count()
-
-    // &line[(bytes_before_cursor - bytes_to_take)..bytes_before_cursor]
 }
 
 #[cfg(test)]

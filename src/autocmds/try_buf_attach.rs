@@ -5,18 +5,19 @@ use std::sync::{Arc, Mutex};
 use crate::completion;
 use crate::state::State;
 
-pub fn maybe_attach(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
+/// Executed on every `BufEnter` event.
+pub fn try_buf_attach(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
     let nvim = Neovim::new(lua)?;
 
     // If the buffer has the `modifiable` option turned off we don't attach.
-    // This catches a large number of buffers we'd like to ignore like: netwr,
-    // startify, terminal buffers, help buffers, etc.
+    // This should catch a large number of buffers we'd like to ignore like
+    // netwr, startify, terminal buffers, help buffers, etc.
     if !nvim.api.buf_get_option::<bool>(0, "modifiable")? {
         return Ok(());
     }
 
     let _state = state.clone();
-    let bytes_changed = lua.create_function_mut(
+    let bytes_changed = lua.create_function(
         move |lua,
               (
             _,
@@ -25,12 +26,12 @@ pub fn maybe_attach(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
             start_row,
             start_col,
             _,
-            old_end_row,
+            rows_deleted,
             _,
-            old_end_bytelen,
-            new_end_row,
+            bytes_deleted,
+            rows_added,
             _,
-            new_end_bytelen,
+            bytes_added,
         ): (
             String,
             usize,
@@ -50,10 +51,10 @@ pub fn maybe_attach(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
                 &mut _state.lock().unwrap(),
                 start_row,
                 start_col,
-                old_end_row,
-                old_end_bytelen,
-                new_end_row,
-                new_end_bytelen,
+                rows_deleted,
+                bytes_deleted,
+                rows_added,
+                bytes_added,
             )
         },
     )?;

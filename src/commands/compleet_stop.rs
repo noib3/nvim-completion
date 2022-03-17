@@ -4,6 +4,7 @@ use neovim::{LogLevel, Neovim};
 use crate::autocmds;
 use crate::State;
 
+// TODO: detach from every buffer we've attached to.
 /// Executed by the `CompleetStop` user command.
 pub fn compleet_stop(lua: &Lua, state: &mut State) -> Result<()> {
     let nvim = Neovim::new(lua)?;

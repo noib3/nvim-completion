@@ -3,6 +3,8 @@ use neovim::Neovim;
 
 use crate::ui::UI;
 
+// refactor: make it a method on UI?
+
 /// Executed on every `InsertLeft` event.
 pub fn cleanup_ui(lua: &Lua, ui: &mut UI) -> Result<()> {
     let api = &Neovim::new(lua)?.api;

@@ -6,6 +6,12 @@ use crate::state::State;
 
 /// Executed by the `require("compleet").has_completions` Lua function.
 pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
+    // If the augroup id is `None` that means the user has turned off the
+    // plugin with `:CompleetStop`.
+    if state.augroup_id.is_none() {
+        return Ok(false);
+    }
+
     let api = Neovim::new(lua)?.api;
 
     let buffer = &mut state.buffer;

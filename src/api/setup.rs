@@ -69,7 +69,7 @@ pub fn setup(
     // Used for debugging.
     // nvim.print(format!("{:?}", &_state.settings))?;
 
-    // TODO: explain
+    // Save the `id` of the `Compleet` augroup.
     _state.augroup_id = Some(autocmds::setup(lua, api, state)?);
 
     commands::setup(lua, api, state)?;

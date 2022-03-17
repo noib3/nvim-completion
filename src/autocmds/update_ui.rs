@@ -5,8 +5,9 @@ use crate::autocmds;
 use crate::state::State;
 use crate::ui::{completion_menu, positioning::WindowPosition};
 
+// refactor
 /// Executed on every `CursorMovedI` event.
-pub fn maybe_show_completions(lua: &Lua, state: &mut State) -> Result<()> {
+pub fn update_ui(lua: &Lua, state: &mut State) -> Result<()> {
     let ui = &mut state.ui;
 
     // TODO: refactor, menu_position = None != no drawing instructions.
@@ -47,14 +48,12 @@ pub fn maybe_show_completions(lua: &Lua, state: &mut State) -> Result<()> {
         )?);
     }
 
-    // TODO: that -2 is ugly.
     // Next, we fill the completion menu's buffer with the completion results
     // and highlight the matched characters of every completion result.
     completion_menu::fill_buffer(
         lua,
         &api,
         menu.bufnr,
-        menu_position.width - 2,
         menu.matched_chars_nsid,
         completions,
     )?;
@@ -79,6 +78,7 @@ pub fn maybe_show_completions(lua: &Lua, state: &mut State) -> Result<()> {
     Ok(())
 }
 
+// refactor: move to ui module
 /// Moves a floating window to a new position.
 fn move_floatwin(
     lua: &Lua,

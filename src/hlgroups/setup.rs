@@ -1,6 +1,8 @@
 use mlua::{Lua, Result};
 use neovim::Api;
 
+/// Creates our highlight groups, linking them to other default groups. This
+/// can be used by colorscheme plugin authors to style the UI.
 pub fn setup(lua: &Lua, api: &Api) -> Result<()> {
     // `CompleetMenu`
     // Used to highlight the completion menu.

@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use crate::api;
 use crate::state::State;
 
+/// Creates some default insert mode mappings for `<Tab>`, `<S-Tab>` and
+/// `<CR>`.
 pub fn enable_default(
     lua: &Lua,
     keymap: &Keymap,

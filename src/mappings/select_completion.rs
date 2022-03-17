@@ -41,11 +41,11 @@ pub fn select_completion(
     let api = Neovim::new(lua)?.api;
 
     // Update the completion menu.
-    menu.select_completion(lua, &api, new_selected_index)?;
+    menu.select_completion(&api, new_selected_index)?;
 
     match new_selected_index {
-        // No selected completion -> clear the completion hint and close the
-        // details window.
+        // No new selected completion -> clear the completion hint and close
+        // the details window.
         None => {
             hint.erase(&api)?;
             details.hide(&api)?;

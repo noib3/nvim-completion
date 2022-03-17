@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::autocmds;
 use crate::State;
 
+// TODO: try to attach to the current buffer.
 /// Executed by the `CompleetStart` user command.
 pub fn compleet_start(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
     let nvim = Neovim::new(lua)?;

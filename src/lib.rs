@@ -14,29 +14,25 @@ mod ui;
 
 use state::State;
 
+// TODOs: On Hold
+//
+// 1. Show scroll indicator if number of completions is bigger than the
+//    completion menu's max height. This needs floating windows to support
+//    scrollbars. See `:h api-floatwin`.
+
+// TODOs
+//
+// 1. Make the core logic as neovim-agnostic as possible.
+//
+// 2. Right now everything is sync and we're blocking on every single event
+//    we listen to. This will be a problem when we start dealing with
+//    possibly thousands of completion results from LSPs.
+//
+// Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
+// vim.loop` and `:h lua-loop-threading`.
+
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    // TODOs: On Hold
-    //
-    // 1. Show scroll indicator if number of completions is bigger than the
-    //    completion menu's max height. This needs floating windows to support
-    //    scrollbars. See `:h api-floatwin`.
-
-    // TODOs
-
-    // 1. We're querying the cursor position and the entire line the cursor is
-    //    on on every single `CursorMovedI` and `TextChangedI` event. Is there
-    //    a way not to? Also look into `nvim_buf_attach`.
-
-    // 2. Make the core logic as neovim-agnostic as possible.
-
-    // 3. Right now everything is sync and we're blocking on every single event
-    //    we listen to. This will be a problem when we start dealing with
-    //    possibly thousands of completion results from LSPs.
-    //
-    // Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
-    // vim.loop` and `:h lua-loop-threading`.
-
     let nvim = Neovim::new(lua)?;
     let state = Arc::new(Mutex::new(State::new(&nvim)?));
 

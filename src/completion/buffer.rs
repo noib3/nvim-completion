@@ -1,6 +1,7 @@
 use mlua::Result;
 use neovim::Api;
 
+// Refactor: rename to `Cursor`?
 #[derive(Debug)]
 pub struct Buffer {
     /// The row the cursor is currently on.

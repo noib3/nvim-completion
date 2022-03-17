@@ -16,7 +16,7 @@ pub fn setup(
 
     let _state = state.clone();
     let maybe_show_completions = lua.create_function(move |lua, ()| {
-        super::maybe_show_completions(lua, &mut _state.lock().unwrap())
+        super::update_ui(lua, &mut _state.lock().unwrap())
     })?;
 
     // let _state = state.clone();
@@ -30,8 +30,8 @@ pub fn setup(
     // })?;
 
     let _state = state.clone();
-    let maybe_attach =
-        lua.create_function(move |lua, ()| super::maybe_attach(lua, &_state))?;
+    let try_buf_attach = lua
+        .create_function(move |lua, ()| super::try_buf_attach(lua, &_state))?;
 
     let opts = lua.create_table_from([("clear", true)])?;
     let augroup_id = api.create_augroup("Compleet", opts)?;
@@ -50,7 +50,7 @@ pub fn setup(
     // opts.set("callback", text_changed)?;
     // api.create_autocmd(&["TextChangedI"], opts.clone())?;
 
-    opts.set("callback", maybe_attach)?;
+    opts.set("callback", try_buf_attach)?;
     api.create_autocmd(&["BufEnter"], opts.clone())?;
 
     Ok(augroup_id)

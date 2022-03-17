@@ -25,12 +25,10 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
                 lua, &api, menu.bufnr, pos,
             )?);
 
-            // TODO: that -2 is ugly.
             completion_menu::fill_buffer(
                 lua,
                 &api,
                 menu.bufnr,
-                pos.width - 2,
                 menu.matched_chars_nsid,
                 completions,
             )?;
