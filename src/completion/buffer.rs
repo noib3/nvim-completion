@@ -3,38 +3,38 @@ use neovim::Api;
 
 // Refactor: rename to `Cursor`?
 #[derive(Debug)]
-pub struct Buffer {
+pub struct Cursor {
     /// The row the cursor is currently on.
-    pub row: usize,
+    pub row: u32,
 
     /// Number of bytes before (i.e. left-of) the current cursor position.
-    pub at_bytes: usize,
+    pub bytes: u32,
 
     /// The text in the row the cursor is currently on.
     pub line: String,
 }
 
-impl Buffer {
+impl Cursor {
     pub fn new() -> Self {
-        Buffer {
+        Cursor {
             row: 0,
-            at_bytes: 0,
+            bytes: 0,
             line: "".to_string(),
         }
     }
 }
 
-impl Buffer {
-    pub fn cursor_is_at_eol(&self) -> bool {
-        self.at_bytes == self.line.len()
+impl Cursor {
+    pub fn is_at_eol(&self) -> bool {
+        self.bytes as usize == self.line.len()
     }
 
-    pub fn get_bytes_before_cursor(&mut self, api: &Api) -> Result<()> {
-        self.at_bytes = api.win_get_cursor(0)?.1;
+    pub fn update_bytes(&mut self, api: &Api) -> Result<()> {
+        self.bytes = api.win_get_cursor(0)?.1;
         Ok(())
     }
 
-    pub fn get_text(&mut self, api: &Api) -> Result<()> {
+    pub fn update_line(&mut self, api: &Api) -> Result<()> {
         self.line = api.get_current_line()?;
         Ok(())
     }

@@ -3,6 +3,21 @@ use mlua::{Function, Result, Table, ToLua};
 use super::Api;
 
 impl<'a> Api<'a> {
+    /// Binding to `vim.api.nvim_win_close`.
+    ///
+    /// Closes the window.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window.
+    /// * `force`  Whether to behave like `:close!`.
+    pub fn win_close(&self, winid: u32, force: bool) -> Result<()> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_close")?
+            .call((winid, force))?)
+    }
+
     /// Binding to `vim.api.nvim_win_get_cursor`
     ///
     /// Returns the (1,0)-indexed cursor position as a tuple.
@@ -10,7 +25,7 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `winid`  Window handle, or 0 for current window.
-    pub fn win_get_cursor(&self, winid: usize) -> Result<(usize, usize)> {
+    pub fn win_get_cursor(&self, winid: u32) -> Result<(u32, u32)> {
         let position = self
             .0
             .get::<&str, Function>("nvim_win_get_cursor")?
@@ -26,11 +41,11 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `winid`  Window handle, or 0 for current window.
-    pub fn win_get_width(&self, winid: usize) -> Result<usize> {
+    pub fn win_get_width(&self, winid: u32) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_get_width")?
-            .call::<_, usize>(winid)?)
+            .call(winid)?)
     }
 
     /// Binding to `vim.api.nvim_win_get_width`
@@ -40,11 +55,11 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `winid`  Window handle, or 0 for current window.
-    pub fn win_get_height(&self, winid: usize) -> Result<usize> {
+    pub fn win_get_height(&self, winid: u32) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_get_height")?
-            .call::<_, usize>(winid)?)
+            .call(winid)?)
     }
 
     /// Binding to `vim.api.nvim_win_hide`.
@@ -54,11 +69,8 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `winid`  Window handle, or 0 for current window.
-    pub fn win_hide(&self, winid: usize) -> Result<()> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_win_hide")?
-            .call::<_, ()>(winid)?)
+    pub fn win_hide(&self, winid: u32) -> Result<()> {
+        Ok(self.0.get::<&str, Function>("nvim_win_hide")?.call(winid)?)
     }
 
     /// Binding to `vim.api.nvim_win_set_cursor`
@@ -72,14 +84,14 @@ impl<'a> Api<'a> {
     /// * `col`    Column number (0-indexed).
     pub fn win_set_cursor(
         &self,
-        winid: usize,
-        row: usize,
-        col: usize,
+        winid: u32,
+        row: u32,
+        col: u32,
     ) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_set_cursor")?
-            .call::<_, ()>((winid, [row, col]))?)
+            .call((winid, [row, col]))?)
     }
 
     /// Binding to `vim.api.nvim_win_set_option`
@@ -94,13 +106,13 @@ impl<'a> Api<'a> {
     /// * `value`  Option value.
     pub fn win_set_option<V: ToLua<'a>>(
         &self,
-        winid: usize,
+        winid: u32,
         name: &str,
         value: V,
     ) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_set_option")?
-            .call::<_, ()>((winid, name, value))?)
+            .call((winid, name, value))?)
     }
 }

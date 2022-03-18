@@ -1,21 +1,21 @@
-use mlua::Result;
-use neovim::Neovim;
+use mlua::prelude::LuaResult;
+use neovim::Api;
 
-use crate::completion::{Buffer, CompletionItem};
+use crate::completion::{CompletionItem, Cursor};
 use crate::settings::Settings;
 use crate::ui::UI;
 
 #[derive(Debug)]
 pub struct State {
     /// TODO: docs
-    pub augroup_id: Option<usize>,
+    pub augroup_id: Option<u32>,
 
     /// The currently available completion items computed by
     /// `completion::algo::complete`.
     pub completions: Vec<CompletionItem>,
 
-    /// Holds state about the current buffer.
-    pub buffer: Buffer,
+    /// Holds state about the current cursor position.
+    pub cursor: Cursor,
 
     /// Used to store the current configuration.
     pub settings: Settings,
@@ -25,13 +25,13 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(nvim: &Neovim) -> Result<Self> {
+    pub fn new(api: &Api) -> LuaResult<Self> {
         Ok(State {
             augroup_id: None,
             completions: Vec::new(),
-            buffer: Buffer::new(),
+            cursor: Cursor::new(),
             settings: Settings::default(),
-            ui: UI::new(nvim)?,
+            ui: UI::new(api)?,
         })
     }
 }

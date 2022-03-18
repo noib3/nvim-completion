@@ -3,17 +3,17 @@ use neovim::Api;
 
 #[derive(Debug)]
 pub struct CompletionHint {
-    /// The Neovim namespace id associated to the completion hint.
-    ns_id: usize,
+    /// The namespace id associated to the completion hint.
+    nsid: u32,
 
-    /// TODO
+    /// The index of the completion currently being hinted.
     pub hinted_index: Option<usize>,
 }
 
 impl CompletionHint {
     pub fn new(api: &Api) -> Result<Self> {
         Ok(CompletionHint {
-            ns_id: api.create_namespace("compleet_completion_hint")?,
+            nsid: api.create_namespace("compleet_completion_hint")?,
             hinted_index: None,
         })
     }
@@ -21,13 +21,7 @@ impl CompletionHint {
 
 impl CompletionHint {
     pub fn erase(&mut self, api: &Api) -> Result<()> {
-        // nvim.buf_clear_namespace(0, self.ns_id, 0, -1)?;
-        api.buf_clear_namespace(
-            0,
-            isize::try_from(self.ns_id).unwrap_or(-1), // TODO: this is bad
-            0,
-            -1,
-        )?;
+        api.buf_clear_namespace(0, self.nsid.try_into().unwrap(), 0, -1)?;
         self.hinted_index = None;
         Ok(())
     }
@@ -40,17 +34,18 @@ impl CompletionHint {
         &mut self,
         lua: &Lua,
         api: &Api,
-        index: usize,
-        row: usize,
-        col: usize,
         hint: &str,
+        row: u32,
+        col: u32,
+        index: usize,
     ) -> Result<()> {
         let opts = lua.create_table_with_capacity(0, 3)?;
         opts.set("id", 1)?;
-        opts.set::<&str, &[&[&str]]>("virt_text", &[&[hint, "CompleetHint"]])?;
+        opts.set("virt_text", [[hint, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
-        api.buf_set_extmark(0, self.ns_id, row, col, opts)?;
+        api.buf_set_extmark(0, self.nsid, row, col, opts)?;
+
         self.hinted_index = Some(index);
 
         Ok(())

@@ -1,22 +1,24 @@
 use mlua::{Lua, Result};
-use neovim::Api;
+use neovim::{Api, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::state::State;
 
-pub fn setup(
-    lua: &Lua,
-    api: &Api,
-    state: &Arc<Mutex<State>>,
-) -> Result<usize> {
+pub fn setup(lua: &Lua, api: &Api, state: &Arc<Mutex<State>>) -> Result<u32> {
     let _state = state.clone();
-    let cleanup = lua.create_function(move |lua, ()| {
-        super::cleanup_ui(lua, &mut _state.lock().unwrap().ui)
+    let cleanup_ui = lua.create_function(move |lua, ()| {
+        let api = Neovim::new(&lua)?.api;
+        let ui = &mut _state.lock().unwrap().ui;
+        ui.cleanup(&api)
     })?;
 
     let _state = state.clone();
-    let maybe_show_completions = lua.create_function(move |lua, ()| {
-        super::update_ui(lua, &mut _state.lock().unwrap())
+    let update_ui = lua.create_function(move |lua, ()| {
+        let api = Neovim::new(&lua)?.api;
+        let state = &mut *_state.lock().unwrap();
+        state
+            .ui
+            .update(lua, &api, &state.cursor, &state.completions)
     })?;
 
     let _state = state.clone();
@@ -28,10 +30,10 @@ pub fn setup(
 
     let opts = lua.create_table_from([("group", augroup_id)])?;
 
-    opts.set("callback", cleanup)?;
+    opts.set("callback", cleanup_ui)?;
     api.create_autocmd(&["InsertLeave"], opts.clone())?;
 
-    opts.set("callback", maybe_show_completions)?;
+    opts.set("callback", update_ui)?;
     api.create_autocmd(&["CursorMovedI"], opts.clone())?;
 
     opts.set("callback", try_buf_attach)?;

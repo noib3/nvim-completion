@@ -11,7 +11,7 @@ pub struct Settings {
     pub enable_default_mappings: bool,
 
     /// The maximum number of rows the completion menu can take up.
-    pub max_menu_height: Option<usize>,
+    pub max_menu_height: Option<u32>,
 
     /// Whether to show completion hints.
     pub show_hints: bool,
@@ -118,7 +118,7 @@ impl<'a> TryFrom<Option<Table<'a>>> for Settings {
                         reason: "the maximum menu height should be at least 1",
                     });
                 }
-                config.max_menu_height = Some(height as usize);
+                config.max_menu_height = Some(height as u32);
             },
             _ => {
                 return Err(Error::FailedConversion {

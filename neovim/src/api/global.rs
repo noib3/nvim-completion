@@ -22,7 +22,7 @@ impl<'a> Api<'a> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_add_user_command")?
-            .call::<_, ()>((name, command, opts))?)
+            .call((name, command, opts))?)
     }
 
     /// Binding to `vim.api.nvim_create_buf`.
@@ -34,11 +34,11 @@ impl<'a> Api<'a> {
     ///
     /// * `listed`   Whether to set `buflisted`.
     /// * `scratch`  Whether the new buffer is a "throwaway" (`:h scratch-buffer`) buffer used for temporary work.
-    pub fn create_buf(&self, listed: bool, scratch: bool) -> Result<usize> {
+    pub fn create_buf(&self, listed: bool, scratch: bool) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_create_buf")?
-            .call::<_, usize>((listed, scratch))?)
+            .call((listed, scratch))?)
     }
 
     /// Binding to `vim.api.nvim_echo`.
@@ -51,9 +51,9 @@ impl<'a> Api<'a> {
     /// text chunk with specified highlight. The `hl_group` element can be
     /// set to `None` for no highlight.
     /// * `history`  Whether to add the message to the message history.
-    pub fn echo<M: AsRef<str>>(
+    pub fn echo<S: AsRef<str>>(
         &self,
-        chunks: &[(M, Option<&str>)],
+        chunks: &[(S, Option<&str>)],
         history: bool,
     ) -> Result<()> {
         let chunks = chunks
@@ -64,7 +64,7 @@ impl<'a> Api<'a> {
             })
             .collect::<Vec<Vec<&str>>>();
 
-        Ok(self.0.get::<&str, Function>("nvim_echo")?.call::<_, ()>((
+        Ok(self.0.get::<&str, Function>("nvim_echo")?.call((
             chunks,
             history,
             Vec::<u8>::new(),
@@ -78,7 +78,7 @@ impl<'a> Api<'a> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_get_current_line")?
-            .call::<_, String>(())?)
+            .call(())?)
     }
 
     /// Binding to `vim.api.nvim_get_mode`
@@ -102,10 +102,10 @@ impl<'a> Api<'a> {
     /// * `ns_id`  Namespace to use, or 0 to set a highlight group in the global namespace.
     /// * `name`   Highlight group name.
     /// * `opts`   Optional parameters. See `:h nvim_set_hl` for  details.
-    pub fn set_hl(&self, ns_id: usize, name: &str, opts: Table) -> Result<()> {
+    pub fn set_hl(&self, ns_id: u32, name: &str, opts: Table) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_set_hl")?
-            .call::<_, ()>((ns_id, name, opts))?)
+            .call((ns_id, name, opts))?)
     }
 }

@@ -11,15 +11,16 @@ pub fn insert_completion(
     selected_index: usize,
 ) -> Result<()> {
     let selected_completion = &state.completions[selected_index];
-    let buffer = &state.buffer;
+    let buffer = &state.cursor;
 
     let text_to_insert = get_text_to_insert(
         selected_completion.matched_prefix_len,
-        &buffer.line[buffer.at_bytes..],
+        &buffer.line[buffer.bytes as usize..],
         &selected_completion.text,
     );
 
-    let end_column = buffer.at_bytes - selected_completion.matched_prefix_len
+    let end_column = buffer.bytes as usize
+        - selected_completion.matched_prefix_len
         + selected_completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
@@ -33,10 +34,10 @@ pub fn insert_completion(
     // TODO: Understand why this happens.
 
     let insert_completion = lua.create_function(
-        move |lua, (row, col, text): (usize, usize, String)| {
+        move |lua, (row, col, text): (u32, u32, String)| {
             let api = Neovim::new(lua)?.api;
             api.buf_set_text(0, row, col, row, col, &[text])?;
-            api.win_set_cursor(0, row + 1, end_column)?;
+            api.win_set_cursor(0, row + 1, end_column as u32)?;
             Ok(())
         },
     )?;
@@ -45,7 +46,7 @@ pub fn insert_completion(
 
     nvim.schedule(insert_completion.bind((
         buffer.row,
-        buffer.at_bytes,
+        buffer.bytes,
         text_to_insert.to_string(),
     ))?)?;
 
@@ -54,8 +55,8 @@ pub fn insert_completion(
 
 /// Returns the text that should be inserted into the buffer, taking into
 /// account what comes after the cursor. For example, if we have `f|o` and
-/// we're completing `foo` we only need to insert one `o`, since another one is
-/// already present in the buffer.
+/// we're completing `foo` we only need to insert the first `o`, since the
+/// other one is already present in the buffer.
 fn get_text_to_insert<'a>(
     matched_prefix_len: usize,
     line_after_cursor: &'a str,

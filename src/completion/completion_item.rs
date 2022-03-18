@@ -5,6 +5,10 @@ pub struct CompletionItem {
     /// TODO: docs
     pub details: Option<Vec<String>>,
 
+    // TODO: rename
+    /// TODO: docs
+    pub line: String,
+
     /// TODO: refactor
     pub matched_prefix_len: usize,
 
@@ -27,15 +31,10 @@ impl CompletionItem {
             details: details.map(|lines| {
                 lines.lines().map(|line| line.into()).collect::<Vec<_>>()
             }),
+            line: format!(" {}", text),
             matched_prefix_len,
-            matched_byte_ranges: vec![(0..matched_prefix_len)],
+            matched_byte_ranges: vec![(1..matched_prefix_len + 1)],
             text,
         }
-    }
-}
-
-impl CompletionItem {
-    pub fn format(&self) -> String {
-        format!(" {}", self.text)
     }
 }

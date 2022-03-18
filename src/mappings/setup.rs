@@ -23,7 +23,7 @@ pub fn setup(
     let _state = state.clone();
     let insert_selected_completion = lua.create_function(move |lua, ()| {
         let _state = &mut _state.lock().unwrap();
-        if let Some(index) = _state.ui.completion_menu.selected_completion {
+        if let Some(index) = _state.ui.completion_menu.selected_index {
             super::insert_completion(lua, _state, index)?;
         }
         Ok(())

@@ -14,14 +14,15 @@ impl<'a> Api<'a> {
     /// * `opts`         Optional parameters. See `:h nvim_buf_attach` for  details.
     pub fn buf_attach(
         &self,
-        bufnr: usize,
+        bufnr: u32,
         send_buffer: bool,
         opts: Table,
     ) -> Result<bool> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_buf_attach")?
-            .call::<_, bool>((bufnr, send_buffer, opts))?)
+        Ok(self.0.get::<&str, Function>("nvim_buf_attach")?.call((
+            bufnr,
+            send_buffer,
+            opts,
+        ))?)
     }
 
     /// Binding to `vim.api.nvim_buf_call`.
@@ -32,11 +33,11 @@ impl<'a> Api<'a> {
     ///
     /// * `bufnr`   Buffer handle, or 0 for current buffer.
     /// * `fun`     Function to call inside the buffer.
-    pub fn buf_call(&self, bufnr: usize, fun: Function) -> Result<()> {
+    pub fn buf_call(&self, bufnr: u32, fun: Function) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_buf_call")?
-            .call::<_, ()>((bufnr, fun))?)
+            .call((bufnr, fun))?)
     }
 
     /// Binding to `vim.api.nvim_buf_get_lines`.
@@ -54,15 +55,17 @@ impl<'a> Api<'a> {
     /// * `strict_indexing`   Whether out-of-bounds should be an error.
     pub fn buf_get_lines(
         &self,
-        bufnr: usize,
-        start: usize,
-        end: isize,
+        bufnr: u32,
+        start: u32,
+        end: i32,
         strict_indexing: bool,
     ) -> Result<Vec<String>> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_buf_get_lines")?
-            .call::<_, Vec<String>>((bufnr, start, end, strict_indexing))?)
+        Ok(self.0.get::<&str, Function>("nvim_buf_get_lines")?.call((
+            bufnr,
+            start,
+            end,
+            strict_indexing,
+        ))?)
     }
 
     /// Binding to `vim.api.nvim_buf_get_lines`.
@@ -80,13 +83,13 @@ impl<'a> Api<'a> {
     /// * `strict_indexing`   Whether out-of-bounds should be an error.
     pub fn buf_get_option<V: FromLua<'a>>(
         &self,
-        bufnr: usize,
+        bufnr: u32,
         name: &str,
     ) -> Result<V> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_buf_get_option")?
-            .call::<_, V>((bufnr, name))?)
+            .call((bufnr, name))?)
     }
 
     /// Binding to `vim.api.nvim_buf_set_lines`.
@@ -103,25 +106,22 @@ impl<'a> Api<'a> {
     /// * `replacement`      Slice of lines to use as replacement.
     pub fn buf_set_lines<L: AsRef<str>>(
         &self,
-        bufnr: usize,
-        start: usize,
-        end: isize,
+        bufnr: u32,
+        start: u32,
+        end: i32,
         strict_indexing: bool,
         replacement: &[L],
     ) -> Result<()> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_buf_set_lines")?
-            .call::<_, ()>((
-                bufnr,
-                start,
-                end,
-                strict_indexing,
-                replacement
-                    .iter()
-                    .map(|l| l.as_ref())
-                    .collect::<Vec<&str>>(),
-            ))?)
+        Ok(self.0.get::<&str, Function>("nvim_buf_set_lines")?.call((
+            bufnr,
+            start,
+            end,
+            strict_indexing,
+            replacement
+                .iter()
+                .map(|l| l.as_ref())
+                .collect::<Vec<&str>>(),
+        ))?)
     }
 
     /// Binding to `vim.api.nvim_buf_set_text`.
@@ -140,26 +140,23 @@ impl<'a> Api<'a> {
     /// * `replacement`  Slice of lines to use as replacement.
     pub fn buf_set_text<L: AsRef<str>>(
         &self,
-        bufnr: usize,
-        start_row: usize,
-        start_col: usize,
-        end_row: usize,
-        end_col: usize,
+        bufnr: u32,
+        start_row: u32,
+        start_col: u32,
+        end_row: u32,
+        end_col: u32,
         replacement: &[L],
     ) -> Result<()> {
-        Ok(self
-            .0
-            .get::<&str, Function>("nvim_buf_set_text")?
-            .call::<_, ()>((
-                bufnr,
-                start_row,
-                start_col,
-                end_row,
-                end_col,
-                replacement
-                    .iter()
-                    .map(|l| l.as_ref())
-                    .collect::<Vec<&str>>(),
-            ))?)
+        Ok(self.0.get::<&str, Function>("nvim_buf_set_text")?.call((
+            bufnr,
+            start_row,
+            start_col,
+            end_row,
+            end_col,
+            replacement
+                .iter()
+                .map(|l| l.as_ref())
+                .collect::<Vec<&str>>(),
+        ))?)
     }
 }

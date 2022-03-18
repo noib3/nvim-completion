@@ -19,17 +19,17 @@ impl<'a> Api<'a> {
     /// * `col_end`    End of column range to highlight, or -1 to  highlight to end of line (byte-indexed).
     pub fn buf_add_highlight(
         &self,
-        bufnr: usize,
-        ns_id: isize,
+        bufnr: u32,
+        ns_id: i32,
         hl_group: &str,
-        line: usize,
-        col_start: usize,
-        col_end: isize,
-    ) -> Result<isize> {
+        line: u32,
+        col_start: u32,
+        col_end: i32,
+    ) -> Result<i32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_buf_add_highlight")?
-            .call::<_, isize>((
+            .call::<_, i32>((
                 bufnr, ns_id, hl_group, line, col_start, col_end,
             ))?)
     }
@@ -48,10 +48,10 @@ impl<'a> Api<'a> {
     /// * `line_end`    End of range of lines to clear (zero-indexed and exclusive).
     pub fn buf_clear_namespace(
         &self,
-        bufnr: usize,
-        ns_id: isize,
-        line_start: usize,
-        line_end: isize,
+        bufnr: u32,
+        ns_id: i32,
+        line_start: u32,
+        line_end: i32,
     ) -> Result<()> {
         Ok(self
             .0
@@ -74,16 +74,16 @@ impl<'a> Api<'a> {
     /// * `opts`   Optional parameters. See `:h nvim_buf_set_extmark` for  details.
     pub fn buf_set_extmark(
         &self,
-        bufnr: usize,
-        ns_id: usize,
-        row: usize,
-        col: usize,
+        bufnr: u32,
+        ns_id: u32,
+        row: u32,
+        col: u32,
         opts: Table,
-    ) -> Result<usize> {
+    ) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_buf_set_extmark")?
-            .call::<_, usize>((bufnr, ns_id, row, col, opts))?)
+            .call((bufnr, ns_id, row, col, opts))?)
     }
 
     /// Binding to `vim.api.nvim_create_namespace`.
@@ -96,10 +96,10 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `name`   Namespace name or empty string.
-    pub fn create_namespace(&self, name: &str) -> Result<usize> {
+    pub fn create_namespace(&self, name: &str) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_create_namespace")?
-            .call::<_, usize>(name)?)
+            .call(name)?)
     }
 }

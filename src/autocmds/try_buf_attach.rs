@@ -34,16 +34,16 @@ pub fn try_buf_attach(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
             bytes_added,
         ): (
             String,
-            usize,
-            usize,
+            u32,
+            u32,
             _,
             _,
-            usize,
+            u32,
             _,
-            usize,
+            u32,
             _,
             _,
-            usize,
+            u32,
             _,
         )| {
             completion::bytes_changed(

@@ -2,17 +2,18 @@ use mlua::{Lua, Result};
 use neovim::{Api, Neovim};
 
 use crate::state::State;
+use crate::ui::menu;
 
 /// Executed every time some bytes in the current buffer are changed.
 pub fn bytes_changed(
     lua: &Lua,
     state: &mut State,
-    start_row: usize,
-    start_col: usize,
-    rows_deleted: usize,
-    bytes_deleted: usize,
-    rows_added: usize,
-    bytes_added: usize,
+    start_row: u32,
+    start_col: u32,
+    rows_deleted: u32,
+    bytes_deleted: u32,
+    rows_added: u32,
+    bytes_added: u32,
 ) -> Result<()> {
     let api = Neovim::new(lua)?.api;
 
@@ -31,11 +32,11 @@ pub fn bytes_changed(
         return Ok(());
     }
 
-    let buffer = &mut state.buffer;
+    let cursor = &mut state.cursor;
 
-    buffer.row = start_row;
-    buffer.line = get_current_line(&api, buffer.row)?;
-    buffer.at_bytes = start_col + bytes_added;
+    cursor.row = start_row;
+    cursor.line = get_current_line(&api, cursor.row)?;
+    cursor.bytes = start_col + bytes_added;
 
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;
@@ -54,7 +55,7 @@ pub fn bytes_changed(
     // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
 
     let completions = &mut state.completions;
-    *completions = super::complete(&buffer.line, buffer.at_bytes);
+    *completions = super::complete(&cursor.line, cursor.bytes as usize);
 
     if completions.is_empty() {
         return Ok(());
@@ -63,28 +64,30 @@ pub fn bytes_changed(
     let settings = &state.settings;
     let ui = &mut state.ui;
 
-    // Update the completion menu.
+    // Queue an update for the completion menu.
     if settings.autoshow_menu {
-        ui.draw_instructions.menu_position = ui
-            .completion_menu
-            .show_completions(&api, &completions, settings.max_menu_height)?;
+        ui.queued_updates.menu_position = menu::positioning::get_position(
+            &api,
+            &completions,
+            settings.max_menu_height,
+        )?;
     }
 
     // If hints are enabled and the cursor is at the end of the line, set the
     // hint for the first completion.
-    if settings.show_hints && buffer.cursor_is_at_eol() {
-        ui.draw_instructions.hinted_index = Some(0);
+    if settings.show_hints && cursor.is_at_eol() {
+        ui.queued_updates.hinted_index = Some(0);
     }
 
     Ok(())
 }
 
-fn get_current_line(api: &Api, current_row: usize) -> Result<String> {
+fn get_current_line(api: &Api, current_row: u32) -> Result<String> {
     let current_line = api
         .buf_get_lines(
             0,
             current_row,
-            isize::try_from(current_row + 1).unwrap(),
+            (current_row + 1).try_into().unwrap(),
             false,
         )?
         .into_iter()

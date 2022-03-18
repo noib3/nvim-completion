@@ -22,9 +22,7 @@ use state::State;
 
 // TODOs
 //
-// 1. Make the core logic as neovim-agnostic as possible.
-//
-// 2. Right now everything is sync and we're blocking on every single event
+// 1. Right now everything is sync and we're blocking on every single event
 //    we listen to. This will be a problem when we start dealing with
 //    possibly thousands of completion results from LSPs.
 //
@@ -33,8 +31,8 @@ use state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {
-    let nvim = Neovim::new(lua)?;
-    let state = Arc::new(Mutex::new(State::new(&nvim)?));
+    let api = Neovim::new(lua)?.api;
+    let state = Arc::new(Mutex::new(State::new(&api)?));
 
     let _state = state.clone();
     let has_completions = lua.create_function(move |lua, ()| {

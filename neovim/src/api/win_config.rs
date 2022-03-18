@@ -14,14 +14,14 @@ impl<'a> Api<'a> {
     /// * `config`  Map defining the window configuration. See `:h nvim_open_win` for details.
     pub fn open_win(
         &self,
-        bufnr: usize,
+        bufnr: u32,
         enter: bool,
         config: Table,
-    ) -> Result<usize> {
+    ) -> Result<u32> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_open_win")?
-            .call::<_, usize>((bufnr, enter, config))?)
+            .call((bufnr, enter, config))?)
     }
 
     /// Binding to `vim.api.nvim_win_get_config`.
@@ -31,11 +31,11 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `winid`   Window handle, or 0 for current buffer.
-    pub fn win_get_config(&self, winid: usize) -> Result<Table> {
+    pub fn win_get_config(&self, winid: u32) -> Result<Table> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_get_config")?
-            .call::<_, Table>(winid)?)
+            .call(winid)?)
     }
 
     /// Binding to `vim.api.nvim_win_set_config`.
@@ -47,10 +47,10 @@ impl<'a> Api<'a> {
     ///
     /// * `winid`   Window handle, or 0 for current buffer.
     /// * `config`  Map defining the window configuration. See `:h nvim_open_win` for details.
-    pub fn win_set_config(&self, winid: usize, config: Table) -> Result<()> {
+    pub fn win_set_config(&self, winid: u32, config: Table) -> Result<()> {
         Ok(self
             .0
             .get::<&str, Function>("nvim_win_set_config")?
-            .call::<_, ()>((winid, config))?)
+            .call((winid, config))?)
     }
 }

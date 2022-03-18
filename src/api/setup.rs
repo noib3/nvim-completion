@@ -17,7 +17,7 @@ pub fn setup(
 
     // If the Neovim version isn't >= 0.7 we echo an error message and return
     // early.
-    if !api.call_function::<_, usize>("has", vec!["nvim-0.7"])? == 1 {
+    if !api.call_function::<_, u8>("has", vec!["nvim-0.7"])? == 1 {
         nvim.api.echo(
             &[
                 ("[nvim-compleet]: ", Some("ErrorMsg")),

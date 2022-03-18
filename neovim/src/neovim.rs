@@ -61,7 +61,7 @@ impl<'a> Neovim<'a> {
     ) -> Result<()> {
         self.vim.get::<&str, Function>("notify")?.call::<_, ()>((
             msg.as_ref(),
-            level as usize,
+            level as u8,
             opts,
         ))
     }

@@ -14,13 +14,13 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
 
     let api = Neovim::new(lua)?.api;
 
-    let buffer = &mut state.buffer;
+    let cursor = &mut state.cursor;
     let completions = &mut state.completions;
 
-    buffer.get_bytes_before_cursor(&api)?;
-    buffer.get_text(&api)?;
+    cursor.update_bytes(&api)?;
+    cursor.update_line(&api)?;
 
-    *completions = completion::complete(&buffer.line, buffer.at_bytes);
+    *completions = completion::complete(&cursor.line, cursor.bytes as usize);
 
     Ok(!completions.is_empty())
 }

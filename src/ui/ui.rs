@@ -1,13 +1,15 @@
-use mlua::Result;
-use neovim::Neovim;
+use mlua::{prelude::LuaResult, Lua};
+use neovim::Api;
 
-use crate::ui::{CompletionHint, CompletionMenu, DetailsPane};
+use super::{
+    details::CompletionDetails, hint::CompletionHint, menu::CompletionMenu,
+    DrawInstructions,
+};
+use crate::completion::{CompletionItem, Cursor};
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
 #[derive(Debug)]
 pub struct UI {
-    pub draw_instructions: DrawInstructions,
-
     /// A completion menu used to show all the available completion candidates.
     pub completion_menu: CompletionMenu,
 
@@ -17,37 +19,93 @@ pub struct UI {
 
     /// A details pane used to show some informations about the currently
     /// selected completion item.
-    pub details_pane: DetailsPane,
+    pub completion_details: CompletionDetails,
+
+    pub queued_updates: DrawInstructions,
 }
 
 impl UI {
-    pub fn new(nvim: &Neovim) -> Result<Self> {
+    pub fn new(api: &Api) -> LuaResult<Self> {
         Ok(UI {
-            draw_instructions: DrawInstructions::new(),
-            completion_menu: CompletionMenu::new(&nvim.api)?,
-            completion_hint: CompletionHint::new(&nvim.api)?,
-            details_pane: DetailsPane::new(&nvim.api)?,
+            completion_menu: CompletionMenu::new(api)?,
+            completion_hint: CompletionHint::new(api)?,
+            completion_details: CompletionDetails::new(api)?,
+            queued_updates: DrawInstructions::new(),
         })
     }
 }
 
-#[derive(Debug)]
-pub struct DrawInstructions {
-    pub menu_position: Option<super::positioning::WindowPosition>,
+impl UI {
+    /// Executed on every `InsertLeft` event.
+    pub fn cleanup(&mut self, api: &Api) -> LuaResult<()> {
+        if self.completion_menu.is_visible() {
+            self.completion_menu.close(api)?;
 
-    pub hinted_index: Option<usize>,
-}
-
-impl DrawInstructions {
-    fn new() -> DrawInstructions {
-        DrawInstructions {
-            menu_position: None,
-            hinted_index: None,
+            // The details pane can only be visible if the completion menu is
+            // visible.
+            if self.completion_details.is_visible() {
+                self.completion_details.close(api)?;
+            }
         }
+
+        if self.completion_hint.is_visible() {
+            self.completion_hint.erase(api)?;
+        }
+
+        Ok(())
     }
 
-    pub fn reset(&mut self) {
-        self.menu_position = None;
-        self.hinted_index = None;
+    /// Executed on every `CursorMovedI` event.
+    pub fn update(
+        &mut self,
+        lua: &Lua,
+        api: &Api,
+        cursor: &Cursor,
+        completions: &[CompletionItem],
+    ) -> LuaResult<()> {
+        let menu = &mut self.completion_menu;
+        let hint = &mut self.completion_hint;
+        let details = &mut self.completion_details;
+        let updates = &mut self.queued_updates;
+
+        // Update the completion menu.
+        match (menu.is_visible(), updates.menu_position.as_ref()) {
+            (true, Some(position)) => {
+                menu.shift(lua, api, position)?;
+                menu.fill(lua, api, completions)?;
+            },
+
+            (false, Some(position)) => {
+                menu.spawn(lua, api, position)?;
+                menu.fill(lua, api, completions)?;
+            },
+
+            (true, None) => {
+                menu.close(api)?;
+                if details.is_visible() {
+                    details.close(api)?;
+                }
+            },
+
+            (false, None) => {},
+        }
+
+        // Update the completion hint.
+        match (hint.is_visible(), updates.hinted_index) {
+            (_, Some(index)) => {
+                let completion = &completions[index];
+                let text = &completion.text[completion.matched_prefix_len..];
+                hint.set(lua, api, text, cursor.row, cursor.bytes, index)?;
+            },
+
+            (true, None) => hint.erase(api)?,
+
+            (false, None) => {},
+        }
+
+        // After we've consumed all the instructions we reset them.
+        updates.reset();
+
+        Ok(())
     }
 }

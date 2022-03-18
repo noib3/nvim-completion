@@ -2,36 +2,26 @@ use mlua::{Lua, Result};
 use neovim::Neovim;
 
 use crate::state::State;
-use crate::ui::completion_menu;
+use crate::ui::menu;
 
-// TODO: refactor.
 /// Executed on `<Plug>(compleet-show-completions)`.
 pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
-    let completions = &state.completions;
     let menu = &mut state.ui.completion_menu;
+    let completions = &state.completions;
 
     if !menu.is_visible() && !completions.is_empty() {
-        // TODO: already select first completion.
+        // TODO: already select the first completion.
         let api = Neovim::new(lua)?.api;
 
-        let position = menu.show_completions(
+        let maybe_position = menu::positioning::get_position(
             &api,
             completions,
             state.settings.max_menu_height,
         )?;
 
-        if let Some(pos) = &position {
-            menu.winid = Some(completion_menu::create_floatwin(
-                lua, &api, menu.bufnr, pos,
-            )?);
-
-            completion_menu::fill_buffer(
-                lua,
-                &api,
-                menu.bufnr,
-                menu.matched_chars_nsid,
-                completions,
-            )?;
+        if let Some(position) = maybe_position {
+            menu.spawn(lua, &api, &position)?;
+            menu.fill(lua, &api, completions)?;
         }
     }
 
