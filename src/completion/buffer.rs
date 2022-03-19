@@ -1,4 +1,4 @@
-use mlua::Result;
+use mlua::prelude::LuaResult;
 use neovim::Api;
 
 // Refactor: rename to `Cursor`?
@@ -29,12 +29,12 @@ impl Cursor {
         self.bytes as usize == self.line.len()
     }
 
-    pub fn update_bytes(&mut self, api: &Api) -> Result<()> {
+    pub fn update_bytes(&mut self, api: &Api) -> LuaResult<()> {
         self.bytes = api.win_get_cursor(0)?.1;
         Ok(())
     }
 
-    pub fn update_line(&mut self, api: &Api) -> Result<()> {
+    pub fn update_line(&mut self, api: &Api) -> LuaResult<()> {
         self.line = api.get_current_line()?;
         Ok(())
     }

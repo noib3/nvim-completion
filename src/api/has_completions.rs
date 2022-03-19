@@ -1,11 +1,11 @@
-use mlua::{Lua, Result};
+use mlua::prelude::{Lua, LuaResult};
 use neovim::Neovim;
 
 use crate::completion;
 use crate::state::State;
 
 /// Executed by the `require("compleet").has_completions` Lua function.
-pub fn has_completions(lua: &Lua, state: &mut State) -> Result<bool> {
+pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     // If the augroup id is `None` that means the user has turned off the
     // plugin with `:CompleetStop`.
     if state.augroup_id.is_none() {

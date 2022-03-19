@@ -1,4 +1,4 @@
-use mlua::{Lua, Result, Table};
+use mlua::{prelude::LuaResult, Lua, Table};
 use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
@@ -23,8 +23,6 @@ use state::State;
 // TODOs
 //
 // 0. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
-//
-// 0. vim.keymap -> nvim_set_keymap, vim.notify -> nvim_notify
 //
 // 1. Right now everything is sync and we're blocking on every single event we
 //    listen to. This will be a problem when we start dealing with possibly
@@ -63,7 +61,7 @@ use state::State;
 // 11. Add nvim integration tests (lua?).
 
 #[mlua::lua_module]
-fn compleet(lua: &Lua) -> Result<Table> {
+fn compleet(lua: &Lua) -> LuaResult<Table> {
     let api = Neovim::new(lua)?.api;
     let state = Arc::new(Mutex::new(State::new(&api)?));
 

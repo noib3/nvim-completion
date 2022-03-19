@@ -1,5 +1,5 @@
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
-use neovim::{LogLevel, Neovim};
+use neovim::{api::LogLevel, Neovim};
 
 use crate::state::State;
 
@@ -36,10 +36,9 @@ pub fn try_buf_attach(
         // nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
         // nvim.print(format!("{:?}", &state.attached_buffers))?;
     } else {
-        nvim.notify(
+        api.notify(
             "[nvim-compleet]: Couldn't attach to buffer.",
             LogLevel::Error,
-            lua.create_table()?,
         )?;
     }
 

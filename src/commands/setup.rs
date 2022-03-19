@@ -1,13 +1,18 @@
-use mlua::{Lua, Result};
-use neovim::Api;
+use mlua::prelude::{Lua, LuaResult};
+use neovim::{Api, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::State;
 
-pub fn setup(lua: &Lua, api: &Api, state: &Arc<Mutex<State>>) -> Result<()> {
+pub fn setup(
+    lua: &Lua,
+    api: &Api,
+    state: &Arc<Mutex<State>>,
+) -> LuaResult<()> {
     let _state = state.clone();
     let stop = lua.create_function(move |lua, ()| {
-        super::compleet_stop(lua, &mut _state.lock().unwrap())
+        let api = Neovim::new(lua)?.api;
+        super::compleet_stop(&api, &mut _state.lock().unwrap())
     })?;
 
     let _state = state.clone();

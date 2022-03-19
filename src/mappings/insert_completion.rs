@@ -1,4 +1,4 @@
-use mlua::{Lua, Result};
+use mlua::prelude::{Lua, LuaResult};
 use neovim::Neovim;
 
 use crate::state::State;
@@ -9,7 +9,7 @@ pub fn insert_completion(
     lua: &Lua,
     state: &mut State,
     selected_index: usize,
-) -> Result<()> {
+) -> LuaResult<()> {
     let selected_completion = &state.completions[selected_index];
     let buffer = &state.cursor;
 

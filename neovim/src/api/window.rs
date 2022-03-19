@@ -12,10 +12,9 @@ impl<'a> Api<'a> {
     /// * `winid`  Window handle, or 0 for current window.
     /// * `force`  Whether to behave like `:close!`.
     pub fn win_close(&self, winid: u32, force: bool) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_close")?
-            .call((winid, force))?)
+            .call((winid, force))
     }
 
     /// Binding to `vim.api.nvim_win_get_cursor`
@@ -48,10 +47,9 @@ impl<'a> Api<'a> {
         winid: u32,
         name: &str,
     ) -> Result<V> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_get_option")?
-            .call((winid, name))?)
+            .call((winid, name))
     }
 
     /// Binding to `vim.api.nvim_win_get_width`
@@ -62,10 +60,9 @@ impl<'a> Api<'a> {
     ///
     /// * `winid`  Window handle, or 0 for current window.
     pub fn win_get_width(&self, winid: u32) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_get_width")?
-            .call(winid)?)
+            .call(winid)
     }
 
     /// Binding to `vim.api.nvim_win_get_width`
@@ -76,10 +73,9 @@ impl<'a> Api<'a> {
     ///
     /// * `winid`  Window handle, or 0 for current window.
     pub fn win_get_height(&self, winid: u32) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_get_height")?
-            .call(winid)?)
+            .call(winid)
     }
 
     /// Binding to `vim.api.nvim_win_hide`.
@@ -90,7 +86,7 @@ impl<'a> Api<'a> {
     ///
     /// * `winid`  Window handle, or 0 for current window.
     pub fn win_hide(&self, winid: u32) -> Result<()> {
-        Ok(self.0.get::<&str, Function>("nvim_win_hide")?.call(winid)?)
+        self.0.get::<&str, Function>("nvim_win_hide")?.call(winid)
     }
 
     /// Binding to `vim.api.nvim_win_set_cursor`
@@ -108,10 +104,9 @@ impl<'a> Api<'a> {
         row: u32,
         col: u32,
     ) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_set_cursor")?
-            .call((winid, [row, col]))?)
+            .call((winid, [row, col]))
     }
 
     /// Binding to `vim.api.nvim_win_set_option`
@@ -130,9 +125,8 @@ impl<'a> Api<'a> {
         name: &str,
         value: V,
     ) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_win_set_option")?
-            .call((winid, name, value))?)
+            .call((winid, name, value))
     }
 }

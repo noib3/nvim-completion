@@ -1,14 +1,14 @@
-use mlua::{Lua, Result};
-use neovim::Keymap;
+use mlua::prelude::{Lua, LuaResult};
+use neovim::Api;
 use std::sync::{Arc, Mutex};
 
 use crate::state::State;
 
 pub fn setup(
     lua: &Lua,
-    keymap: &Keymap,
+    api: &Api,
     state: &Arc<Mutex<State>>,
-) -> Result<()> {
+) -> LuaResult<()> {
     // Insert the currently hinted completion.
     let _state = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
@@ -45,39 +45,34 @@ pub fn setup(
 
     let opts = lua.create_table_from([("silent", true)])?;
 
-    keymap.set(
+    opts.set("callback", insert_hinted_completion)?;
+    api.set_keymap(
         "i",
         "<Plug>(compleet-insert-hinted-completion)",
-        insert_hinted_completion,
-        Some(opts.clone()),
+        "",
+        opts.clone(),
     )?;
 
-    keymap.set(
+    opts.set("callback", insert_selected_completion)?;
+    api.set_keymap(
         "i",
         "<Plug>(compleet-insert-selected-completion)",
-        insert_selected_completion,
-        Some(opts.clone()),
+        "",
+        opts.clone(),
     )?;
 
-    keymap.set(
-        "i",
-        "<Plug>(compleet-next-completion)",
-        select_completion.bind(1)?,
-        Some(opts.clone()),
-    )?;
+    opts.set("callback", select_completion.bind(1)?)?;
+    api.set_keymap("i", "<Plug>(compleet-next-completion)", "", opts.clone())?;
 
-    keymap.set(
-        "i",
-        "<Plug>(compleet-prev-completion)",
-        select_completion.bind(-1)?,
-        Some(opts.clone()),
-    )?;
+    opts.set("callback", select_completion.bind(-1)?)?;
+    api.set_keymap("i", "<Plug>(compleet-prev-completion)", "", opts.clone())?;
 
-    keymap.set(
+    opts.set("callback", show_completions)?;
+    api.set_keymap(
         "i",
         "<Plug>(compleet-show-completions)",
-        show_completions,
-        Some(opts.clone()),
+        "",
+        opts.clone(),
     )?;
 
     Ok(())

@@ -1,11 +1,11 @@
-use mlua::{Lua, Result};
+use mlua::prelude::{Lua, LuaResult};
 use neovim::Neovim;
 
 use crate::state::State;
 use crate::ui::menu;
 
 /// Executed on `<Plug>(compleet-show-completions)`.
-pub fn show_completions(lua: &Lua, state: &mut State) -> Result<()> {
+pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let menu = &mut state.ui.completion_menu;
     let completions = &state.completions;
 

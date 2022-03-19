@@ -19,10 +19,9 @@ impl<'a> Api<'a> {
         command: Function,
         opts: Table,
     ) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_add_user_command")?
-            .call((name, command, opts))?)
+            .call((name, command, opts))
     }
 
     /// Binding to `vim.api.nvim_create_buf`.
@@ -35,10 +34,9 @@ impl<'a> Api<'a> {
     /// * `listed`   Whether to set `buflisted`.
     /// * `scratch`  Whether the new buffer is a "throwaway" (`:h scratch-buffer`) buffer used for temporary work.
     pub fn create_buf(&self, listed: bool, scratch: bool) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_create_buf")?
-            .call((listed, scratch))?)
+            .call((listed, scratch))
     }
 
     /// Binding to `vim.api.nvim_echo`.
@@ -64,21 +62,20 @@ impl<'a> Api<'a> {
             })
             .collect::<Vec<Vec<&str>>>();
 
-        Ok(self.0.get::<&str, Function>("nvim_echo")?.call((
+        self.0.get::<&str, Function>("nvim_echo")?.call((
             chunks,
             history,
             Vec::<u8>::new(),
-        ))?)
+        ))
     }
 
     /// Binding to `vim.api.nvim_get_current_buf`
     ///
     /// Returns the current buffer handle.
     pub fn get_current_buf(&self) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_get_current_buf")?
-            .call(())?)
+            .call(())
     }
 
     /// Binding to `vim.api.nvim_get_current_line`
@@ -103,6 +100,49 @@ impl<'a> Api<'a> {
         Ok((t.get("mode")?, t.get("blocking")?))
     }
 
+    /// Binding to `vim.api.nvim_notify`.
+    ///
+    /// Notify the user with a message.
+    ///
+    /// # Arguments
+    ///
+    /// * `msg`         Message to display to the user.
+    /// * `log_level`   The log level.
+    pub fn notify<S: AsRef<str>>(
+        &self,
+        msg: S,
+        level: super::LogLevel,
+    ) -> Result<()> {
+        self.0.get::<&str, Function>("notify")?.call((
+            msg.as_ref(),
+            level as u8,
+            Vec::<u8>::new(),
+        ))
+    }
+
+    /// Binding to `vim.api.nvim_replace_termcodes`
+    ///
+    /// Replaces terminal codes and keycodes in a string with the internal
+    /// representation.
+    ///
+    /// # Arguments
+    ///
+    /// * `str`         String to be converted.
+    /// * `from_part`   Legacy vim parameter. Usually true.
+    /// * `do_lt`       Also translate `<lt>`.
+    /// * `special`     Replace keycodes, e.g. `<CR>` becomes a `"\r"` char.
+    pub fn replace_termcodes(
+        &self,
+        str: &str,
+        from_part: bool,
+        do_lt: bool,
+        special: bool,
+    ) -> Result<std::ffi::CString> {
+        self.0
+            .get::<&str, Function>("nvim_replace_termcodes")?
+            .call((str, from_part, do_lt, special))
+    }
+
     /// Binding to `vim.api.nvim_set_hl`
     ///
     /// Sets a highlight group
@@ -113,9 +153,30 @@ impl<'a> Api<'a> {
     /// * `name`   Highlight group name.
     /// * `opts`   Optional parameters. See `:h nvim_set_hl` for  details.
     pub fn set_hl(&self, ns_id: u32, name: &str, opts: Table) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_set_hl")?
-            .call((ns_id, name, opts))?)
+            .call((ns_id, name, opts))
+    }
+
+    /// Binding to `vim.api.nvim_set_keymap`
+    ///
+    /// Sets a global mapping for the given mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`    Mode short name.
+    /// * `lhs`     Left-hand-side of the mapping.
+    /// * `rhs`     Right-hand-side of the mapping.
+    /// * `opts`    Optional parameters. See `:h nvim_set_keymap` for  details.
+    pub fn set_keymap(
+        &self,
+        mode: &str,
+        lhs: &str,
+        rhs: &str,
+        opts: Table,
+    ) -> Result<()> {
+        self.0
+            .get::<&str, Function>("nvim_set_keymap")?
+            .call((mode, lhs, rhs, opts))
     }
 }

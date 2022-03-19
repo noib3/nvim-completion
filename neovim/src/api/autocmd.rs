@@ -13,10 +13,9 @@ impl<'a> Api<'a> {
     /// * `name`  The name of the augroup to create.
     /// * `opts`  Optional parameters. See `:h nvim_create_augroup` for  details.
     pub fn create_augroup(&self, name: &str, opts: Table) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_create_augroup")?
-            .call((name, opts))?)
+            .call((name, opts))
     }
 
     /// Binding to `vim.api.nvim_create_autocmd`.
@@ -28,10 +27,9 @@ impl<'a> Api<'a> {
     /// * `events`  A slice of strings reprenting event names.
     /// * `opts`    Optional parameters. See `:h nvim_create_autocmd` for  details.
     pub fn create_autocmd(&self, events: &[&str], opts: Table) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_create_autocmd")?
-            .call((events, opts))?)
+            .call((events, opts))
     }
 
     /// Binding to `vim.api.nvim_del_augroup_by_id`.
@@ -43,10 +41,9 @@ impl<'a> Api<'a> {
     ///
     /// * `id`  The id of the augroup to delete.
     pub fn del_augroup_by_id(&self, id: u32) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_del_augroup_by_id")?
-            .call(id)?)
+            .call(id)
     }
 
     /// Binding to `vim.api.nvim_del_augroup_by_name`.
@@ -58,10 +55,9 @@ impl<'a> Api<'a> {
     ///
     /// * `name`  The name of the augroup to delete.
     pub fn del_augroup_by_name(&self, name: &str) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_del_augroup_by_name")?
-            .call::<_, ()>(name)?)
+            .call::<_, ()>(name)
     }
 
     /// Binding to `vim.api.nvim_do_autocmd`.
@@ -73,9 +69,8 @@ impl<'a> Api<'a> {
     /// * `event`  The event or events to execute.
     /// * `opts`  Optional parameters. See `:h nvim_do_autocmd` for  details.
     pub fn do_autocmd(&self, events: &[&str], opts: Table) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_do_autocmd")?
-            .call((events, opts))?)
+            .call((events, opts))
     }
 }

@@ -1,4 +1,4 @@
-use mlua::{Lua, Result};
+use mlua::prelude::{Lua, LuaResult};
 use neovim::Neovim;
 
 use crate::state::State;
@@ -10,7 +10,7 @@ pub fn select_completion(
     lua: &Lua,
     state: &mut State,
     step: i8, // either 1 or -1
-) -> Result<()> {
+) -> LuaResult<()> {
     if !state.ui.completion_menu.is_visible() {
         return Ok(());
     }

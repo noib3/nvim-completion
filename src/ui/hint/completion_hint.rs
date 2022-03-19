@@ -1,4 +1,4 @@
-use mlua::{Lua, Result};
+use mlua::prelude::{Lua, LuaResult};
 use neovim::Api;
 
 #[derive(Debug)]
@@ -11,7 +11,7 @@ pub struct CompletionHint {
 }
 
 impl CompletionHint {
-    pub fn new(api: &Api) -> Result<Self> {
+    pub fn new(api: &Api) -> LuaResult<Self> {
         Ok(CompletionHint {
             nsid: api.create_namespace("compleet_completion_hint")?,
             hinted_index: None,
@@ -20,7 +20,7 @@ impl CompletionHint {
 }
 
 impl CompletionHint {
-    pub fn erase(&mut self, api: &Api) -> Result<()> {
+    pub fn erase(&mut self, api: &Api) -> LuaResult<()> {
         api.buf_clear_namespace(0, self.nsid.try_into().unwrap(), 0, -1)?;
         self.hinted_index = None;
         Ok(())
@@ -38,7 +38,7 @@ impl CompletionHint {
         row: u32,
         col: u32,
         index: usize,
-    ) -> Result<()> {
+    ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 3)?;
         opts.set("id", 1)?;
         opts.set("virt_text", [[hint, "CompleetHint"]])?;

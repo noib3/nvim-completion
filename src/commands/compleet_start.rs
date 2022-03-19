@@ -1,5 +1,5 @@
-use mlua::{Lua, Result};
-use neovim::{LogLevel, Neovim};
+use mlua::prelude::{Lua, LuaResult};
+use neovim::{api::LogLevel, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::autocmds;
@@ -7,26 +7,20 @@ use crate::State;
 
 // TODO: try to attach to the current buffer.
 /// Executed by the `CompleetStart` user command.
-pub fn compleet_start(lua: &Lua, state: &Arc<Mutex<State>>) -> Result<()> {
-    let nvim = Neovim::new(lua)?;
-    let empty = lua.create_table()?;
+pub fn compleet_start(lua: &Lua, state: &Arc<Mutex<State>>) -> LuaResult<()> {
+    let api = Neovim::new(lua)?.api;
 
     let _state = state.clone();
     let _state = &mut _state.lock().unwrap();
 
     if _state.augroup_id.is_none() {
-        _state.augroup_id = Some(autocmds::setup(lua, &nvim.api, state)?);
+        _state.augroup_id = Some(autocmds::setup(lua, &api, state)?);
 
-        nvim.notify(
-            "[nvim-compleet]: Started completing.",
-            LogLevel::Info,
-            empty,
-        )?;
+        api.notify("[nvim-compleet]: Started completing.", LogLevel::Info)?;
     } else {
-        nvim.notify(
+        api.notify(
             "[nvim-compleet]: Completion was already on.",
             LogLevel::Error,
-            empty,
         )?;
     }
 

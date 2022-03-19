@@ -7,4 +7,4 @@ mod vimscript;
 mod win_config;
 mod window;
 
-pub use api::Api;
+pub use api::{Api, LogLevel};

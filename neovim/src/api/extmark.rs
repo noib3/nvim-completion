@@ -26,12 +26,9 @@ impl<'a> Api<'a> {
         col_start: u32,
         col_end: i32,
     ) -> Result<i32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_buf_add_highlight")?
-            .call::<_, i32>((
-                bufnr, ns_id, hl_group, line, col_start, col_end,
-            ))?)
+            .call::<_, i32>((bufnr, ns_id, hl_group, line, col_start, col_end))
     }
 
     /// Binding to `vim.api.nvim_buf_clear_namespace`.
@@ -53,10 +50,9 @@ impl<'a> Api<'a> {
         line_start: u32,
         line_end: i32,
     ) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_buf_clear_namespace")?
-            .call::<_, ()>((bufnr, ns_id, line_start, line_end))?)
+            .call::<_, ()>((bufnr, ns_id, line_start, line_end))
     }
 
     /// Binding to `vim.api.nvim_buf_set_extmark`.
@@ -80,10 +76,9 @@ impl<'a> Api<'a> {
         col: u32,
         opts: Table,
     ) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_buf_set_extmark")?
-            .call((bufnr, ns_id, row, col, opts))?)
+            .call((bufnr, ns_id, row, col, opts))
     }
 
     /// Binding to `vim.api.nvim_create_namespace`.
@@ -97,9 +92,8 @@ impl<'a> Api<'a> {
     ///
     /// * `name`   Namespace name or empty string.
     pub fn create_namespace(&self, name: &str) -> Result<u32> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_create_namespace")?
-            .call(name)?)
+            .call(name)
     }
 }

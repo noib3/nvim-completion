@@ -1,4 +1,4 @@
-use mlua::{Lua, Result, Table};
+use mlua::{prelude::LuaResult, Lua, Table};
 use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +11,7 @@ pub fn setup(
     lua: &Lua,
     state: &Arc<Mutex<State>>,
     preferences: Option<Table>,
-) -> Result<()> {
+) -> LuaResult<()> {
     let nvim = Neovim::new(lua)?;
     let api = &nvim.api;
 
@@ -77,10 +77,10 @@ pub fn setup(
 
         commands::setup(lua, api, state)?;
         hlgroups::setup(lua, api)?;
-        mappings::setup(lua, &nvim.keymap, state)?;
+        mappings::setup(lua, api, state)?;
 
         if _state.settings.enable_default_mappings {
-            mappings::enable_default(lua, &nvim.keymap, state)?;
+            mappings::enable_default(lua, api, state)?;
         }
 
         _state.did_setup = true;

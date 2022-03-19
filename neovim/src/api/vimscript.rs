@@ -16,10 +16,9 @@ impl<'a> Api<'a> {
         fun: &str,
         args: Vec<A>,
     ) -> Result<R> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_call_function")?
-            .call::<(_, Vec<A>), R>((fun, args))?)
+            .call::<(_, Vec<A>), R>((fun, args))
     }
 
     /// Binding to `vim.api.nvim_command`.
@@ -30,9 +29,8 @@ impl<'a> Api<'a> {
     ///
     /// * `cmd`  The command to execute.
     pub fn command(&self, cmd: &str) -> Result<()> {
-        Ok(self
-            .0
+        self.0
             .get::<&str, Function>("nvim_command")?
-            .call::<_, ()>(cmd)?)
+            .call::<_, ()>(cmd)
     }
 }

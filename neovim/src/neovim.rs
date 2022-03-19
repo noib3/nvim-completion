@@ -34,15 +34,6 @@ impl<'a> Neovim<'a> {
     }
 }
 
-/// TODO: docs
-pub enum LogLevel {
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-}
-
 impl<'a> Neovim<'a> {
     /// TODO: docs
     pub fn inspect(&self, t: Table) -> Result<String> {
@@ -50,20 +41,6 @@ impl<'a> Neovim<'a> {
             .get::<&str, Table>("inspect")?
             .get::<&str, Function>("inspect")?
             .call::<_, String>(t)
-    }
-
-    /// TODO: docs
-    pub fn notify<S: AsRef<str>>(
-        &self,
-        msg: S,
-        level: LogLevel,
-        opts: Table,
-    ) -> Result<()> {
-        self.vim.get::<&str, Function>("notify")?.call::<_, ()>((
-            msg.as_ref(),
-            level as u8,
-            opts,
-        ))
     }
 
     /// TODO: docs
