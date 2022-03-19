@@ -71,6 +71,16 @@ impl<'a> Api<'a> {
         ))?)
     }
 
+    /// Binding to `vim.api.nvim_get_current_buf`
+    ///
+    /// Returns the current buffer handle.
+    pub fn get_current_buf(&self) -> Result<u32> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_get_current_buf")?
+            .call(())?)
+    }
+
     /// Binding to `vim.api.nvim_get_current_line`
     ///
     /// Returns the current line.

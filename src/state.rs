@@ -8,6 +8,9 @@ use crate::ui::UI;
 #[derive(Debug)]
 pub struct State {
     /// TODO: docs
+    pub attached_buffers: Vec<u32>,
+
+    /// TODO: docs
     pub augroup_id: Option<u32>,
 
     /// The currently available completion items computed by
@@ -16,6 +19,9 @@ pub struct State {
 
     /// Holds state about the current cursor position.
     pub cursor: Cursor,
+
+    /// TODO: docs
+    pub did_setup: bool,
 
     /// Used to store the current configuration.
     pub settings: Settings,
@@ -27,9 +33,11 @@ pub struct State {
 impl State {
     pub fn new(api: &Api) -> LuaResult<Self> {
         Ok(State {
+            attached_buffers: Vec::new(),
             augroup_id: None,
             completions: Vec::new(),
             cursor: Cursor::new(),
+            did_setup: false,
             settings: Settings::default(),
             ui: UI::new(api)?,
         })

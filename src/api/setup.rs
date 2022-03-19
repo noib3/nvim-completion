@@ -59,7 +59,8 @@ pub fn setup(
                 Error::Lua(e) => return Err(e),
             };
 
-            chunks.insert(0, ("[nvim-compleet]: ".into(), Some("ErrorMsg")));
+            chunks.insert(0, ("[nvim-compleet]".into(), Some("ErrorMsg")));
+            chunks.insert(1, (" ".into(), None));
             api.echo(&chunks, true)?;
 
             return Ok(());
@@ -69,15 +70,20 @@ pub fn setup(
     // Used for debugging.
     // nvim.print(format!("{:?}", &_state.settings))?;
 
-    // Save the `id` of the `Compleet` augroup.
-    _state.augroup_id = Some(autocmds::setup(lua, api, state)?);
+    // Only execute this block the first time this function is called.
+    if !_state.did_setup {
+        // Save the `id` of the `Compleet` augroup.
+        _state.augroup_id = Some(autocmds::setup(lua, api, state)?);
 
-    commands::setup(lua, api, state)?;
-    hlgroups::setup(lua, api)?;
-    mappings::setup(lua, &nvim.keymap, state)?;
+        commands::setup(lua, api, state)?;
+        hlgroups::setup(lua, api)?;
+        mappings::setup(lua, &nvim.keymap, state)?;
 
-    if _state.settings.enable_default_mappings {
-        mappings::enable_default(lua, &nvim.keymap, state)?;
+        if _state.settings.enable_default_mappings {
+            mappings::enable_default(lua, &nvim.keymap, state)?;
+        }
+
+        _state.did_setup = true;
     }
 
     // // See how many times the state has been cloned across all the various

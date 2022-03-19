@@ -50,9 +50,9 @@ pub fn bytes_changed(
 
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;
-    // let mut current_line = buffer.line.clone();
-    // current_line.insert(buffer.bytes_before_cursor, '|');
-    // nvim.print(format!("Current row: {}", buffer.row))?;
+    // let mut current_line = cursor.line.clone();
+    // current_line.insert(cursor.bytes as usize, '|');
+    // nvim.print(format!("Current row: {}", cursor.row))?;
     // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
 
     let completions = &mut state.completions;

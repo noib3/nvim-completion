@@ -74,10 +74,10 @@ impl UI {
                 menu.shift(lua, api, position)?;
                 menu.fill(lua, api, completions)?;
 
-                // Reset the cursor to the top of the buffer.
-                api.win_set_cursor(winid, 1u32, 0)?;
+                // Reset the cursor to the first row of the window.
+                api.win_set_cursor(winid, 1, 0)?;
 
-                // Display the selected completion.
+                // Select the current completion.
                 if let Some(index) = menu.selected_index {
                     api.win_set_cursor(
                         winid,

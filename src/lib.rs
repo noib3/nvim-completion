@@ -22,12 +22,45 @@ use state::State;
 
 // TODOs
 //
-// 1. Right now everything is sync and we're blocking on every single event
-//    we listen to. This will be a problem when we start dealing with
-//    possibly thousands of completion results from LSPs.
+// 0. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
 //
-// Can we leverage async on the Rust end w/ Tokyo? Also look into `:h
-// vim.loop` and `:h lua-loop-threading`.
+// 0. vim.keymap -> nvim_set_keymap, vim.notify -> nvim_notify
+//
+// 1. Right now everything is sync and we're blocking on every single event we
+//    listen to. This will be a problem when we start dealing with possibly
+//    thousands of completion results from LSPs. Can we leverage async on the
+//    Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
+//    lua-loop-threading`.
+//
+// 2. Update details when item is selected.
+//
+// 3. Add padding to both details and completion windows instead of relying on
+//    spaces?
+//
+// 4. Add option to set the completion window at the start of the completion
+//    instead of the cursor.
+//
+// 5. Add `complete_while_deleting` option to show completion results when
+//    going back.
+//
+// 6. Use serde to deserialize settings into struct.
+//
+// 7. Make `lipsum` an actual source.
+//
+// 8. `Compleet{Start, Stop}!` to attach and detach from all buffers, with
+//    version w/o ! only attaching to/detaching from the current buffer.
+//
+// 8. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only
+//    for attached buffers.
+//
+// 8. Provide fallback for options that don't exist (e.g. `did you mean y?`).
+//
+// 9. If value is not valid display what the user passed (e.g. `expected a
+//    boolean, found '"true"'`).
+//
+// 10. Return all wrong options at once instead of stopping at the first one.
+//
+// 11. Add nvim integration tests (lua?).
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> Result<Table> {

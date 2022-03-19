@@ -120,8 +120,6 @@ impl CompletionMenu {
 
         api.win_set_config(winid, opts)?;
 
-        api.win_set_option(winid, "scrolloff", 0)?;
-
         Ok(())
     }
 
