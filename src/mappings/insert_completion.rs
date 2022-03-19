@@ -50,6 +50,9 @@ pub fn insert_completion(
         text_to_insert.to_string(),
     ))?)?;
 
+    // Reset the selected completion.
+    state.ui.completion_menu.selected_index = None;
+
     Ok(())
 }
 

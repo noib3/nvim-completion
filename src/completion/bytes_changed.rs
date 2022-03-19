@@ -1,5 +1,6 @@
-use mlua::{Lua, Result};
+use mlua::{prelude::LuaResult, Lua};
 use neovim::{Api, Neovim};
+use std::cmp;
 
 use crate::state::State;
 use crate::ui::menu;
@@ -14,7 +15,7 @@ pub fn bytes_changed(
     bytes_deleted: u32,
     rows_added: u32,
     bytes_added: u32,
-) -> Result<()> {
+) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
 
     // TODO: detach buffer on every `InsertLeave` and re-attach it on every
@@ -63,6 +64,7 @@ pub fn bytes_changed(
 
     let settings = &state.settings;
     let ui = &mut state.ui;
+    let menu = &mut ui.completion_menu;
 
     // Queue an update for the completion menu.
     if settings.autoshow_menu {
@@ -71,18 +73,24 @@ pub fn bytes_changed(
             &completions,
             settings.max_menu_height,
         )?;
+
+        // Update the selected completion.
+        menu.selected_index = menu
+            .selected_index
+            .map(|old| cmp::min(old, completions.len() - 1));
     }
 
-    // If hints are enabled and the cursor is at the end of the line, set the
-    // hint for the first completion.
+    // If hints are enabled and the cursor is at the end of the line, queue an
+    // update for the completion hint.
     if settings.show_hints && cursor.is_at_eol() {
-        ui.queued_updates.hinted_index = Some(0);
+        ui.queued_updates.hinted_index =
+            Some(ui.completion_menu.selected_index.unwrap_or(0));
     }
 
     Ok(())
 }
 
-fn get_current_line(api: &Api, current_row: u32) -> Result<String> {
+fn get_current_line(api: &Api, current_row: u32) -> LuaResult<String> {
     let current_line = api
         .buf_get_lines(
             0,

@@ -1,4 +1,4 @@
-use mlua::{Function, Result, Table, ToLua};
+use mlua::{FromLua, Function, Result, Table, ToLua};
 
 use super::Api;
 
@@ -32,6 +32,26 @@ impl<'a> Api<'a> {
             .call::<_, Table>(winid)?;
 
         Ok((position.get(1)?, position.get(2)?))
+    }
+
+    /// Binding to `vim.api.nvim_win_get_option`
+    ///
+    /// Gets a window option value.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window.
+    /// * `name`   Option name.
+    /// * `value`  Option value.
+    pub fn win_get_option<V: FromLua<'a>>(
+        &self,
+        winid: u32,
+        name: &str,
+    ) -> Result<V> {
+        Ok(self
+            .0
+            .get::<&str, Function>("nvim_win_get_option")?
+            .call((winid, name))?)
     }
 
     /// Binding to `vim.api.nvim_win_get_width`

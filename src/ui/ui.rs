@@ -69,25 +69,41 @@ impl UI {
         let updates = &mut self.queued_updates;
 
         // Update the completion menu.
-        match (menu.is_visible(), updates.menu_position.as_ref()) {
-            (true, Some(position)) => {
+        match (menu.winid, updates.menu_position.as_ref()) {
+            (Some(winid), Some(position)) => {
                 menu.shift(lua, api, position)?;
                 menu.fill(lua, api, completions)?;
+
+                // Reset the cursor to the top of the buffer.
+                api.win_set_cursor(winid, 1u32, 0)?;
+
+                // Display the selected completion.
+                if let Some(index) = menu.selected_index {
+                    api.win_set_cursor(
+                        winid,
+                        (index + 1).try_into().unwrap(),
+                        0,
+                    )?;
+
+                    // Shifting the window resets the `cursorline` option to
+                    // false.
+                    api.win_set_option(winid, "cursorline", true)?;
+                }
             },
 
-            (false, Some(position)) => {
+            (None, Some(position)) => {
                 menu.spawn(lua, api, position)?;
                 menu.fill(lua, api, completions)?;
             },
 
-            (true, None) => {
+            (Some(_), None) => {
                 menu.close(api)?;
                 if details.is_visible() {
                     details.close(api)?;
                 }
             },
 
-            (false, None) => {},
+            (None, None) => {},
         }
 
         // Update the completion hint.
