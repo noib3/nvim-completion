@@ -26,10 +26,13 @@ pub fn bytes_changed(
         return Ok(());
     }
 
-    // If we've added a new line, deleted one or stayed in the same line but
-    // deleted characters we don't do anything. We only do something when new
-    // characters are added to the current line.
-    if rows_added != 0 || rows_deleted != 0 || bytes_deleted != 0 {
+    // If we've added or deleted a line we return early. If we've deleted
+    // characters we continue only if the `complete_while_deleting` option is
+    // set.
+    if rows_added != 0
+        || rows_deleted != 0
+        || (bytes_deleted != 0 && !state.settings.complete_while_deleting)
+    {
         return Ok(());
     }
 
@@ -37,7 +40,8 @@ pub fn bytes_changed(
 
     cursor.row = start_row;
     cursor.line = get_current_line(&api, cursor.row)?;
-    cursor.bytes = start_col + bytes_added;
+    cursor.bytes =
+        start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
 
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;

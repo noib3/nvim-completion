@@ -74,6 +74,7 @@ impl UI {
 
         // Update the completion menu.
         match (menu.winid, updates.menu_position.as_ref()) {
+            // TODO: refactor
             (Some(winid), Some(position)) => {
                 menu.shift(lua, api, position)?;
                 menu.fill(lua, api, completions)?;

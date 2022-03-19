@@ -41,6 +41,9 @@ pub struct Settings {
     /// completion items available.
     pub autoshow_menu: bool,
 
+    /// TODO: docs
+    pub complete_while_deleting: bool,
+
     /// Enable the default insert mode mappings for `<Tab>`, `<S-Tab>` and
     /// `<CR>`.
     pub enable_default_mappings: bool,
@@ -57,6 +60,7 @@ impl Settings {
     fn field_names() -> &'static [&'static str] {
         &[
             "autoshow_menu",
+            "complete_while_deleting",
             "enable_default_mappings",
             "max_menu_height",
             "show_hints",
@@ -68,6 +72,7 @@ impl Default for Settings {
     fn default() -> Settings {
         Settings {
             autoshow_menu: true,
+            complete_while_deleting: false,
             enable_default_mappings: false,
             max_menu_height: None,
             show_hints: false,
@@ -128,6 +133,17 @@ impl<'a> TryFrom<Option<Table<'a>>> for Settings {
             _ => {
                 return Err(Error::FailedConversion {
                     option: "autoshow_menu",
+                    expected: "boolean",
+                })
+            },
+        }
+
+        match preferences.get("complete_while_deleting")? {
+            Value::Nil => {},
+            Value::Boolean(bool) => config.complete_while_deleting = bool,
+            _ => {
+                return Err(Error::FailedConversion {
+                    option: "complete_while_deleting",
                     expected: "boolean",
                 })
             },

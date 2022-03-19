@@ -11,7 +11,7 @@ pub struct CompletionDetails {
 
     /// The handle of the floating window used to show the completion details,
     /// or `None` if the details window is not currently visible.
-    pub winid: Option<u32>,
+    winid: Option<u32>,
 }
 
 impl CompletionDetails {

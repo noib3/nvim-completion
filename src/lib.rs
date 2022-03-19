@@ -14,6 +14,10 @@ mod ui;
 
 use state::State;
 
+// BUGs
+//
+// 1. Completion details is in the wrong column when completion is selected.
+
 // TODOs: On Hold
 //
 // 1. Show scroll indicator if number of completions is bigger than the
@@ -33,30 +37,27 @@ use state::State;
 // 2. Add padding to both details and completion windows instead of relying on
 //    spaces?
 //
-// 3. Add option to set the completion window at the start of the completion
-//    instead of the cursor.
+// ** 3. Add option to set the completion window at the start of the completion
+// instead of the cursor.
 //
-// 4. Add `complete_while_deleting` option to show completion results when
-//    going back.
+// 4. Use serde to deserialize settings into struct.
 //
-// 5. Use serde to deserialize settings into struct.
+// 5. Make `lipsum` an actual source.
 //
-// 6. Make `lipsum` an actual source.
-//
-// 7. `Compleet{Start, Stop}!` to attach and detach from all buffers, with
+// 6. `Compleet{Start, Stop}!` to attach and detach from all buffers, with
 //    version w/o ! only attaching to/detaching from the current buffer.
 //
-// 8. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only
+// 7. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only
 //    for attached buffers.
 //
-// 9. Provide fallback for options that don't exist (e.g. `did you mean y?`).
+// 8. Provide fallback for options that don't exist (e.g. `did you mean y?`).
 //
-// 10. If value is not valid display what the user passed (e.g. `expected a
+// 9. If value is not valid display what the user passed (e.g. `expected a
 //    boolean, found '"true"'`).
 //
-// 12. Return all wrong options at once instead of stopping at the first one.
+// 10. Return all wrong options at once instead of stopping at the first one.
 //
-// 13. Add nvim integration tests (lua?).
+// 11. Add nvim integration tests (lua?).
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {

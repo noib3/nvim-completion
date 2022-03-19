@@ -46,6 +46,7 @@ pub fn select_completion(
     // Update the completion menu.
     menu.select(&api, new_selected_index)?;
 
+    // TODO: refactor
     if let Some(index) = new_selected_index {
         let completion = &completions[index];
 
