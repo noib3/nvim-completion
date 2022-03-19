@@ -2,9 +2,12 @@ use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use super::{
-    details::CompletionDetails, hint::CompletionHint, menu::CompletionMenu,
-    DrawInstructions,
+    details::{self, CompletionDetails},
+    hint::CompletionHint,
+    menu::CompletionMenu,
+    QueuedUpdates,
 };
+
 use crate::completion::{CompletionItem, Cursor};
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
@@ -21,7 +24,8 @@ pub struct UI {
     /// selected completion item.
     pub completion_details: CompletionDetails,
 
-    pub queued_updates: DrawInstructions,
+    /// TODO: docs
+    pub queued_updates: QueuedUpdates,
 }
 
 impl UI {
@@ -30,7 +34,7 @@ impl UI {
             completion_menu: CompletionMenu::new(api)?,
             completion_hint: CompletionHint::new(api)?,
             completion_details: CompletionDetails::new(api)?,
-            queued_updates: DrawInstructions::new(),
+            queued_updates: QueuedUpdates::new(),
         })
     }
 }
@@ -88,6 +92,34 @@ impl UI {
                     // Shifting the window resets the `cursorline` option to
                     // false.
                     api.win_set_option(winid, "cursorline", true)?;
+
+                    // Update the completion details.
+                    if let Some(lines) = &completions[index].details {
+                        let mut maybe_position =
+                            details::positioning::get_position(
+                                api,
+                                lines,
+                                winid,
+                                position.width,
+                            )?;
+
+                        if let Some(dpos) = &mut maybe_position {
+                            if details.is_visible() {
+                                // TODO: understand why I need this +1.
+                                dpos.col += 1;
+                                details.shift(lua, &api, winid, dpos)?;
+                            } else {
+                                details.spawn(lua, &api, winid, dpos)?;
+                            }
+                            details.fill(&api, lines)?;
+                        } else {
+                            details.close(&api)?;
+                        }
+                    } else {
+                        details.close(&api)?;
+                    }
+                } else {
+                    details.close(&api)?;
                 }
             },
 

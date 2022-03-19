@@ -1,5 +1,40 @@
 use mlua::{Table, Value};
 
+// TODO: devide in `ui`, `completion` and `sources`:
+// {
+//   ui = {
+//     menu = {
+//       autoshow = true,
+//       max_height = 7,
+//       borders = {
+//         enable = true,
+//         chars = {..},
+//       }
+//     },
+//
+//     details = {
+//       borders = {
+//         enable = true,
+//         chars = {..},
+//       }
+//     },
+//
+//     hints = {
+//       enable = true,
+//     },
+//   },
+//
+//   completion = {
+//     while_deleting = true,
+//   },
+//
+//   sources = {
+//     lipsum = {
+//       enable = true,
+//     },
+//   },
+// }
+
 #[derive(Debug)]
 pub struct Settings {
     /// Whether to automatically show the completion menu every time there are

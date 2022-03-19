@@ -15,10 +15,11 @@ pub fn get_position(
 ) -> LuaResult<Option<WindowPosition>> {
     let longest_line = completions
         .iter()
-        .map(|c| c.line.chars().count())
+        .map(|c| c.line.chars().count() - 1)
         .max()
         .expect("There's at least one completion");
 
+    // TODO: this is one column too wide. Why?
     // The `+ 2` is to pad each item with a space.
     let width: u32 = (longest_line + 2).try_into().unwrap();
 

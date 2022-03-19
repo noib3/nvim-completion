@@ -10,7 +10,6 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let completions = &state.completions;
 
     if !menu.is_visible() && !completions.is_empty() {
-        // TODO: already select the first completion.
         let api = Neovim::new(lua)?.api;
 
         let maybe_position = menu::positioning::get_position(

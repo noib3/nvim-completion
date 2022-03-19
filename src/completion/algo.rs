@@ -18,7 +18,7 @@ pub fn complete(
         ("bar", Some("A bar")),
         ("baz", Some("A baz")),
         ("bam", None),
-        ("bazooka", None),
+        ("bazooka", Some("A bazooka")),
         ("baroo", None),
         ("barometer", None),
         ("beard", None),

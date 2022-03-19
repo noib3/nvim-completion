@@ -12,13 +12,12 @@ pub fn setup(
     state: &Arc<Mutex<State>>,
     preferences: Option<Table>,
 ) -> LuaResult<()> {
-    let nvim = Neovim::new(lua)?;
-    let api = &nvim.api;
+    let api = Neovim::new(lua)?.api;
 
     // If the Neovim version isn't >= 0.7 we echo an error message and return
     // early.
     if !api.call_function::<_, u8>("has", vec!["nvim-0.7"])? == 1 {
-        nvim.api.echo(
+        api.echo(
             &[
                 ("[nvim-compleet]: ", Some("ErrorMsg")),
                 ("Neovim v0.7+ is required.", None),
@@ -67,20 +66,21 @@ pub fn setup(
         },
     };
 
-    // Used for debugging.
+    // // Used for debugging.
+    // let nvim = Neovim::new(lua)?;
     // nvim.print(format!("{:?}", &_state.settings))?;
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
         // Save the `id` of the `Compleet` augroup.
-        _state.augroup_id = Some(autocmds::setup(lua, api, state)?);
+        _state.augroup_id = Some(autocmds::setup(lua, &api, state)?);
 
-        commands::setup(lua, api, state)?;
-        hlgroups::setup(lua, api)?;
-        mappings::setup(lua, api, state)?;
+        commands::setup(lua, &api, state)?;
+        hlgroups::setup(lua, &api)?;
+        mappings::setup(lua, &api, state)?;
 
         if _state.settings.enable_default_mappings {
-            mappings::enable_default(lua, api, state)?;
+            mappings::enable_default(lua, &api, state)?;
         }
 
         _state.did_setup = true;
@@ -88,6 +88,7 @@ pub fn setup(
 
     // // See how many times the state has been cloned across all the various
     // // functions.
+    // let nvim = Neovim::new(lua)?;
     // nvim.print(format!(
     //     "State cloned {} times in total!",
     //     Arc::<Mutex<State>>::strong_count(state)

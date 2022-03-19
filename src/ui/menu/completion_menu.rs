@@ -120,6 +120,8 @@ impl CompletionMenu {
 
         api.win_set_config(winid, opts)?;
 
+        self.width = Some(position.width);
+
         Ok(())
     }
 
