@@ -16,7 +16,7 @@ use state::State;
 
 // BUGs
 //
-// 1. Completion details is in the wrong column when completion is selected.
+// ** 1. Completion details is in the wrong column when completion is selected.
 
 // TODOs: On Hold
 //
@@ -34,11 +34,10 @@ use state::State;
 //    Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
 //    lua-loop-threading`.
 //
-// 2. Add padding to both details and completion windows instead of relying on
-//    spaces?
+// 2. Add option for menu and details corners.
 //
-// ** 3. Add option to set the completion window at the start of the completion
-// instead of the cursor.
+// 3. Add option to set the completion window at the start of the completion
+//    instead of the cursor.
 //
 // 4. Use serde to deserialize settings into struct.
 //

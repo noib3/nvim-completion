@@ -1,4 +1,5 @@
 mod completion_details;
-pub mod positioning;
+mod positioning;
 
 pub use completion_details::CompletionDetails;
+use positioning::get_position;

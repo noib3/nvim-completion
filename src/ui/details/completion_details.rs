@@ -99,4 +99,46 @@ impl CompletionDetails {
 
         Ok(())
     }
+
+    /// TODO: docs
+    pub fn update(
+        &mut self,
+        lua: &Lua,
+        api: &Api,
+        new_lines: Option<&Vec<String>>,
+        menu_width: u32,
+        menu_winid: u32,
+    ) -> LuaResult<()> {
+        match new_lines {
+            // If the are new lines to fill the buffer with try to get a
+            // position for the floating window.
+            Some(lines) => {
+                match (
+                    self.is_visible(),
+                    &super::get_position(api, lines, menu_winid, menu_width)?,
+                ) {
+                    (true, Some(position)) => {
+                        self.shift(lua, api, menu_winid, position)?;
+                        self.fill(api, lines)?;
+                    },
+
+                    (false, Some(position)) => {
+                        self.spawn(lua, api, menu_winid, position)?;
+                        self.fill(api, lines)?;
+                    },
+
+                    (true, None) => {
+                        self.close(api)?;
+                    },
+
+                    (false, None) => {},
+                }
+            },
+
+            // Otherwise close the window.
+            None => self.close(api)?,
+        }
+
+        Ok(())
+    }
 }

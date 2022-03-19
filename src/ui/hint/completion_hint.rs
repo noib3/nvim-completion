@@ -1,6 +1,8 @@
 use mlua::prelude::{Lua, LuaResult};
 use neovim::Api;
 
+use crate::completion::{CompletionItem, Cursor};
+
 #[derive(Debug)]
 pub struct CompletionHint {
     /// The namespace id associated to the completion hint.
@@ -34,19 +36,38 @@ impl CompletionHint {
         &mut self,
         lua: &Lua,
         api: &Api,
-        hint: &str,
-        row: u32,
-        col: u32,
+        text: &str,
+        cursor: &Cursor,
         index: usize,
     ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 3)?;
         opts.set("id", 1)?;
-        opts.set("virt_text", [[hint, "CompleetHint"]])?;
+        opts.set("virt_text", [[text, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
-        api.buf_set_extmark(0, self.nsid, row, col, opts)?;
+        api.buf_set_extmark(0, self.nsid, cursor.row, cursor.bytes, opts)?;
 
         self.hinted_index = Some(index);
+
+        Ok(())
+    }
+
+    pub fn update(
+        &mut self,
+        lua: &Lua,
+        api: &Api,
+        new_completion: Option<(&CompletionItem, usize)>,
+        cursor_position: &Cursor,
+    ) -> LuaResult<()> {
+        // Display the hint for the new completion.
+        if let Some((completion, index)) = new_completion {
+            let text = &completion.text[completion.matched_prefix_len..];
+            self.set(lua, api, text, cursor_position, index)?;
+        }
+        // If there is no new completion to hint then try to clear the old one.
+        else if self.is_visible() {
+            self.erase(api)?
+        };
 
         Ok(())
     }

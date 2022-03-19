@@ -2,9 +2,7 @@ use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use super::{
-    details::{self, CompletionDetails},
-    hint::CompletionHint,
-    menu::CompletionMenu,
+    details::CompletionDetails, hint::CompletionHint, menu::CompletionMenu,
     QueuedUpdates,
 };
 
@@ -40,12 +38,12 @@ impl UI {
 }
 
 impl UI {
-    /// Executed on every `InsertLeft` event.
+    /// Executed on every `InsertLeft` event of attached buffers.
     pub fn cleanup(&mut self, api: &Api) -> LuaResult<()> {
         if self.completion_menu.is_visible() {
             self.completion_menu.close(api)?;
 
-            // The details pane can only be visible if the completion menu is
+            // The details window can only be visible if the completion menu is
             // visible.
             if self.completion_details.is_visible() {
                 self.completion_details.close(api)?;
@@ -59,7 +57,7 @@ impl UI {
         Ok(())
     }
 
-    /// Executed on every `CursorMovedI` event.
+    /// Executed on every `CursorMovedI` event of attached buffers.
     pub fn update(
         &mut self,
         lua: &Lua,
@@ -68,13 +66,12 @@ impl UI {
         completions: &[CompletionItem],
     ) -> LuaResult<()> {
         let menu = &mut self.completion_menu;
-        let hint = &mut self.completion_hint;
         let details = &mut self.completion_details;
+        let hint = &mut self.completion_hint;
         let updates = &mut self.queued_updates;
 
-        // Update the completion menu.
+        // Update the completion menu and completion details.
         match (menu.winid, updates.menu_position.as_ref()) {
-            // TODO: refactor
             (Some(winid), Some(position)) => {
                 menu.shift(lua, api, position)?;
                 menu.fill(lua, api, completions)?;
@@ -82,43 +79,21 @@ impl UI {
                 // Reset the cursor to the first row of the window.
                 api.win_set_cursor(winid, 1, 0)?;
 
-                // Select the current completion.
                 if let Some(index) = menu.selected_index {
+                    // Shifting the window resets the `cursorline` option to
+                    // false.
+                    api.win_set_option(winid, "cursorline", true)?;
+
+                    // Set the cursor row to the selected completion.
                     api.win_set_cursor(
                         winid,
                         (index + 1).try_into().unwrap(),
                         0,
                     )?;
 
-                    // Shifting the window resets the `cursorline` option to
-                    // false.
-                    api.win_set_option(winid, "cursorline", true)?;
-
                     // Update the completion details.
-                    if let Some(lines) = &completions[index].details {
-                        let mut maybe_position =
-                            details::positioning::get_position(
-                                api,
-                                lines,
-                                winid,
-                                position.width,
-                            )?;
-
-                        if let Some(dpos) = &mut maybe_position {
-                            if details.is_visible() {
-                                // TODO: understand why I need this +1.
-                                dpos.col += 1;
-                                details.shift(lua, &api, winid, dpos)?;
-                            } else {
-                                details.spawn(lua, &api, winid, dpos)?;
-                            }
-                            details.fill(&api, lines)?;
-                        } else {
-                            details.close(&api)?;
-                        }
-                    } else {
-                        details.close(&api)?;
-                    }
+                    let lines = completions[index].details.as_ref();
+                    details.update(lua, api, lines, position.width, winid)?;
                 } else {
                     details.close(&api)?;
                 }
@@ -131,26 +106,15 @@ impl UI {
 
             (Some(_), None) => {
                 menu.close(api)?;
-                if details.is_visible() {
-                    details.close(api)?;
-                }
+                details.close(api)?;
             },
 
             (None, None) => {},
         }
 
         // Update the completion hint.
-        match (hint.is_visible(), updates.hinted_index) {
-            (_, Some(index)) => {
-                let completion = &completions[index];
-                let text = &completion.text[completion.matched_prefix_len..];
-                hint.set(lua, api, text, cursor.row, cursor.bytes, index)?;
-            },
-
-            (true, None) => hint.erase(api)?,
-
-            (false, None) => {},
-        }
+        let comp_with_i = updates.hinted_index.map(|i| (&completions[i], i));
+        hint.update(lua, api, comp_with_i, cursor)?;
 
         // After we've consumed all the instructions we reset them.
         updates.reset();
