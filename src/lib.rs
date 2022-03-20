@@ -14,52 +14,58 @@ mod ui;
 
 use state::State;
 
-// BUGs
-//
-// 1. complete `bazooka` -> delete a -> completion menu is empty.
-// 2. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
+/*
+BUGs
 
-// TODOs: On Hold
-//
-// 1. Show scroll indicator if number of completions is bigger than the
-//    completion menu's max height. This needs floating windows to support
-//    scrollbars. See `:h api-floatwin`.
+1. complete `bazooka` -> delete a -> completion menu is empty.
+2. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
 
-// TODOs
-//
-// 0. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
-//
-// 1. Right now everything is sync and we're blocking on every single event we
-//    listen to. This will be a problem when we start dealing with possibly
-//    thousands of completion results from LSPs. Can we leverage async on the
-//    Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
-//    lua-loop-threading`.
-//
-// 2. Add option for menu and details corners.
-//
-// 3. Add option to set the completion window at the start of the completion
-//    instead of the cursor.
-//
-// ** 4. Use serde to deserialize settings into struct.
-//
-// 5. Make `lipsum` an actual source.
-//
-// 6. `Compleet{Start, Stop}!` to attach and detach from all buffers, with
-//    version w/o ! only attaching to/detaching from the current buffer.
-//
-// 7. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only
-//    for attached buffers.
-//
-// 8. Provide fallback for options that don't exist (e.g. `did you mean y?`).
-//
-// 9. If value is not valid display what the user passed (e.g. `expected a
-//    boolean, found '"true"'`).
-//
-// 10. Return all wrong options at once instead of stopping at the first one.
-//
-// 11. Add nvim integration tests (lua?).
-//
-// 12. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+TODOs: On Hold
+
+1. Show scroll indicator if number of completions is bigger than the completion
+   menu's max height. This needs floating windows to support scrollbars. See
+   `:h api-floatwin`.
+
+TODOs
+
+0. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
+
+1. Right now everything is sync and we're blocking on every single event we
+   listen to. This will be a problem when we start dealing with possibly
+   thousands of completion results from LSPs. Can we leverage async on the Rust
+   end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
+
+2. Add option for menu and details corners.
+
+** 3. Add option to set the completion window at the start of the completion
+instead of the cursor.
+
+4. Make `lipsum` an actual source.
+
+5. `Compleet{Start, Stop}!` to attach and detach from all buffers, with version
+   w/o ! only attaching to/detaching from the current buffer.
+
+6. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only for
+   attached buffers.
+
+7. Better error reporting for wrongly formed preferences, e.g.:
+
+   * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
+   and "match"`;
+
+   * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
+   and "match"`;
+
+   * `Invalid field `ui.foo`, valid fields are `ui.menu`, `ui.details` and
+   `ui.hint`;
+
+   * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
+   and "match"`;
+
+10. Add nvim integration tests (lua?).
+
+11. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+*/
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {

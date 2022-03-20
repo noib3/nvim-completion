@@ -1,6 +1,6 @@
 use mlua::prelude::LuaResult;
 use neovim::Api;
-use std::cmp;
+use std::{cmp, num::NonZeroU32};
 
 use crate::completion::CompletionItem;
 use crate::ui::WindowPosition;
@@ -11,7 +11,7 @@ use crate::ui::WindowPosition;
 pub fn get_position(
     api: &Api,
     completions: &[CompletionItem],
-    max_height: Option<u32>,
+    max_height: Option<NonZeroU32>,
 ) -> LuaResult<Option<WindowPosition>> {
     let longest_line = completions
         .iter()
@@ -32,7 +32,7 @@ pub fn get_position(
 
     let height = match max_height {
         None => completions.len() as u32,
-        Some(height) => cmp::min(height as usize, completions.len()) as u32,
+        Some(height) => cmp::min(u32::from(height), completions.len() as u32),
     };
 
     // Horizontal policy.

@@ -31,7 +31,7 @@ pub fn bytes_changed(
     // set.
     if rows_added != 0
         || rows_deleted != 0
-        || (bytes_deleted != 0 && !state.settings.complete_while_deleting)
+        || (bytes_deleted != 0 && !state.settings.completion.while_deleting)
     {
         return Ok(());
     }
@@ -71,11 +71,11 @@ pub fn bytes_changed(
     let menu = &mut ui.completion_menu;
 
     // Queue an update for the completion menu.
-    if settings.autoshow_menu {
+    if settings.ui.menu.autoshow {
         ui.queued_updates.menu_position = menu::positioning::get_position(
             &api,
             &completions,
-            settings.max_menu_height,
+            settings.ui.menu.max_height,
         )?;
 
         // Update the selected completion.
@@ -86,7 +86,7 @@ pub fn bytes_changed(
 
     // If hints are enabled and the cursor is at the end of the line, queue an
     // update for the completion hint.
-    if settings.show_hints && cursor.is_at_eol() {
+    if settings.ui.hint.enable && cursor.is_at_eol() {
         ui.queued_updates.hinted_index =
             Some(ui.completion_menu.selected_index.unwrap_or(0));
     }

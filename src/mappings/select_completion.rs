@@ -46,7 +46,7 @@ pub fn select_completion(
     menu.select(&api, new_index)?;
 
     // Update the completion hint.
-    if state.settings.show_hints && cursor.is_at_eol() {
+    if state.settings.ui.hint.enable && cursor.is_at_eol() {
         let new_completion_w_i = new_index.map(|i| (&completions[i], i));
         hint.update(lua, &api, new_completion_w_i, cursor)?;
     }

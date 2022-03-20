@@ -15,7 +15,7 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
         let maybe_position = menu::positioning::get_position(
             &api,
             completions,
-            state.settings.max_menu_height,
+            state.settings.ui.menu.max_height,
         )?;
 
         if let Some(position) = maybe_position {
