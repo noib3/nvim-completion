@@ -16,7 +16,8 @@ use state::State;
 
 // BUGs
 //
-// ** 1. Completion details is in the wrong column when completion is selected.
+// 1. complete `bazooka` -> delete a -> completion menu is empty.
+// 2. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
 
 // TODOs: On Hold
 //
@@ -39,7 +40,7 @@ use state::State;
 // 3. Add option to set the completion window at the start of the completion
 //    instead of the cursor.
 //
-// 4. Use serde to deserialize settings into struct.
+// ** 4. Use serde to deserialize settings into struct.
 //
 // 5. Make `lipsum` an actual source.
 //
@@ -57,6 +58,8 @@ use state::State;
 // 10. Return all wrong options at once instead of stopping at the first one.
 //
 // 11. Add nvim integration tests (lua?).
+//
+// 12. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {

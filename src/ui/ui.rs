@@ -81,7 +81,8 @@ impl UI {
 
                 if let Some(index) = menu.selected_index {
                     // Shifting the window resets the `cursorline` option to
-                    // false.
+                    // `false`. If a completion is selected it needs to be set
+                    // back to `true`.
                     api.win_set_option(winid, "cursorline", true)?;
 
                     // Set the cursor row to the selected completion.

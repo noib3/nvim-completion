@@ -44,7 +44,7 @@ impl CompletionDetails {
     }
 
     /// TODO: docs
-    pub fn shift(
+    pub fn _shift(
         &mut self,
         lua: &Lua,
         api: &Api,
@@ -55,7 +55,7 @@ impl CompletionDetails {
             .winid
             .expect("The details window is visible so it has a window id.");
 
-        let opts = lua.create_table_with_capacity(0, 7)?;
+        let opts = lua.create_table_with_capacity(0, 6)?;
         opts.set("relative", "win")?;
         opts.set("win", menu_winid)?;
         opts.set("width", position.width)?;
@@ -69,14 +69,14 @@ impl CompletionDetails {
     }
 
     /// TODO: docs
-    pub fn spawn(
+    fn spawn(
         &mut self,
         lua: &Lua,
         api: &Api,
         menu_winid: u32,
         position: &WindowPosition,
     ) -> LuaResult<()> {
-        let opts = lua.create_table_with_capacity(0, 10)?;
+        let opts = lua.create_table_with_capacity(0, 9)?;
         opts.set("relative", "win")?;
         opts.set("win", menu_winid)?;
         opts.set("width", position.width)?;
@@ -118,7 +118,22 @@ impl CompletionDetails {
                     &super::get_position(api, lines, menu_winid, menu_width)?,
                 ) {
                     (true, Some(position)) => {
-                        self.shift(lua, api, menu_winid, position)?;
+                        // TODO: Understand why closing and reopening the
+                        // details window works but setting a new config makes
+                        // it lag by 1 column. I tried reproducing this by
+                        // replicating the same command sequence manually but
+                        // everything seems to work fine. What is going on
+                        // here?
+                        //
+                        // This lags 1 column behind.
+                        //
+                        // self.shift(lua, api, menu_winid, position)?;
+
+                        // So closing and reopening works but shifting
+                        // doesn't?
+                        self.close(api)?;
+                        self.spawn(lua, api, menu_winid, position)?;
+
                         self.fill(api, lines)?;
                     },
 
