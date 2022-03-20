@@ -21,9 +21,13 @@ pub fn setup(
     let update_ui = lua.create_function(move |lua, ()| {
         let api = Neovim::new(&lua)?.api;
         let state = &mut *_state.lock().unwrap();
-        state
-            .ui
-            .update(lua, &api, &state.cursor, &state.completions)
+        state.ui.update(
+            lua,
+            &api,
+            &state.completions,
+            &state.cursor,
+            &state.settings,
+        )
     })?;
 
     let _state = state.clone();

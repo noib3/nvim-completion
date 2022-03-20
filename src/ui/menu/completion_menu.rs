@@ -2,6 +2,7 @@ use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use crate::completion::CompletionItem;
+use crate::settings::ui::border::BorderSettings;
 use crate::ui::WindowPosition;
 
 #[derive(Debug)]
@@ -130,6 +131,7 @@ impl CompletionMenu {
         lua: &Lua,
         api: &Api,
         position: &WindowPosition,
+        border: &BorderSettings,
     ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 8)?;
         opts.set("relative", "cursor")?;
@@ -141,11 +143,15 @@ impl CompletionMenu {
         opts.set("style", "minimal")?;
         opts.set("noautocmd", true)?;
 
+        if border.enable {
+            opts.set("border", border.style.to_lua(lua)?)?;
+        }
+
         let winid = api.open_win(self.bufnr, false, opts)?;
         api.win_set_option(
             winid,
             "winhl",
-            "CursorLine:CompleetMenuSelected,Normal:CompleetMenu,Search:None",
+            "CursorLine:CompleetMenuSelected,FloatBorder:CompleetMenuBorder,Normal:CompleetMenu,Search:None",
         )?;
         api.win_set_option(winid, "scrolloff", 0)?;
 

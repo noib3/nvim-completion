@@ -1,4 +1,4 @@
-mod borders;
+pub mod border;
 mod details;
 mod hint;
 pub mod menu;

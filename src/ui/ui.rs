@@ -7,6 +7,7 @@ use super::{
 };
 
 use crate::completion::{CompletionItem, Cursor};
+use crate::settings::Settings;
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
 #[derive(Debug)]
@@ -62,8 +63,9 @@ impl UI {
         &mut self,
         lua: &Lua,
         api: &Api,
-        cursor: &Cursor,
         completions: &[CompletionItem],
+        cursor: &Cursor,
+        settings: &Settings,
     ) -> LuaResult<()> {
         let menu = &mut self.completion_menu;
         let details = &mut self.completion_details;
@@ -101,7 +103,7 @@ impl UI {
             },
 
             (None, Some(position)) => {
-                menu.spawn(lua, api, position)?;
+                menu.spawn(lua, api, position, &settings.ui.menu.border)?;
                 menu.fill(lua, api, completions)?;
             },
 

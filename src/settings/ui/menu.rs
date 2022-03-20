@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 
-use super::borders;
+use super::border;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,7 +16,7 @@ pub struct MenuSettings {
     pub max_height: Option<NonZeroU32>,
 
     #[serde(default)]
-    pub borders: super::borders::BorderSettings,
+    pub border: super::border::BorderSettings,
 }
 
 impl Default for MenuSettings {
@@ -25,7 +25,7 @@ impl Default for MenuSettings {
             anchor: MenuAnchor::default(),
             autoshow: default_menu_autoshow(),
             max_height: Option::default(),
-            borders: borders::BorderSettings::default(),
+            border: border::BorderSettings::default(),
         }
     }
 }

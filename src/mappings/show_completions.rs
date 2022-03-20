@@ -14,13 +14,12 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
 
         let maybe_position = menu::positioning::get_position(
             completions,
-            state.settings.ui.menu.max_height,
-            &state.settings.ui.menu.anchor,
             state.cursor.matched_bytes,
+            &state.settings.ui.menu,
         )?;
 
         if let Some(position) = maybe_position {
-            menu.spawn(lua, &api, &position)?;
+            menu.spawn(lua, &api, &position, &state.settings.ui.menu.border)?;
             menu.fill(lua, &api, completions)?;
         }
     }

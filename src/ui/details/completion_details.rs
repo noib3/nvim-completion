@@ -91,7 +91,7 @@ impl CompletionDetails {
         api.win_set_option(
             winid,
             "winhl",
-            "Normal:CompleetDetails,Search:None",
+            "FloatBorder:CompleetDetailsBorder,Normal:CompleetDetails,Search:None",
         )?;
         api.win_set_option(winid, "scrolloff", 0)?;
 

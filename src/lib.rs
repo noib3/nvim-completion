@@ -35,20 +35,19 @@ TODOs
    thousands of completion results from LSPs. Can we leverage async on the Rust
    end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
 
-2. Add option for menu and details corners.
+** 2. Add option for details border.
 
-** 3. Add option to set the completion window at the start of the completion
-instead of the cursor.
+3. Make `lipsum` an actual source by creating `CompletionSource` trait. That
+   trait has a `complete` function that takes some context and returns a
+   `Vec<CompletionItem>`. Call lipsum by `lipsum.complete(&ctx)` or something.
 
-4. Make `lipsum` an actual source.
-
-5. `Compleet{Start, Stop}!` to attach and detach from all buffers, with version
+4. `Compleet{Start, Stop}!` to attach and detach from all buffers, with version
    w/o ! only attaching to/detaching from the current buffer.
 
-6. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only for
+5. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only for
    attached buffers.
 
-7. Better error reporting for wrongly formed preferences, e.g.:
+6. Better error reporting for wrongly formed preferences, e.g.:
 
    * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
    and "match"`;
@@ -62,9 +61,9 @@ instead of the cursor.
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-8. Add nvim integration tests (lua?).
+7. Add nvim integration tests (lua?).
 
-9. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+8. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]
