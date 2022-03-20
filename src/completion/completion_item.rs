@@ -2,21 +2,16 @@ use std::ops::Range;
 
 #[derive(Debug, Clone)]
 pub struct CompletionItem {
-    /// TODO: docs
+    /// The text to display in the details window as a vector of strings.
     pub details: Option<Vec<String>>,
 
-    // TODO: rename
     /// TODO: docs
     pub line: String,
 
-    /// TODO: refactor
-    pub matched_prefix_len: usize,
+    /// TODO: docs
+    pub hl_ranges: Vec<(Range<usize>, &'static str)>,
 
-    /// A vector of ranges representing indices of bytes of the `text` field
-    /// that are matched by the current completion prefix.
-    pub matched_byte_ranges: Vec<Range<usize>>,
-
-    /// The text that will be inserted into the buffer if a completion is
+    /// The text that will be inserted into the buffer if the completion is
     /// selected.
     pub text: String,
 }
@@ -25,15 +20,18 @@ impl CompletionItem {
     pub fn new(
         text: String,
         details: Option<String>,
-        matched_prefix_len: usize,
+        matched_bytes: u32,
     ) -> Self {
+        let details = details
+            .map(|lines| lines.lines().map(|line| line.to_string()).collect());
+
+        let hl_ranges =
+            vec![(1..matched_bytes as usize + 1, "CompleetMenuMatchingChars")];
+
         CompletionItem {
-            details: details.map(|lines| {
-                lines.lines().map(|line| line.into()).collect::<Vec<_>>()
-            }),
+            details,
             line: format!(" {}", text),
-            matched_prefix_len,
-            matched_byte_ranges: vec![(1..matched_prefix_len + 1)],
+            hl_ranges,
             text,
         }
     }

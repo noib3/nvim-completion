@@ -66,22 +66,21 @@ impl CompletionMenu {
 
         api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
-        // Highlight the matched characters of every completion result.
+        // Highlight some characters of the completion item.
         let opts = lua.create_table_with_capacity(0, 4)?;
-        opts.set("hl_group", "CompleetMenuMatchingChars")?;
-
         for (row, completion) in completions.iter().enumerate() {
-            for range in &completion.matched_byte_ranges {
+            for range in &completion.hl_ranges {
                 // TODO: the id has to be unique not only for every line
                 // but also for every range.
+                opts.set("hl_group", range.1)?;
                 opts.set("id", row + 1)?;
                 opts.set("end_row", row)?;
-                opts.set("end_col", range.end)?;
+                opts.set("end_col", range.0.end)?;
                 api.buf_set_extmark(
                     self.bufnr,
                     self.mc_nsid,
                     row as u32,
-                    range.start as u32,
+                    range.0.start as u32,
                     opts.clone(),
                 )?;
             }

@@ -40,8 +40,9 @@ pub fn bytes_changed(
 
     cursor.row = start_row;
     cursor.line = get_current_line(&api, cursor.row)?;
-    cursor.bytes =
+    cursor.at_bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
+    cursor.update_matched_bytes();
 
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;
@@ -60,7 +61,7 @@ pub fn bytes_changed(
     // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
 
     let completions = &mut state.completions;
-    *completions = super::complete(&cursor.line, cursor.bytes as usize);
+    *completions = super::complete(&cursor);
 
     if completions.is_empty() {
         return Ok(());
@@ -73,9 +74,10 @@ pub fn bytes_changed(
     // Queue an update for the completion menu.
     if settings.ui.menu.autoshow {
         ui.queued_updates.menu_position = menu::positioning::get_position(
-            &api,
             &completions,
             settings.ui.menu.max_height,
+            &settings.ui.menu.anchor,
+            cursor.matched_bytes,
         )?;
 
         // Update the selected completion.

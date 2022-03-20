@@ -11,16 +11,15 @@ pub fn insert_completion(
     selected_index: usize,
 ) -> LuaResult<()> {
     let selected_completion = &state.completions[selected_index];
-    let buffer = &state.cursor;
+    let cursor = &state.cursor;
 
     let text_to_insert = get_text_to_insert(
-        selected_completion.matched_prefix_len,
-        &buffer.line[buffer.bytes as usize..],
+        cursor.matched_bytes as usize,
+        &cursor.line[cursor.at_bytes as usize..],
         &selected_completion.text,
     );
 
-    let end_column = buffer.bytes as usize
-        - selected_completion.matched_prefix_len
+    let end_column = (cursor.at_bytes - cursor.matched_bytes) as usize
         + selected_completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
@@ -45,8 +44,8 @@ pub fn insert_completion(
     let nvim = Neovim::new(lua)?;
 
     nvim.schedule(insert_completion.bind((
-        buffer.row,
-        buffer.bytes,
+        cursor.row,
+        cursor.at_bytes,
         text_to_insert.to_string(),
     ))?)?;
 
@@ -61,16 +60,16 @@ pub fn insert_completion(
 /// we're completing `foo` we only need to insert the first `o`, since the
 /// other one is already present in the buffer.
 fn get_text_to_insert<'a>(
-    matched_prefix_len: usize,
+    matched_bytes: usize,
     line_after_cursor: &'a str,
     completion: &'a str,
 ) -> &'a str {
-    // We don't care about the first `matched_prefix_len` bytes of the
-    // completion text since we're not doing any error correction yet.
+    // We don't care about the first `matched_bytes` bytes of the completion
+    // text since we're not doing any error correction yet.
     //
     // NOTE: this should never panic since `completion` is expected to always
-    // be strictly longer than `matched_prefix`.
-    let completion_wo_prefix = &completion[matched_prefix_len..];
+    // be strictly longer than `matched_bytes`.
+    let completion_wo_prefix = &completion[matched_bytes..];
 
     let bytes_after_cursor = line_after_cursor.len();
     let bytes_rest_of_completion = completion_wo_prefix.len();

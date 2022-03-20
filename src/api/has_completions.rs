@@ -6,6 +6,7 @@ use crate::state::State;
 
 /// Executed by the `require("compleet").has_completions` Lua function.
 pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
+    // TODO: check if the bufnr is in the attached buffers instead.
     // If the augroup id is `None` that means the user has turned off the
     // plugin with `:CompleetStop`.
     if state.augroup_id.is_none() {
@@ -17,10 +18,11 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     let cursor = &mut state.cursor;
     let completions = &mut state.completions;
 
-    cursor.update_bytes(&api)?;
+    cursor.update_at_bytes(&api)?;
     cursor.update_line(&api)?;
+    cursor.update_matched_bytes();
 
-    *completions = completion::complete(&cursor.line, cursor.bytes as usize);
+    *completions = completion::complete(&cursor);
 
     Ok(!completions.is_empty())
 }

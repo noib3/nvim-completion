@@ -6,13 +6,13 @@ use super::borders;
 #[serde(deny_unknown_fields)]
 pub struct DetailsSettings {
     #[serde(default)]
-    borders: borders::BordersSettings,
+    borders: borders::BorderSettings,
 }
 
 impl Default for DetailsSettings {
     fn default() -> Self {
         DetailsSettings {
-            borders: borders::BordersSettings::default(),
+            borders: borders::BorderSettings::default(),
         }
     }
 }

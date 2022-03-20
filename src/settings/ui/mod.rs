@@ -1,7 +1,7 @@
 mod borders;
 mod details;
 mod hint;
-mod menu;
+pub mod menu;
 mod ui;
 
 pub use ui::UiSettings;

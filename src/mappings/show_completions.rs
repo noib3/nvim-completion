@@ -13,9 +13,10 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
         let api = Neovim::new(lua)?.api;
 
         let maybe_position = menu::positioning::get_position(
-            &api,
             completions,
             state.settings.ui.menu.max_height,
+            &state.settings.ui.menu.anchor,
+            state.cursor.matched_bytes,
         )?;
 
         if let Some(position) = maybe_position {

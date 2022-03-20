@@ -62,9 +62,9 @@ instead of the cursor.
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-10. Add nvim integration tests (lua?).
+8. Add nvim integration tests (lua?).
 
-11. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+9. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]

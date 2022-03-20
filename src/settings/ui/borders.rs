@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct BordersSettings {
+pub struct BorderSettings {
     #[serde(default)]
     enable: bool,
 
@@ -10,9 +10,9 @@ pub struct BordersSettings {
     style: BorderType,
 }
 
-impl Default for BordersSettings {
+impl Default for BorderSettings {
     fn default() -> Self {
-        BordersSettings {
+        BorderSettings {
             enable: bool::default(),
             style: BorderType::default(),
         }

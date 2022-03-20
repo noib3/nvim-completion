@@ -45,7 +45,7 @@ impl CompletionHint {
         opts.set("virt_text", [[text, "CompleetHint"]])?;
         opts.set("virt_text_pos", "overlay")?;
 
-        api.buf_set_extmark(0, self.nsid, cursor.row, cursor.bytes, opts)?;
+        api.buf_set_extmark(0, self.nsid, cursor.row, cursor.at_bytes, opts)?;
 
         self.hinted_index = Some(index);
 
@@ -57,12 +57,12 @@ impl CompletionHint {
         lua: &Lua,
         api: &Api,
         new_completion: Option<(&CompletionItem, usize)>,
-        cursor_position: &Cursor,
+        cursor: &Cursor,
     ) -> LuaResult<()> {
         // Display the hint for the new completion.
         if let Some((completion, index)) = new_completion {
-            let text = &completion.text[completion.matched_prefix_len..];
-            self.set(lua, api, text, cursor_position, index)?;
+            let text = &completion.text[(cursor.matched_bytes as usize)..];
+            self.set(lua, api, text, cursor, index)?;
         }
         // If there is no new completion to hint then try to clear the old one.
         else if self.is_visible() {

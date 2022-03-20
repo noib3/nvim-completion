@@ -24,39 +24,3 @@ impl Default for Settings {
         }
     }
 }
-
-// TODO: devide in `ui`, `completion` and `sources`:
-// {
-//   ui = {
-//     menu = {
-//       autoshow = true,
-//       anchor = "cursor" | "match",
-//       max_height = 7,
-//       borders = {
-//         enable = true,
-//         chars = {..},
-//       }
-//     },
-//
-//     details = {
-//       borders = {
-//         enable = true,
-//         chars = {..},
-//       }
-//     },
-//
-//     hints = {
-//       enable = true,
-//     },
-//   },
-//
-//   completion = {
-//     while_deleting = true,
-//   },
-//
-//   sources = {
-//     lipsum = {
-//       enable = true,
-//     },
-//   },
-// }

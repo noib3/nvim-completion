@@ -16,7 +16,7 @@ pub struct MenuSettings {
     pub max_height: Option<NonZeroU32>,
 
     #[serde(default)]
-    pub borders: super::borders::BordersSettings,
+    pub borders: super::borders::BorderSettings,
 }
 
 impl Default for MenuSettings {
@@ -25,7 +25,7 @@ impl Default for MenuSettings {
             anchor: MenuAnchor::default(),
             autoshow: default_menu_autoshow(),
             max_height: Option::default(),
-            borders: borders::BordersSettings::default(),
+            borders: borders::BorderSettings::default(),
         }
     }
 }
