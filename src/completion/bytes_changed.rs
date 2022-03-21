@@ -18,13 +18,19 @@ pub fn bytes_changed(
 ) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
 
-    // TODO: detach buffer on every `InsertLeave` and re-attach it on every
-    // `InsertEnter`?
-    //
     // We only care about insert mode events.
     if api.get_mode()?.0 != "i" {
         return Ok(());
     }
+
+    let ui = &mut state.ui;
+    let completions = &mut state.completions;
+    let cursor = &mut state.cursor;
+    let menu = &mut ui.completion_menu;
+    let settings = &state.settings;
+
+    // First we reset all the ui updates to `None`.
+    ui.queued_updates.reset();
 
     // If we've added or deleted a line we return early. If we've deleted
     // characters we continue only if the `complete_while_deleting` option is
@@ -35,8 +41,6 @@ pub fn bytes_changed(
     {
         return Ok(());
     }
-
-    let cursor = &mut state.cursor;
 
     cursor.row = start_row;
     cursor.line = get_current_line(&api, cursor.row)?;
@@ -60,16 +64,11 @@ pub fn bytes_changed(
     // nvim.print(format!("Current row: {}", cursor.row))?;
     // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
 
-    let completions = &mut state.completions;
     *completions = super::complete(&cursor);
 
     if completions.is_empty() {
         return Ok(());
     }
-
-    let settings = &state.settings;
-    let ui = &mut state.ui;
-    let menu = &mut ui.completion_menu;
 
     // Queue an update for the completion menu.
     if settings.ui.menu.autoshow {

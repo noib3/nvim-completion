@@ -127,9 +127,6 @@ impl UI {
         let comp_with_i = updates.hinted_index.map(|i| (&completions[i], i));
         hint.update(lua, api, comp_with_i, cursor)?;
 
-        // After we've consumed all the instructions we reset them.
-        updates.reset();
-
         Ok(())
     }
 }

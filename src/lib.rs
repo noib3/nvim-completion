@@ -15,10 +15,6 @@ mod ui;
 use state::State;
 
 /*
-BUGs
-
-** 1. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
-
 TODOs: On Hold
 
 1. Show scroll indicator if number of completions is bigger than the completion
