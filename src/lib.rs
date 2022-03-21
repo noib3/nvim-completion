@@ -54,9 +54,7 @@ TODOs
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-7. Add nvim integration tests (lua?).
-
-8. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+7. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]
