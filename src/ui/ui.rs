@@ -96,7 +96,15 @@ impl UI {
 
                     // Update the completion details.
                     let lines = completions[index].details.as_ref();
-                    details.update(lua, api, lines, position.width, winid)?;
+                    details.update(
+                        lua,
+                        api,
+                        lines,
+                        &settings.ui.details.border,
+                        position.width,
+                        winid,
+                        &settings.ui.menu.border,
+                    )?;
                 } else {
                     details.close(&api)?;
                 }

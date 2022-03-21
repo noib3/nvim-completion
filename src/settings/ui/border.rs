@@ -40,7 +40,7 @@ impl BorderSettings {
     }
 
     /// Whether the right edge of the border is set (i.e. takes up column).
-    pub fn _is_right_edge_set(&self) -> bool {
+    pub fn is_right_edge_set(&self) -> bool {
         if !self.enable {
             return false;
         }
@@ -51,6 +51,42 @@ impl BorderSettings {
                 // Technically the right edge is present when the border's
                 // style is "shadow", but if it's supposed to be a shadow it
                 // looks better if we draw the details over it.
+                BorderString::Shadow => false,
+                _ => true,
+            },
+
+            // TODO: implement this
+            _ => true,
+        }
+    }
+
+    /// Whether the top edge of the border is set (i.e. takes up column).
+    pub fn is_top_edge_set(&self) -> bool {
+        if !self.enable {
+            return false;
+        }
+
+        match &self.style {
+            BorderStyle::String(s) => match s {
+                BorderString::None => false,
+                BorderString::Shadow => false,
+                _ => true,
+            },
+
+            // TODO: implement this
+            _ => true,
+        }
+    }
+
+    /// Whether the bottom edge of the border is set (i.e. takes up column).
+    pub fn is_bottom_edge_set(&self) -> bool {
+        if !self.enable {
+            return false;
+        }
+
+        match &self.style {
+            BorderStyle::String(s) => match s {
+                BorderString::None => false,
                 BorderString::Shadow => false,
                 _ => true,
             },

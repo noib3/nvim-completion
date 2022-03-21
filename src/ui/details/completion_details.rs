@@ -1,6 +1,7 @@
 use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
+use crate::settings::ui::border::BorderSettings;
 use crate::ui::WindowPosition;
 
 #[derive(Debug)]
@@ -75,6 +76,7 @@ impl CompletionDetails {
         api: &Api,
         menu_winid: u32,
         position: &WindowPosition,
+        border: &BorderSettings,
     ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 9)?;
         opts.set("relative", "win")?;
@@ -86,6 +88,10 @@ impl CompletionDetails {
         opts.set("focusable", false)?;
         opts.set("style", "minimal")?;
         opts.set("noautocmd", true)?;
+
+        if border.enable {
+            opts.set("border", border.style.to_lua(lua)?)?;
+        }
 
         let winid = api.open_win(self.bufnr, false, opts)?;
         api.win_set_option(
@@ -106,8 +112,10 @@ impl CompletionDetails {
         lua: &Lua,
         api: &Api,
         new_lines: Option<&Vec<String>>,
+        border: &BorderSettings,
         menu_width: u32,
         menu_winid: u32,
+        menu_border: &BorderSettings,
     ) -> LuaResult<()> {
         match new_lines {
             // If the are new lines to fill the buffer with try to get a
@@ -115,7 +123,14 @@ impl CompletionDetails {
             Some(lines) => {
                 match (
                     self.is_visible(),
-                    &super::get_position(api, lines, menu_winid, menu_width)?,
+                    &super::get_position(
+                        api,
+                        lines,
+                        border,
+                        menu_winid,
+                        menu_width,
+                        menu_border,
+                    )?,
                 ) {
                     (true, Some(position)) => {
                         // TODO: Understand why closing and reopening the
@@ -132,13 +147,13 @@ impl CompletionDetails {
                         // So closing and reopening works but shifting
                         // doesn't?
                         self.close(api)?;
-                        self.spawn(lua, api, menu_winid, position)?;
+                        self.spawn(lua, api, menu_winid, position, border)?;
 
                         self.fill(api, lines)?;
                     },
 
                     (false, Some(position)) => {
-                        self.spawn(lua, api, menu_winid, position)?;
+                        self.spawn(lua, api, menu_winid, position, border)?;
                         self.fill(api, lines)?;
                     },
 

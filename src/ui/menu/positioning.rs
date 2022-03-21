@@ -1,4 +1,5 @@
 use mlua::prelude::LuaResult;
+use neovim::Api;
 use std::cmp;
 
 use crate::completion::CompletionItem;
@@ -8,6 +9,7 @@ use crate::ui::WindowPosition;
 /// Figures out where to position the floating window used to display the
 /// completion menu.
 pub fn get_position(
+    api: &Api,
     completions: &[CompletionItem],
     matched_bytes: u32,
     settings: &MenuSettings,
@@ -26,6 +28,8 @@ pub fn get_position(
         Some(height) => cmp::min(u32::from(height), completions.len() as u32),
     };
 
+    let border = &settings.border;
+
     let col = match settings.anchor {
         MenuAnchor::Cursor => 0,
         // The `- 1` is because every completion is formatted with a leading
@@ -34,12 +38,35 @@ pub fn get_position(
     }
     // If the left edge of the border is present we need to offset it by
     // placing the menu one more column to the left.
-    - if settings.border.is_left_edge_set() { 1 } else { 0 };
+    - if border.is_left_edge_set() { 1 } else { 0 };
+
+    let (rows_above, rows_below) = get_rows_above_below_cursor(api)?;
+    let total_menu_height = height
+        + if border.is_bottom_edge_set() { 1 } else { 0 }
+        + if border.is_top_edge_set() { 1 } else { 0 };
+
+    let row = if rows_below >= total_menu_height {
+        1
+    } else if rows_above >= total_menu_height {
+        -i32::try_from(total_menu_height).unwrap()
+    } else {
+        return Ok(None);
+    };
 
     Ok(Some(WindowPosition {
         height,
         width,
-        row: 1,
+        row,
         col,
     }))
+}
+
+/// Returns the number of screen rows above and below the current cursor
+/// position.
+fn get_rows_above_below_cursor(api: &Api) -> LuaResult<(u32, u32)> {
+    let total_rows = api.get_option::<u32>("lines")?;
+    let rows_above =
+        api.call_function::<u8, u32>("screenrow", Vec::new())? - 1;
+
+    Ok((rows_above, total_rows - rows_above - 1))
 }

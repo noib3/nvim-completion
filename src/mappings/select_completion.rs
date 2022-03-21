@@ -61,7 +61,15 @@ pub fn select_completion(
 
     let lines = new_index.and_then(|i| completions[i].details.as_ref());
 
-    details.update(lua, &api, lines, menu_width, menu_winid)?;
+    details.update(
+        lua,
+        &api,
+        lines,
+        &state.settings.ui.details.border,
+        menu_width,
+        menu_winid,
+        &state.settings.ui.menu.border,
+    )?;
 
     Ok(())
 }

@@ -6,7 +6,7 @@ use super::border;
 #[serde(deny_unknown_fields)]
 pub struct DetailsSettings {
     #[serde(default)]
-    border: border::BorderSettings,
+    pub border: border::BorderSettings,
 }
 
 impl Default for DetailsSettings {

@@ -1,4 +1,4 @@
-use mlua::{Function, Result, Table};
+use mlua::{FromLua, Function, Result, Table};
 
 use super::Api;
 
@@ -98,6 +98,17 @@ impl<'a> Api<'a> {
             .call::<_, Table>(())?;
 
         Ok((t.get("mode")?, t.get("blocking")?))
+    }
+
+    /// Binding to `vim.api.nvim_get_option`
+    ///
+    /// Returns the global value of an option.
+    ///
+    /// # Arguments
+    ///
+    /// * `name`         Option name.
+    pub fn get_option<V: FromLua<'a>>(&self, name: &str) -> Result<V> {
+        self.0.get::<&str, Function>("nvim_get_option")?.call(name)
     }
 
     /// Binding to `vim.api.nvim_notify`.

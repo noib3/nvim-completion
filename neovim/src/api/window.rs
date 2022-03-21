@@ -52,6 +52,23 @@ impl<'a> Api<'a> {
             .call((winid, name))
     }
 
+    /// Binding to `vim.api.nvim_win_get_position`
+    ///
+    /// Returns the global position of the north-west corner of the window as a
+    /// `(row, col)` tuple.
+    ///
+    /// # Arguments
+    ///
+    /// * `winid`  Window handle, or 0 for current window.
+    pub fn win_get_position(&self, winid: u32) -> Result<(u32, u32)> {
+        let position = self
+            .0
+            .get::<&str, Function>("nvim_win_get_position")?
+            .call::<_, Table>(winid)?;
+
+        Ok((position.get(1)?, position.get(2)?))
+    }
+
     /// Binding to `vim.api.nvim_win_get_width`
     ///
     /// Returns the window width as a count of columns.

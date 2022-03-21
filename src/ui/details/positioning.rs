@@ -1,14 +1,17 @@
-use mlua::{prelude::LuaResult, Table};
+use mlua::prelude::LuaResult;
 use neovim::Api;
 use std::cmp;
 
+use crate::settings::ui::border::BorderSettings;
 use crate::ui::WindowPosition;
 
 pub fn get_position(
     api: &Api,
     lines: &[String],
+    border: &BorderSettings,
     menu_winid: u32,
     menu_width: u32,
+    menu_border: &BorderSettings,
 ) -> LuaResult<Option<WindowPosition>> {
     let longest_line = lines
         .iter()
@@ -19,15 +22,31 @@ pub fn get_position(
     let width = cmp::min(longest_line, 79) as u32;
     let height = lines.len() as u32;
 
+    let total_details_width = width
+        + if border.is_left_edge_set() { 1 } else { 0 }
+        + if border.is_right_edge_set() { 1 } else { 0 };
+
+    let (cols_before, cols_after) =
+        get_cols_before_after_menu(api, menu_winid, menu_width, menu_border)?;
+
     // Horizontal policy.
     //
     // First we try to display the details to the right of the completion menu,
     // if there's not enough space we try to display it to the left of it. If
-    // that also fails we give up and return an error.
-    let col = if is_there_space_after_window(api, menu_winid, menu_width)? {
-        menu_width.try_into().unwrap()
-    } else if is_there_space_before_window(api, menu_winid, menu_width)? {
+    // that also fails we give up and return `None`.
+    let col = if cols_after >= total_details_width {
+        i32::try_from(menu_width).unwrap()
+            + if menu_border.is_right_edge_set() {
+                1
+            } else {
+                0
+            }
+    } else if cols_before >= total_details_width {
         -i32::try_from(width).unwrap()
+            - if menu_border.is_left_edge_set() { 1 } else { 0 }
+            // TODO: why? do I need this
+            - if border.is_left_edge_set() { 1 } else { 0 }
+            - if border.is_right_edge_set() { 1 } else { 0 }
     } else {
         // TODO: a better fallback behaviour might be to try to place the
         // details window above or below the completion_menu.
@@ -39,7 +58,7 @@ pub fn get_position(
     // The top edge of the details window always lines up with the top edge of
     // the completion menu. This is likely to change in the future as we allow
     // it to be placed above or below the completion menu.
-    let row = 0;
+    let row = if menu_border.is_top_edge_set() { -1 } else { 0 };
 
     Ok(Some(WindowPosition {
         height,
@@ -49,31 +68,30 @@ pub fn get_position(
     }))
 }
 
-/// TODO: docs
-fn is_there_space_after_window(
+/// Returns the number of screen columns before and after the completion menu,
+/// taking into account the menu's horizontal borders.
+fn get_cols_before_after_menu(
     api: &Api,
-    winid: u32,
-    width: u32,
-) -> LuaResult<bool> {
-    let window_config = api.win_get_config(winid)?;
+    menu_winid: u32,
+    menu_width: u32,
+    menu_border: &BorderSettings,
+) -> LuaResult<(u32, u32)> {
+    let total_cols = api.get_option::<u32>("columns")?;
 
-    let columns_after_window = api.win_get_width(0)?
-        - window_config.get::<_, Table>("col")?.get::<_, u32>(false)?
-        - window_config.get::<_, u32>("width")?;
+    let mut cols_before = api.win_get_position(menu_winid)?.1;
 
-    Ok(width <= columns_after_window)
-}
+    let cols_after = total_cols
+        - cols_before
+        - menu_width
+        - if menu_border.is_right_edge_set() {
+            1
+        } else {
+            0
+        };
 
-/// TODO: docs
-fn is_there_space_before_window(
-    api: &Api,
-    winid: u32,
-    width: u32,
-) -> LuaResult<bool> {
-    let columns_before_window = api
-        .win_get_config(winid)?
-        .get::<_, Table>("col")?
-        .get::<_, u32>(false)?;
+    if menu_border.is_left_edge_set() {
+        cols_before -= 1;
+    }
 
-    Ok(width <= columns_before_window)
+    Ok((cols_before, cols_after))
 }

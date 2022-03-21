@@ -74,6 +74,7 @@ pub fn bytes_changed(
     // Queue an update for the completion menu.
     if settings.ui.menu.autoshow {
         ui.queued_updates.menu_position = menu::positioning::get_position(
+            &api,
             &completions,
             cursor.matched_bytes,
             &settings.ui.menu,
