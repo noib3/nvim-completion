@@ -13,8 +13,7 @@ pub struct State {
     /// TODO: docs
     pub augroup_id: Option<u32>,
 
-    /// The currently available completion items computed by
-    /// `completion::algo::complete`.
+    /// The currently available completion items.
     pub completions: Vec<CompletionItem>,
 
     /// Holds state about the current cursor position.

@@ -45,6 +45,15 @@ impl CompletionMenu {
     /// completion and the window position to `None`.
     pub fn close(&mut self, api: &Api) -> LuaResult<()> {
         if let Some(winid) = self.winid {
+            // For some reason it's necessary to reset the cursor before
+            // closing the floating window, or the next window will have the
+            // cursor at whatever row it was on in this window. This is kinda
+            // weird as the cursor position should be a window-scoped option,
+            // and the next time the menu is opened it will be in a completely
+            // new window. The only thing they will share is the buffer, so
+            // maybe that's why we need this.
+            api.win_set_cursor(winid, 1, 0)?;
+
             api.win_hide(winid)?;
             self.winid = None;
         }
@@ -73,6 +82,8 @@ impl CompletionMenu {
             for range in &completion.hl_ranges {
                 // TODO: the id has to be unique not only for every line
                 // but also for every range.
+                //
+                // Every range is a tuple of the form (range, highlight_group).
                 opts.set("hl_group", range.1)?;
                 opts.set("id", row + 1)?;
                 opts.set("end_row", row)?;

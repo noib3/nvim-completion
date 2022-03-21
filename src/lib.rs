@@ -17,8 +17,7 @@ use state::State;
 /*
 BUGs
 
-1. complete `bazooka` -> delete a -> completion menu is empty.
-2. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
+** 1. complete `bazooka` -> `<Alt-BS>` -> thread panic ui.rs:117:58
 
 TODOs: On Hold
 
@@ -28,14 +27,12 @@ TODOs: On Hold
 
 TODOs
 
-0. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
+1. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
 
-1. Right now everything is sync and we're blocking on every single event we
+2. Right now everything is sync and we're blocking on every single event we
    listen to. This will be a problem when we start dealing with possibly
    thousands of completion results from LSPs. Can we leverage async on the Rust
    end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
-
-** 2. Add option for details border.
 
 3. Make `lipsum` an actual source by creating `CompletionSource` trait. That
    trait has a `complete` function that takes some context and returns a
