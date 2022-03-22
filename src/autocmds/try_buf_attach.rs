@@ -8,9 +8,11 @@ pub fn try_buf_attach(
     lua: &Lua,
     state: &mut State,
     bytes_changed: LuaFunction,
+    augroup_id: u32,
+    update_ui: LuaFunction,
+    cleanup_ui: LuaFunction,
 ) -> LuaResult<()> {
-    let nvim = Neovim::new(lua)?;
-    let api = &nvim.api;
+    let api = Neovim::new(lua)?.api;
 
     let bufnr = api.get_current_buf()?;
 
@@ -31,13 +33,26 @@ pub fn try_buf_attach(
 
     if api.buf_attach(0, false, opts)? {
         state.attached_buffers.push(bufnr);
+
+        // We only add two buffer-local autocommands to update and cleanup the
+        // ui once we've successfully attached to the buffer.
+        let opts = lua.create_table_with_capacity(0, 3)?;
+        opts.set("group", augroup_id)?;
+        opts.set("buffer", bufnr)?;
+
+        opts.set("callback", update_ui)?;
+        api.create_autocmd(&["CursorMovedI"], opts.clone())?;
+
+        opts.set("callback", cleanup_ui)?;
+        api.create_autocmd(&["InsertLeave"], opts.clone())?;
+
         // let ft = api.buf_get_option::<String>(bufnr, "filetype")?;
         // let bt = api.buf_get_option::<String>(bufnr, "buftype")?;
         // nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
         // nvim.print(format!("{:?}", &state.attached_buffers))?;
     } else {
         api.notify(
-            "[nvim-compleet]: Couldn't attach to buffer.",
+            "[nvim-compleet] Couldn't attach to buffer",
             LogLevel::Error,
         )?;
     }

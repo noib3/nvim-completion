@@ -15,6 +15,9 @@ mod ui;
 use state::State;
 
 /*
+BUGs
+1. UI not cleared on CursorMovedI.
+
 TODOs: On Hold
 
 1. Show scroll indicator if number of completions is bigger than the completion
@@ -37,10 +40,7 @@ TODOs
 4. `Compleet{Start, Stop}!` to attach and detach from all buffers, with version
    w/o ! only attaching to/detaching from the current buffer.
 
-5. `CursorMovedI` and `InsertLeave` should be <buffer> local autocmds only for
-   attached buffers.
-
-6. Better error reporting for wrongly formed preferences, e.g.:
+5. Better error reporting for wrongly formed preferences, e.g.:
 
    * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
    and "match"`;
@@ -54,7 +54,7 @@ TODOs
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-7. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+6. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]

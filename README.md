@@ -78,7 +78,7 @@ local cr = function()
      or "<CR>"
 end
 
-let opts = { expr = true, remap = true }
+local opts = { expr = true, remap = true }
 
 keymap.set("i", "<Tab>", tab, opts)
 keymap.set("i", "<S-Tab>", s_tab, opts)

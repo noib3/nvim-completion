@@ -8,19 +8,19 @@ use crate::state::State;
 pub fn insert_completion(
     lua: &Lua,
     state: &mut State,
-    selected_index: usize,
+    index: usize,
 ) -> LuaResult<()> {
-    let selected_completion = &state.completions[selected_index];
+    let completion = &state.completions[index];
     let cursor = &state.cursor;
 
     let text_to_insert = get_text_to_insert(
         cursor.matched_bytes as usize,
         &cursor.line[cursor.at_bytes as usize..],
-        &selected_completion.text,
+        &completion.text,
     );
 
     let end_column = (cursor.at_bytes - cursor.matched_bytes) as usize
-        + selected_completion.text.len();
+        + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
     // triggers `completion::bytes_changed`, which causes the Mutex wrapping

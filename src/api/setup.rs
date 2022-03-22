@@ -22,7 +22,7 @@ pub fn setup(
     if !api.call_function::<_, u8>("has", vec!["nvim-0.7"])? == 1 {
         let chunks = [
             ("[nvim-compleet]", Some("ErrorMsg")),
-            (" Neovim v0.7+ is required.", None),
+            (" Neovim v0.7+ is required", None),
         ];
         api.echo(&chunks, true)?;
         return Ok(());

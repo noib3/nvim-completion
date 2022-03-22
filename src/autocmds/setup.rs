@@ -73,29 +73,39 @@ pub fn setup(
         },
     )?;
 
+    let opts = lua.create_table_from([("clear", true)])?;
+    let augroup_id = api.create_augroup("Compleet", opts)?;
+
     let _state = state.clone();
-    let try_buf_attach =
-        lua.create_function(move |lua, bytes_changed: LuaFunction| {
+    let try_buf_attach = lua.create_function(
+        move |lua,
+              (bytes_changed, update_ui, cleanup_ui): (
+            LuaFunction,
+            LuaFunction,
+            LuaFunction,
+        )| {
             super::try_buf_attach(
                 lua,
                 &mut _state.lock().unwrap(),
                 bytes_changed,
+                augroup_id,
+                update_ui,
+                cleanup_ui,
             )
-        })?;
+        },
+    )?;
 
-    let opts = lua.create_table_from([("clear", true)])?;
-    let augroup_id = api.create_augroup("Compleet", opts)?;
+    let opts = lua.create_table_with_capacity(0, 2)?;
+    opts.set("group", augroup_id)?;
+    opts.set(
+        "callback",
+        try_buf_attach
+            .bind(bytes_changed)?
+            .bind(update_ui)?
+            .bind(cleanup_ui)?,
+    )?;
 
-    let opts = lua.create_table_from([("group", augroup_id)])?;
-
-    opts.set("callback", try_buf_attach.bind(bytes_changed)?)?;
-    api.create_autocmd(&["BufEnter"], opts.clone())?;
-
-    opts.set("callback", update_ui)?;
-    api.create_autocmd(&["CursorMovedI"], opts.clone())?;
-
-    opts.set("callback", cleanup_ui)?;
-    api.create_autocmd(&["InsertLeave"], opts.clone())?;
+    api.create_autocmd(&["BufEnter"], opts)?;
 
     Ok(augroup_id)
 }
