@@ -73,8 +73,12 @@ pub fn setup(
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
+        let ret = autocmds::setup(lua, &api, state)?;
+
         // Save the id of the autocmd for the `BufEnter` event.
-        _state.bufenter_autocmd_id = Some(autocmds::setup(lua, &api, state)?);
+        _state.augroup_id = Some(ret.0);
+        _state.try_buf_attach = Some(ret.1);
+        // _state.bufenter_autocmd_id = Some(autocmds::setup(lua, &api, state)?);
 
         commands::setup(lua, &api, state)?;
         hlgroups::setup(lua, &api)?;

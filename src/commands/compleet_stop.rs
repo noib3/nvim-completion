@@ -20,20 +20,11 @@ pub fn compleet_stop(
 }
 
 fn detach_all_buffers(api: &Api, state: &mut State) -> LuaResult<()> {
-    if let Some(id) = state.bufenter_autocmd_id {
-        // Delete the autocmd for the `BufEnter` event.
-        api.del_autocmd(id)?;
+    if let Some(id) = state.augroup_id {
+        // Delete the `Compleet` augroup containing all the autocmds.
+        api.del_augroup_by_id(id)?;
 
-        // Delete all the buffer-local autocmds for all attached buffer.
-        for bufnr in state.attached_buffers.iter() {
-            for id in state.buffer_local_autocmds.get(bufnr).expect(
-                "If the buffer was attached it had some buffer-local autocmds",
-            ) {
-                api.del_autocmd(*id)?;
-            }
-        }
-
-        state.bufenter_autocmd_id = None;
+        state.augroup_id = None;
 
         // Move all the buffer numbers from the `attached_buffers` vector to
         // `buffers_to_be_detached`.
@@ -88,5 +79,6 @@ fn detach_current_buffer(api: &Api, state: &mut State) -> LuaResult<()> {
         &format!("[nvim-compleet] Stopped completion for buffer {bufnr}"),
         LogLevel::Info,
     )?;
+
     Ok(())
 }

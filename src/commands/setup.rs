@@ -15,7 +15,7 @@ pub fn setup(
     let _state = state.clone();
     let start = lua.create_function(move |lua, opts: Table| {
         let bang = opts.get::<_, bool>("bang")?;
-        super::compleet_start(lua, &_state, bang)
+        super::compleet_start(lua, &mut _state.lock().unwrap(), bang)
     })?;
 
     let _state = state.clone();

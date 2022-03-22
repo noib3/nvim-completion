@@ -1,24 +1,19 @@
 use mlua::prelude::{Lua, LuaResult};
 use neovim::{api::LogLevel, Neovim};
-use std::sync::{Arc, Mutex};
 
 use crate::State;
 
-// TODO: try to attach to the current buffer.
 /// Executed by the `CompleetStart` user command.
 pub fn compleet_start(
     lua: &Lua,
-    state: &Arc<Mutex<State>>,
+    state: &mut State,
     bang: bool,
 ) -> LuaResult<()> {
-    let _state = state.clone();
-    let _state = &mut _state.lock().unwrap();
-
     // The `CompleetStart!` command attaches to all the buffers, while
     // `CompleetStart` only attaches to the current buffer.
     match bang {
-        true => attach_all_buffers(lua, _state),
-        false => attach_current_buffer(lua, _state),
+        true => attach_all_buffers(lua, state),
+        false => attach_current_buffer(lua, state),
     }
 }
 
@@ -27,7 +22,7 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let nvim = Neovim::new(lua)?;
     let api = &nvim.api;
 
-    if state.bufenter_autocmd_id.is_some() {
+    if state.augroup_id.is_some() {
         api.notify(
             "[nvim-compleet] Completion is already on",
             LogLevel::Error,
@@ -37,20 +32,33 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
 
     state.buffers_to_be_detached.clear();
 
-    let trigger_try_attach = lua.create_function(move |lua, ()| {
-        let api = Neovim::new(lua)?.api;
-        api.do_autocmd(
-            &["User"],
-            lua.create_table_from([("pattern", "CompleetReinstate")])?,
-        )?;
-        api.do_autocmd(
-            &["User"],
-            lua.create_table_from([("pattern", "CompleetTryAttach")])?,
-        )
-    })?;
+    // TODO: this leaves `state.try_buf_attach` as `None`, meaning the next
+    // time `CompleetStart!` is called this will panic! We can't clone it bc
+    // `state.try_buf_attach.unwrap()` is a `Box<dyn ..>`, which doesn't
+    // implement `Clone` since it isn't sized.
+    let try_buf_attach = lua.create_function(
+        state
+            .try_buf_attach
+            .take()
+            .expect("`try_buf_attach` has already been created"),
+    )?;
 
-    nvim.schedule(trigger_try_attach)?;
+    // Recreate the `Compleet` augroup.
+    let opts = lua.create_table_from([("clear", true)])?;
+    let augroup_id = api.create_augroup("Compleet", opts)?;
 
+    // Add the `BufEnter` autocmd.
+    let opts = lua.create_table_with_capacity(0, 2)?;
+    opts.set("group", augroup_id)?;
+    opts.set("callback", try_buf_attach.clone())?;
+    api.create_autocmd(&["BufEnter"], opts)?;
+
+    // We can't call `autocmds::try_buf_attach` here or the state's mutex would
+    // deadlock. Instead we schedule it for a later time in neovim's event loop
+    // via `vim.schedule`.
+    nvim.schedule(try_buf_attach)?;
+
+    state.augroup_id = Some(augroup_id);
     api.notify(
         "[nvim-compleet] Started completion in all buffers",
         LogLevel::Info,
@@ -80,23 +88,22 @@ fn attach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
         state.buffers_to_be_detached.retain(|&b| b != bufnr);
     }
 
-    // Trigger a user autocmd to try to attach to this buffer. We don't add the
-    // buffer to the `attached_buffers` vector here. That'll be done in
-    // `try_buf_attach` once we successfully attach to the buffer.
-    //
-    // Also, we can't trigger the autocmd right here or the
-    // `autocmds::try_buf_attach` function would be called, causing the global
-    // state's mutex to deadlock. Instead we schedule it for a later time in
-    // neovim's event loop via `vim.schedule`.
-    let trigger_try_attach = lua.create_function(move |lua, ()| {
-        let api = Neovim::new(lua)?.api;
-        api.do_autocmd(
-            &["User"],
-            lua.create_table_from([("pattern", "CompleetTryAttach")])?,
-        )
-    })?;
+    // If there's currently no `Compleet` augroup we need to recreate it.
+    if state.augroup_id.is_none() {
+        let opts = lua.create_table_from([("clear", true)])?;
+        state.augroup_id = Some(api.create_augroup("Compleet", opts)?);
+    }
 
-    nvim.schedule(trigger_try_attach)?;
+    // TODO: this leaves `state.try_buf_attach` as `None`, meaning the next
+    // call to `CompleetStart` will panic!
+    let try_buf_attach = lua.create_function(
+        state
+            .try_buf_attach
+            .take()
+            .expect("`try_buf_attach` has already been created"),
+    )?;
+
+    nvim.schedule(try_buf_attach)?;
 
     // TODO: only display this once we've successfully attached to the
     // buffer.

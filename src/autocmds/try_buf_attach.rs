@@ -9,7 +9,6 @@ pub fn try_buf_attach(
     lua: &Lua,
     state: &mut State,
     on_bytes: LuaFunction,
-    augroup_id: u32,
     update_ui: LuaFunction,
     cleanup_ui: LuaFunction,
 ) -> LuaResult<()> {
@@ -41,7 +40,7 @@ pub fn try_buf_attach(
         let mut buffer_autocmd_ids = Vec::with_capacity(2);
 
         let opts = lua.create_table_with_capacity(0, 3)?;
-        opts.set("group", augroup_id)?;
+        opts.set("group", state.augroup_id.expect("The augroup is set"))?;
         opts.set("buffer", bufnr)?;
 
         opts.set("callback", update_ui)?;
