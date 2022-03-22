@@ -6,14 +6,12 @@ use crate::state::State;
 
 /// Executed by the `require("compleet").has_completions` Lua function.
 pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
-    // TODO: check if the bufnr is in the attached buffers instead.
-    // If the augroup id is `None` that means the user has turned off the
-    // plugin with `:CompleetStop`.
-    if state.augroup_id.is_none() {
+    let api = Neovim::new(lua)?.api;
+
+    // If the buffer is not attached we return early.
+    if !state.attached_buffers.contains(&api.get_current_buf()?) {
         return Ok(false);
     }
-
-    let api = Neovim::new(lua)?.api;
 
     let cursor = &mut state.cursor;
     let completions = &mut state.completions;

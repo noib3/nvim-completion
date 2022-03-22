@@ -124,7 +124,7 @@ impl<'a> Api<'a> {
         msg: S,
         level: super::LogLevel,
     ) -> Result<()> {
-        self.0.get::<&str, Function>("notify")?.call((
+        self.0.get::<&str, Function>("nvim_notify")?.call((
             msg.as_ref(),
             level as u8,
             Vec::<u8>::new(),

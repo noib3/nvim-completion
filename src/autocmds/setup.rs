@@ -31,11 +31,11 @@ pub fn setup(
     })?;
 
     let _state = state.clone();
-    let bytes_changed = lua.create_function(
+    let on_bytes = lua.create_function(
         move |lua,
               (
             _,
-            _,
+            bufnr,
             _,
             start_row,
             start_col,
@@ -46,23 +46,11 @@ pub fn setup(
             rows_added,
             _,
             bytes_added,
-        ): (
-            String,
-            u32,
-            u32,
-            _,
-            _,
-            u32,
-            _,
-            u32,
-            _,
-            _,
-            u32,
-            _,
-        )| {
-            completion::bytes_changed(
+        ): (String, _, u32, _, _, u32, _, u32, _, _, u32, _)| {
+            completion::on_bytes(
                 lua,
                 &mut _state.lock().unwrap(),
+                bufnr,
                 start_row,
                 start_col,
                 rows_deleted,
@@ -73,39 +61,65 @@ pub fn setup(
         },
     )?;
 
+    // Create the `Compleet` augroup which will hold all our autocmds.
     let opts = lua.create_table_from([("clear", true)])?;
     let augroup_id = api.create_augroup("Compleet", opts)?;
 
     let _state = state.clone();
-    let try_buf_attach = lua.create_function(
-        move |lua,
-              (bytes_changed, update_ui, cleanup_ui): (
-            LuaFunction,
-            LuaFunction,
-            LuaFunction,
-        )| {
-            super::try_buf_attach(
-                lua,
-                &mut _state.lock().unwrap(),
-                bytes_changed,
-                augroup_id,
-                update_ui,
-                cleanup_ui,
-            )
-        },
-    )?;
+    let try_buf_attach = lua
+        .create_function(
+            move |lua,
+                  (on_bytes, update_ui, cleanup_ui): (
+                LuaFunction,
+                LuaFunction,
+                LuaFunction,
+            )| {
+                super::try_buf_attach(
+                    lua,
+                    &mut _state.lock().unwrap(),
+                    on_bytes,
+                    augroup_id,
+                    update_ui,
+                    cleanup_ui,
+                )
+            },
+        )?
+        .bind(on_bytes)?
+        .bind(update_ui)?
+        .bind(cleanup_ui)?;
 
-    let opts = lua.create_table_with_capacity(0, 2)?;
+    let opts = lua.create_table_with_capacity(0, 3)?;
     opts.set("group", augroup_id)?;
-    opts.set(
-        "callback",
-        try_buf_attach
-            .bind(bytes_changed)?
-            .bind(update_ui)?
-            .bind(cleanup_ui)?,
-    )?;
+    opts.set("callback", try_buf_attach.clone())?;
 
-    api.create_autocmd(&["BufEnter"], opts)?;
+    let bufenter_autocmd_id =
+        api.create_autocmd(&["BufEnter"], opts.clone())?;
 
-    Ok(augroup_id)
+    // TODO: docs
+    opts.set("pattern", "CompleetTryAttach")?;
+    api.create_autocmd(&["User"], opts.clone())?;
+
+    // TODO: docs
+    let _state = state.clone();
+    let reinstate_bufenter = lua
+        .create_function(move |lua, try_buf_attach: LuaFunction| {
+            let opts = lua.create_table_with_capacity(0, 2)?;
+            opts.set("group", augroup_id)?;
+            opts.set("callback", try_buf_attach)?;
+
+            let state = &mut _state.lock().unwrap();
+
+            let api = Neovim::new(lua)?.api;
+            state.bufenter_autocmd_id =
+                Some(api.create_autocmd(&["BufEnter"], opts)?);
+
+            Ok(())
+        })?
+        .bind(try_buf_attach)?;
+
+    opts.set("callback", reinstate_bufenter)?;
+    opts.set("pattern", "CompleetReinstate")?;
+    api.create_autocmd(&["User"], opts.clone())?;
+
+    Ok(bufenter_autocmd_id)
 }

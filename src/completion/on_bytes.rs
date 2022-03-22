@@ -6,21 +6,30 @@ use crate::state::State;
 use crate::ui::menu;
 
 /// Executed every time some bytes in the current buffer are changed.
-pub fn bytes_changed(
+pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
+    bufnr: u32,
     start_row: u32,
     start_col: u32,
     rows_deleted: u32,
     bytes_deleted: u32,
     rows_added: u32,
     bytes_added: u32,
-) -> LuaResult<()> {
+) -> LuaResult<Option<bool>> {
+    // If this buffer is queued to be detached we return `true`, as explained
+    // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
+    // function which seems to have been removed.
+    if state.buffers_to_be_detached.contains(&bufnr) {
+        state.buffers_to_be_detached.retain(|&b| b != bufnr);
+        return Ok(Some(true));
+    }
+
     let api = Neovim::new(lua)?.api;
 
     // We only care about insert mode events.
     if api.get_mode()?.0 != "i" {
-        return Ok(());
+        return Ok(None);
     }
 
     let ui = &mut state.ui;
@@ -39,13 +48,14 @@ pub fn bytes_changed(
         || rows_deleted != 0
         || (bytes_deleted != 0 && !state.settings.completion.while_deleting)
     {
-        return Ok(());
+        return Ok(None);
     }
 
     cursor.row = start_row;
     cursor.line = get_current_line(&api, cursor.row)?;
     cursor.at_bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
+
     cursor.update_matched_bytes();
 
     // // Used for debugging.
@@ -67,7 +77,7 @@ pub fn bytes_changed(
     *completions = super::complete(&cursor);
 
     if completions.is_empty() {
-        return Ok(());
+        return Ok(None);
     }
 
     // Queue an update for the completion menu.
@@ -92,7 +102,7 @@ pub fn bytes_changed(
             Some(ui.completion_menu.selected_index.unwrap_or(0));
     }
 
-    Ok(())
+    Ok(None)
 }
 
 fn get_current_line(api: &Api, current_row: u32) -> LuaResult<String> {

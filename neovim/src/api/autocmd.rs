@@ -60,6 +60,17 @@ impl<'a> Api<'a> {
             .call::<_, ()>(name)
     }
 
+    /// Binding to `vim.api.nvim_del_autocmd`.
+    ///
+    /// Delete an autocmd by `id`.
+    ///
+    /// # Arguments
+    ///
+    /// * `id`  The id of the autocmd to delete.
+    pub fn del_autocmd(&self, id: u32) -> Result<()> {
+        self.0.get::<&str, Function>("nvim_del_autocmd")?.call(id)
+    }
+
     /// Binding to `vim.api.nvim_do_autocmd`.
     ///
     /// Do one autocmd.

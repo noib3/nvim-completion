@@ -40,7 +40,7 @@ pub fn setup(lua: &Lua, api: &Api) -> LuaResult<()> {
     // `CompleetHint`
     // Used to highlight the completion hint.
     opts.set("link", "Comment")?;
-    api.set_hl(0, "CompleetHint", opts.clone())?;
+    api.set_hl(0, "CompleetHint", opts)?;
 
     Ok(())
 }

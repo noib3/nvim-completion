@@ -68,12 +68,7 @@ pub fn setup(
     api.set_keymap("i", "<Plug>(compleet-prev-completion)", "", opts.clone())?;
 
     opts.set("callback", show_completions)?;
-    api.set_keymap(
-        "i",
-        "<Plug>(compleet-show-completions)",
-        "",
-        opts.clone(),
-    )?;
+    api.set_keymap("i", "<Plug>(compleet-show-completions)", "", opts)?;
 
     Ok(())
 }

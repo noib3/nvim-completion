@@ -11,7 +11,7 @@ use crate::settings::Settings;
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
 #[derive(Debug)]
-pub struct UI {
+pub struct Ui {
     /// A completion menu used to show all the available completion candidates.
     pub completion_menu: CompletionMenu,
 
@@ -27,9 +27,9 @@ pub struct UI {
     pub queued_updates: QueuedUpdates,
 }
 
-impl UI {
+impl Ui {
     pub fn new(api: &Api) -> LuaResult<Self> {
-        Ok(UI {
+        Ok(Ui {
             completion_menu: CompletionMenu::new(api)?,
             completion_hint: CompletionHint::new(api)?,
             completion_details: CompletionDetails::new(api)?,
@@ -38,7 +38,7 @@ impl UI {
     }
 }
 
-impl UI {
+impl Ui {
     /// Executed on every `InsertLeft` event of attached buffers.
     pub fn cleanup(&mut self, api: &Api) -> LuaResult<()> {
         if self.completion_menu.is_visible() {
@@ -126,6 +126,9 @@ impl UI {
         // Update the completion hint.
         let comp_with_i = updates.hinted_index.map(|i| (&completions[i], i));
         hint.update(lua, api, comp_with_i, cursor)?;
+
+        // After we've consumed all the instructions we reset them.
+        updates.reset();
 
         Ok(())
     }

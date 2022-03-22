@@ -15,8 +15,8 @@ mod ui;
 use state::State;
 
 /*
-BUGs
-1. UI not cleared on CursorMovedI.
+BUGs:
+1. ui: menu doesn't update position when the gutter changes.
 
 TODOs: On Hold
 
@@ -26,21 +26,17 @@ TODOs: On Hold
 
 TODOs
 
-1. Trigger a `autocmds::try_buf_attach` on `require('compleet').setup`.
-
-2. Right now everything is sync and we're blocking on every single event we
+1. Right now everything is sync and we're blocking on every single event we
    listen to. This will be a problem when we start dealing with possibly
    thousands of completion results from LSPs. Can we leverage async on the Rust
    end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
 
-3. Make `lipsum` an actual source by creating `CompletionSource` trait. That
+2. Make `lipsum` an actual source by creating `CompletionSource` trait. That
    trait has a `complete` function that takes some context and returns a
-   `Vec<CompletionItem>`. Call lipsum by `lipsum.complete(&ctx)` or something.
+   `Vec<CompletionItem>`. Call lipsum by `lipsum.complete(&cursor)` or
+   Something.
 
-4. `Compleet{Start, Stop}!` to attach and detach from all buffers, with version
-   w/o ! only attaching to/detaching from the current buffer.
-
-5. Better error reporting for wrongly formed preferences, e.g.:
+3. Better error reporting for wrongly formed preferences, e.g.:
 
    * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
    and "match"`;
@@ -54,7 +50,7 @@ TODOs
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-6. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+4. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]
