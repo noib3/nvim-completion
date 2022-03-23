@@ -21,6 +21,9 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let nvim = Neovim::new(lua)?;
     let api = &nvim.api;
 
+    // BUG: `augroup_id.is_some()` is the wrong condition to check, it fails
+    // with `CompleetStop!` -> `CompleetStart` -> change buffer ->
+    // `CompleetStart!`.
     if state.augroup_id.is_some() {
         api.notify(
             "[nvim-compleet] Completion is already on",

@@ -21,26 +21,3 @@ pub struct CompletionItem {
     /// selected.
     pub text: String,
 }
-
-// impl CompletionItem {
-//     pub fn new(
-//         source: &'static str,
-//         text: String,
-//         details: Option<String>,
-//         matched_bytes: Vec<usize>,
-//     ) -> Self {
-//         let details = details
-//             .map(|lines| lines.lines().map(|line| line.to_string()).collect());
-
-//         let hl_ranges =
-//             vec![(1..matched_bytes as usize + 1, "CompleetMenuMatchingChars")];
-
-//         CompletionItem {
-//             details,
-//             format: format!(" {}", text),
-//             hl_ranges,
-//             text,
-//             source,
-//         }
-//     }
-// }

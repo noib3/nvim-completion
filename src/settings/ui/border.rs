@@ -104,10 +104,15 @@ pub enum BorderStyle {
     // TODO: allow empty string (easy to do if we take in strings instead of
     // chars, but then you lose some nice typechecking against strings with
     // more than 1 character).
-    Array1([char; 1]),
-    Array2([char; 2]),
-    Array4([char; 4]),
-    Array8([char; 8]),
+    Array1([String; 1]),
+    Array2([String; 2]),
+    Array4([String; 4]),
+    Array8([String; 8]),
+    //
+    ArrayWithHlgroup1([[String; 2]; 1]),
+    ArrayWithHlgroup2([[String; 2]; 2]),
+    ArrayWithHlgroup4([[String; 2]; 4]),
+    ArrayWithHlgroup8([[String; 2]; 8]),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -142,29 +147,16 @@ impl BorderStyle {
             // TODO: is there a way not to repeat the same exact code 4 times?
             // I can't group them together in the same arm because `a` has
             // different types in each (`[char; 1]` vs `[char; 2]` vs etc..).
-            BorderStyle::Array1(a) => a
-                .iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>()
-                .to_lua(lua),
+            BorderStyle::Array1(a) => a.to_vec().to_lua(lua),
+            BorderStyle::Array2(a) => a.to_vec().to_lua(lua),
+            BorderStyle::Array4(a) => a.to_vec().to_lua(lua),
+            BorderStyle::Array8(a) => a.to_vec().to_lua(lua),
 
-            BorderStyle::Array2(a) => a
-                .iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>()
-                .to_lua(lua),
-
-            BorderStyle::Array4(a) => a
-                .iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>()
-                .to_lua(lua),
-
-            BorderStyle::Array8(a) => a
-                .iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>()
-                .to_lua(lua),
+            // TODO:
+            BorderStyle::ArrayWithHlgroup1(a) => a.to_vec().to_lua(lua),
+            BorderStyle::ArrayWithHlgroup2(a) => a.to_vec().to_lua(lua),
+            BorderStyle::ArrayWithHlgroup4(a) => a.to_vec().to_lua(lua),
+            BorderStyle::ArrayWithHlgroup8(a) => a.to_vec().to_lua(lua),
         }
     }
 }

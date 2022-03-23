@@ -62,16 +62,12 @@ pub fn setup(
 
     let _state = state.clone();
     let try_buf_attach = lua.create_function(move |lua: &Lua, ()| {
-        let on_bytes = lua.create_function(on_bytes.clone())?;
-        let update_ui = lua.create_function(update_ui.clone())?;
-        let cleanup_ui = lua.create_function(cleanup_ui.clone())?;
-
         super::try_buf_attach(
             lua,
             &mut _state.lock().unwrap(),
-            on_bytes,
-            update_ui,
-            cleanup_ui,
+            lua.create_function(on_bytes.clone())?,
+            lua.create_function(update_ui.clone())?,
+            lua.create_function(cleanup_ui.clone())?,
         )
     })?;
 

@@ -19,7 +19,7 @@ pub fn on_bytes(
 ) -> LuaResult<Option<bool>> {
     // If this buffer is queued to be detached we return `true`, as explained
     // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
-    // function which seems to have been removed.
+    // function but it seems to have been removed.
     if state.buffers_to_be_detached.contains(&bufnr) {
         state.buffers_to_be_detached.retain(|&b| b != bufnr);
         return Ok(Some(true));

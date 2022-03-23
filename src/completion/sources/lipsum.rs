@@ -148,6 +148,7 @@ const LOREMS: [&'static str; 128] = [
     "dignissim",
 ];
 
+#[derive(Debug)]
 pub struct Lipsum;
 
 impl Lipsum {

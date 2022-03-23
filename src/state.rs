@@ -6,12 +6,12 @@ use crate::completion::{CompletionItem, CompletionSource, Cursor};
 use crate::settings::Settings;
 use crate::ui::Ui;
 
-// #[derive(Debug)]
+#[derive(Debug)]
 pub struct State {
     /// Contains the buffer numbers of all the currently attached buffers.
     pub attached_buffers: Vec<u32>,
 
-    /// TODO: docs
+    /// The id of the `Compleet` augroup, or `None` if it isn't set.
     pub augroup_id: Option<u32>,
 
     /// TODO: docs
@@ -36,9 +36,6 @@ pub struct State {
     pub sources: Vec<Box<dyn CompletionSource>>,
 
     /// TODO: docs
-    // pub  Option<Callback>,
-
-    /// TODO: docs
     pub try_buf_attach: Option<LuaRegistryKey>,
 
     /// Holds state about the currently displayed UI.
@@ -58,7 +55,6 @@ impl State {
             settings: Settings::default(),
             sources: Vec::new(),
             try_buf_attach: None,
-            // ciao: None,
             ui: Ui::new(api)?,
         })
     }

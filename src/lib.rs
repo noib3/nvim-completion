@@ -1,9 +1,7 @@
 use mlua::{prelude::LuaResult, Lua, Table};
 use neovim::Neovim;
-use std::{
-    panic,
-    sync::{Arc, Mutex},
-};
+use std::panic;
+use std::sync::{Arc, Mutex};
 
 mod api;
 mod autocmds;

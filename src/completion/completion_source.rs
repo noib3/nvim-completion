@@ -1,8 +1,10 @@
-use super::{CompletionItem, Cursor};
 use mlua::prelude::LuaResult;
 use neovim::Api;
+use std::fmt;
 
-pub trait CompletionSource {
+use super::{CompletionItem, Cursor};
+
+pub trait CompletionSource: fmt::Debug {
     fn complete(
         &self,
         api: &Api,
