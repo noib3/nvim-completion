@@ -12,9 +12,23 @@ This plugin is still in early development.
 
 ## :package: Installation
 
-Requires Neovim 0.7+.
+`nvim-compleet` requires Neovim 0.7+. Also, since the Rust code has to be
+compiled it needs the `rustup` toolchain to be available (specifically
+`cargo`), together with the `make` and `ar` utilities.
 
-TODO
+Then installing the plugin is as easy as
+
+```lua
+require("packer").startup(function()
+  use({
+    "noib3/nvim-compleet",
+    config = function()
+      require("compleet").setup()
+    end,
+    run = "cargo build --release && make install",
+  })
+end)
+```
 
 ## :wrench: Configuration
 
@@ -22,7 +36,10 @@ TODO
 
 ## :heavy_exclamation_mark: Commands
 
-TODO
+`nvim-compleet` provides two commands: `CompleetStop{!}` to stop the completion
+and `CompleetStart{!}` to restart it. The versions with the bang `!` stop/start
+the completion in all the buffers, the ones without it only affect the current
+buffer.
 
 ## :musical_keyboard: Mappings
 

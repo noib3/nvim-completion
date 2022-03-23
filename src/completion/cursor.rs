@@ -6,10 +6,6 @@ pub struct Cursor {
     /// The text in the row the cursor is currently on.
     pub line: String,
 
-    /// Number of bytes before the cursor that are currently being matched to
-    /// find a completion.
-    pub matched_bytes: u32,
-
     /// The row the cursor is currently on.
     pub row: u32,
 }
@@ -19,7 +15,6 @@ impl Cursor {
         Cursor {
             at_bytes: 0,
             line: "".to_string(),
-            matched_bytes: 0,
             row: 0,
         }
     }
