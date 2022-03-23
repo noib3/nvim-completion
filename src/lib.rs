@@ -1,6 +1,9 @@
 use mlua::{prelude::LuaResult, Lua, Table};
 use neovim::Neovim;
-use std::sync::{Arc, Mutex};
+use std::{
+    panic,
+    sync::{Arc, Mutex},
+};
 
 mod api;
 mod autocmds;
@@ -27,10 +30,10 @@ TODOs: On Hold
 
 TODOs
 
-1. Right now everything is sync and we're blocking on every single event we
-   listen to. This will be a problem when we start dealing with possibly
-   thousands of completion results from LSPs. Can we leverage async on the Rust
-   end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
+1. Right now everything is sync. This will be a problem when we start dealing
+   with possibly thousands of completion results from LSPs. Can we leverage
+   async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
+   lua-loop-threading`.
 
 2. Better error reporting for wrongly formed preferences, e.g.:
 
@@ -42,15 +45,22 @@ TODOs
 
    * `Invalid field `ui.foo`, valid fields are `ui.menu`, `ui.details` and
    `ui.hint`;
-
-   * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
-   and "match"`;
-
-3. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
+    // Because the plugin is run in the main thread, panics will take down the
+    // whole neovim process. We can't do a lot except relaying the panic
+    // infos.
+    panic::set_hook(Box::new(|infos| {
+        eprintln!(
+            "[nvim-compleet] {infos}. \
+             Please open a new issue at \
+             'https://github.com/noib3/nvim-compleet/issues'."
+        );
+        std::process::exit(1);
+    }));
+
     let api = Neovim::new(lua)?.api;
     let state = Arc::new(Mutex::new(State::new(&api)?));
 

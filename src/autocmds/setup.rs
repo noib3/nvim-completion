@@ -3,13 +3,13 @@ use neovim::{Api, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::completion;
-use crate::state::State;
+use crate::state::{Callback, State};
 
 pub fn setup(
     lua: &Lua,
     api: &Api,
     state: &Arc<Mutex<State>>,
-) -> LuaResult<(u32, Box<dyn 'static + Fn(&Lua, ()) -> LuaResult<()>>)> {
+) -> LuaResult<(u32, Callback)> {
     let _state = state.clone();
     let cleanup_ui = move |lua: &Lua, ()| {
         let api = Neovim::new(&lua)?.api;
@@ -75,7 +75,7 @@ pub fn setup(
         )
     };
 
-    // Create the `Compleet` augroup which will hold all our autocmds.
+    // Create the `Compleet` augroup which will hold all the autocmds.
     let opts = lua.create_table_from([("clear", true)])?;
     let augroup_id = api.create_augroup("Compleet", opts)?;
 
