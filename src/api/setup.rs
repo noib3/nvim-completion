@@ -5,7 +5,8 @@ use mlua::{
 use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
-use crate::settings::Settings;
+use crate::completion::{sources, CompletionSource};
+use crate::settings::{sources::SourcesSettings, Settings};
 use crate::state::State;
 use crate::{autocmds, commands, hlgroups, mappings};
 
@@ -67,18 +68,19 @@ pub fn setup(
         },
     };
 
+    // Collect all the enabled sources.
+    _state.sources = get_enabled_sources(&_state.settings.sources);
+
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;
     // nvim.print(format!("{:?}", &_state.settings))?;
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
-        let ret = autocmds::setup(lua, &api, state)?;
-
         // Save the id of the autocmd for the `BufEnter` event.
-        _state.augroup_id = Some(ret.0);
-        _state.try_buf_attach = Some(ret.1);
-        // _state.bufenter_autocmd_id = Some(autocmds::setup(lua, &api, state)?);
+        let a = autocmds::setup(lua, &api, state)?;
+        _state.augroup_id = Some(a.0);
+        _state.try_buf_attach = Some(a.1);
 
         commands::setup(lua, &api, state)?;
         hlgroups::setup(lua, &api)?;
@@ -96,4 +98,18 @@ pub fn setup(
     // ))?;
 
     Ok(())
+}
+
+fn get_enabled_sources(
+    settings: &SourcesSettings,
+) -> Vec<Box<dyn CompletionSource>> {
+    let mut sources = Vec::new();
+
+    if settings.lipsum.source.enable {
+        sources.push(
+            Box::new(sources::Lipsum::new()) as Box<dyn CompletionSource>
+        );
+    }
+
+    sources
 }

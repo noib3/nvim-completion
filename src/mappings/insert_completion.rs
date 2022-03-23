@@ -14,12 +14,12 @@ pub fn insert_completion(
     let cursor = &state.cursor;
 
     let text_to_insert = get_text_to_insert(
-        cursor.matched_bytes as usize,
+        completion.matched_bytes as usize,
         &cursor.line[cursor.at_bytes as usize..],
         &completion.text,
     );
 
-    let end_column = (cursor.at_bytes - cursor.matched_bytes) as usize
+    let end_column = (cursor.at_bytes - completion.matched_bytes) as usize
         + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point

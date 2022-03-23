@@ -11,12 +11,11 @@ use crate::ui::WindowPosition;
 pub fn get_position(
     api: &Api,
     completions: &[CompletionItem],
-    matched_bytes: u32,
     settings: &MenuSettings,
 ) -> LuaResult<Option<WindowPosition>> {
     let longest_line = completions
         .iter()
-        .map(|c| c.line.chars().count() - 1)
+        .map(|c| c.format.chars().count() - 1)
         .max()
         .expect("There's at least one completion");
 
@@ -34,7 +33,9 @@ pub fn get_position(
         MenuAnchor::Cursor => 0,
         // The `- 1` is because every completion is formatted with a leading
         // space.
-        MenuAnchor::Match => -i32::try_from(matched_bytes).unwrap() - 1,
+        // TODO: picking the first completion is arbitrary.
+        MenuAnchor::Match =>
+            -i32::try_from(completions[0].matched_bytes).unwrap() - 1,
     }
     // If the left edge of the border is present we need to offset it by
     // placing the menu one more column to the left.

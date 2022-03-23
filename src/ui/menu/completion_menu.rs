@@ -71,7 +71,7 @@ impl CompletionMenu {
     ) -> LuaResult<()> {
         let lines = completions
             .iter()
-            .map(|c| c.line.as_ref())
+            .map(|c| c.format.as_ref())
             .collect::<Vec<&str>>();
 
         api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;

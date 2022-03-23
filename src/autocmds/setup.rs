@@ -84,5 +84,5 @@ pub fn setup(
     opts.set("callback", lua.create_function(try_buf_attach.clone())?)?;
     api.create_autocmd(&["BufEnter"], opts.clone())?;
 
-    Ok((augroup_id, Box::new(try_buf_attach.clone())))
+    Ok((augroup_id, Box::new(try_buf_attach)))
 }

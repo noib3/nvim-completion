@@ -61,7 +61,7 @@ impl CompletionHint {
     ) -> LuaResult<()> {
         // Display the hint for the new completion.
         if let Some((completion, index)) = new_completion {
-            let text = &completion.text[(cursor.matched_bytes as usize)..];
+            let text = &completion.text[(completion.matched_bytes as usize)..];
             self.set(lua, api, text, cursor, index)?;
         }
         // If there is no new completion to hint then try to clear the old one.

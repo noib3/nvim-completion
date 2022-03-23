@@ -16,7 +16,8 @@ use state::State;
 
 /*
 BUGs:
-1. ui: menu doesn't update position when the gutter changes.
+1. (ui) menu's position doesn't update when the signcolumn changes;
+2. (panic!) calling `:CompleetStart{!}` twice panics;
 
 TODOs: On Hold
 
@@ -31,12 +32,7 @@ TODOs
    thousands of completion results from LSPs. Can we leverage async on the Rust
    end w/ Tokyo? Also look into `:h vim.loop` and `:h lua-loop-threading`.
 
-2. Make `lipsum` an actual source by creating `CompletionSource` trait. That
-   trait has a `complete` function that takes some context and returns a
-   `Vec<CompletionItem>`. Call lipsum by `lipsum.complete(&cursor)` or
-   Something.
-
-3. Better error reporting for wrongly formed preferences, e.g.:
+2. Better error reporting for wrongly formed preferences, e.g.:
 
    * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
    and "match"`;
@@ -50,7 +46,7 @@ TODOs
    * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
    and "match"`;
 
-4. Safely detach on panic leaving a log to be submitted as a GitHub issue.
+3. Safely detach on panic leaving a log to be submitted as a GitHub issue.
 */
 
 #[mlua::lua_module]

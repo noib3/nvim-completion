@@ -56,8 +56,6 @@ pub fn on_bytes(
     cursor.at_bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
 
-    cursor.update_matched_bytes();
-
     // // Used for debugging.
     // let nvim = Neovim::new(lua)?;
     // nvim.print(format!("Start row: {start_row}"))?;
@@ -74,7 +72,10 @@ pub fn on_bytes(
     // nvim.print(format!("Current row: {}", cursor.row))?;
     // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
 
-    *completions = super::complete(&cursor);
+    completions.clear();
+    for source in state.sources.iter() {
+        completions.append(&mut source.complete(&api, &cursor)?);
+    }
 
     if completions.is_empty() {
         return Ok(None);
@@ -85,7 +86,6 @@ pub fn on_bytes(
         ui.queued_updates.menu_position = menu::positioning::get_position(
             &api,
             &completions,
-            cursor.matched_bytes,
             &settings.ui.menu,
         )?;
 

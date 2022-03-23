@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 use super::sources::SourceSettings;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LipsumSourceSettings {
+pub struct LipsumSettings {
     #[serde(flatten, default = "lipsum_default_source")]
     pub source: SourceSettings,
 }
 
-impl Default for LipsumSourceSettings {
+impl Default for LipsumSettings {
     fn default() -> Self {
-        LipsumSourceSettings {
+        LipsumSettings {
             source: lipsum_default_source(),
         }
     }

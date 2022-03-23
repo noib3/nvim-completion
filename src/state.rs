@@ -2,17 +2,14 @@ use mlua::prelude::{Lua, LuaResult};
 use neovim::Api;
 use std::collections::HashMap;
 
-use crate::completion::{CompletionItem, Cursor};
+use crate::completion::{CompletionItem, CompletionSource, Cursor};
 use crate::settings::Settings;
 use crate::ui::Ui;
 
 pub type Callback = Box<dyn 'static + Fn(&Lua, ()) -> LuaResult<()>>;
 
 // #[derive(Debug)]
-// pub struct State<'a> {
 pub struct State {
-    pub try_buf_attach: Option<Callback>,
-
     /// Contains the buffer numbers of all the currently attached buffers.
     pub attached_buffers: Vec<u32>,
 
@@ -37,16 +34,19 @@ pub struct State {
     /// Used to store the current configuration.
     pub settings: Settings,
 
+    /// TODO: docs
+    pub sources: Vec<Box<dyn CompletionSource>>,
+
+    /// TODO: docs
+    pub try_buf_attach: Option<Callback>,
+
     /// Holds state about the currently displayed UI.
     pub ui: Ui,
 }
 
-// impl<'a> State<'a> {
 impl State {
-    // pub fn new(api: &Api) -> LuaResult<State<'a>> {
     pub fn new(api: &Api) -> LuaResult<Self> {
         Ok(State {
-            try_buf_attach: None,
             attached_buffers: Vec::new(),
             augroup_id: None,
             buffer_local_autocmds: HashMap::new(),
@@ -55,6 +55,8 @@ impl State {
             cursor: Cursor::new(),
             did_setup: false,
             settings: Settings::default(),
+            sources: Vec::new(),
+            try_buf_attach: None,
             ui: Ui::new(api)?,
         })
     }

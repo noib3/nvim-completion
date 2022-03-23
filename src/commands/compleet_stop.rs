@@ -28,8 +28,9 @@ fn detach_all_buffers(api: &Api, state: &mut State) -> LuaResult<()> {
 
         // Move all the buffer numbers from the `attached_buffers` vector to
         // `buffers_to_be_detached`.
-        state.buffers_to_be_detached =
-            state.attached_buffers.drain(..).collect();
+        state
+            .buffers_to_be_detached
+            .append(&mut state.attached_buffers);
 
         // Cleanup the UI in case the user has somehow executed
         // `CompleetStop!` without exiting insert mode (for example via an

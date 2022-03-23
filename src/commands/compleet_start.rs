@@ -59,6 +59,7 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     nvim.schedule(try_buf_attach)?;
 
     state.augroup_id = Some(augroup_id);
+
     api.notify(
         "[nvim-compleet] Started completion in all buffers",
         LogLevel::Info,

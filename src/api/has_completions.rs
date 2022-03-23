@@ -1,7 +1,6 @@
 use mlua::prelude::{Lua, LuaResult};
 use neovim::Neovim;
 
-use crate::completion;
 use crate::state::State;
 
 /// Executed by the `require("compleet").has_completions` Lua function.
@@ -16,11 +15,13 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     let cursor = &mut state.cursor;
     let completions = &mut state.completions;
 
-    cursor.update_at_bytes(&api)?;
-    cursor.update_line(&api)?;
-    cursor.update_matched_bytes();
+    cursor.at_bytes = api.win_get_cursor(0)?.1;
+    cursor.line = api.get_current_line()?;
 
-    *completions = completion::complete(&cursor);
+    completions.clear();
+    for source in state.sources.iter() {
+        completions.append(&mut source.complete(&api, &cursor)?);
+    }
 
     Ok(!completions.is_empty())
 }

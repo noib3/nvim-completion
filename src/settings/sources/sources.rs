@@ -6,13 +6,13 @@ use super::lipsum;
 #[serde(deny_unknown_fields)]
 pub struct SourcesSettings {
     #[serde(default)]
-    pub lipsum: lipsum::LipsumSourceSettings,
+    pub lipsum: lipsum::LipsumSettings,
 }
 
 impl Default for SourcesSettings {
     fn default() -> Self {
         SourcesSettings {
-            lipsum: lipsum::LipsumSourceSettings::default(),
+            lipsum: lipsum::LipsumSettings::default(),
         }
     }
 }
