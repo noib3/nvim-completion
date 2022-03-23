@@ -1,4 +1,4 @@
-use mlua::prelude::{Lua, LuaResult};
+use mlua::prelude::{Lua, LuaFunction, LuaResult};
 use neovim::{api::LogLevel, Neovim};
 
 use crate::State;
@@ -17,7 +17,6 @@ pub fn compleet_start(
     }
 }
 
-/// TODO: docs
 fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let nvim = Neovim::new(lua)?;
     let api = &nvim.api;
@@ -32,14 +31,10 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
 
     state.buffers_to_be_detached.clear();
 
-    // TODO: this leaves `state.try_buf_attach` as `None`, meaning the next
-    // time `CompleetStart!` is called this will panic! We can't clone it bc
-    // `state.try_buf_attach.unwrap()` is a `Box<dyn ..>`, which doesn't
-    // implement `Clone` since it isn't sized.
-    let try_buf_attach = lua.create_function(
+    let try_buf_attach = lua.registry_value::<LuaFunction>(
         state
             .try_buf_attach
-            .take()
+            .as_ref()
             .expect("`try_buf_attach` has already been created"),
     )?;
 
@@ -95,15 +90,14 @@ fn attach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
         state.augroup_id = Some(api.create_augroup("Compleet", opts)?);
     }
 
-    // TODO: this leaves `state.try_buf_attach` as `None`, meaning the next
-    // call to `CompleetStart` will panic!
-    let try_buf_attach = lua.create_function(
+    let try_buf_attach = lua.registry_value::<LuaFunction>(
         state
             .try_buf_attach
-            .take()
+            .as_ref()
             .expect("`try_buf_attach` has already been created"),
     )?;
 
+    // Schedule a `try_buf_attach` to attach to the current buffer.
     nvim.schedule(try_buf_attach)?;
 
     // TODO: only display this once we've successfully attached to the

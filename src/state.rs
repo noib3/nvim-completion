@@ -1,12 +1,10 @@
-use mlua::prelude::{Lua, LuaResult};
+use mlua::prelude::{LuaRegistryKey, LuaResult};
 use neovim::Api;
 use std::collections::HashMap;
 
 use crate::completion::{CompletionItem, CompletionSource, Cursor};
 use crate::settings::Settings;
 use crate::ui::Ui;
-
-pub type Callback = Box<dyn 'static + Fn(&Lua, ()) -> LuaResult<()>>;
 
 // #[derive(Debug)]
 pub struct State {
@@ -38,7 +36,10 @@ pub struct State {
     pub sources: Vec<Box<dyn CompletionSource>>,
 
     /// TODO: docs
-    pub try_buf_attach: Option<Callback>,
+    // pub  Option<Callback>,
+
+    /// TODO: docs
+    pub try_buf_attach: Option<LuaRegistryKey>,
 
     /// Holds state about the currently displayed UI.
     pub ui: Ui,
@@ -57,6 +58,7 @@ impl State {
             settings: Settings::default(),
             sources: Vec::new(),
             try_buf_attach: None,
+            // ciao: None,
             ui: Ui::new(api)?,
         })
     }

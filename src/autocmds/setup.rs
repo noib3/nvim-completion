@@ -1,15 +1,15 @@
-use mlua::prelude::{Lua, LuaResult};
+use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
 use neovim::{Api, Neovim};
 use std::sync::{Arc, Mutex};
 
 use crate::completion;
-use crate::state::{Callback, State};
+use crate::state::State;
 
 pub fn setup(
     lua: &Lua,
     api: &Api,
     state: &Arc<Mutex<State>>,
-) -> LuaResult<(u32, Callback)> {
+) -> LuaResult<(u32, LuaRegistryKey)> {
     let _state = state.clone();
     let cleanup_ui = move |lua: &Lua, ()| {
         let api = Neovim::new(&lua)?.api;
@@ -61,7 +61,7 @@ pub fn setup(
         };
 
     let _state = state.clone();
-    let try_buf_attach = move |lua: &Lua, ()| {
+    let try_buf_attach = lua.create_function(move |lua: &Lua, ()| {
         let on_bytes = lua.create_function(on_bytes.clone())?;
         let update_ui = lua.create_function(update_ui.clone())?;
         let cleanup_ui = lua.create_function(cleanup_ui.clone())?;
@@ -73,7 +73,7 @@ pub fn setup(
             update_ui,
             cleanup_ui,
         )
-    };
+    })?;
 
     // Create the `Compleet` augroup which will hold all the autocmds.
     let opts = lua.create_table_from([("clear", true)])?;
@@ -81,8 +81,8 @@ pub fn setup(
 
     let opts = lua.create_table_with_capacity(0, 2)?;
     opts.set("group", augroup_id)?;
-    opts.set("callback", lua.create_function(try_buf_attach.clone())?)?;
+    opts.set("callback", try_buf_attach.clone())?;
     api.create_autocmd(&["BufEnter"], opts.clone())?;
 
-    Ok((augroup_id, Box::new(try_buf_attach)))
+    Ok((augroup_id, lua.create_registry_value(try_buf_attach)?))
 }

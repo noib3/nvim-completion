@@ -20,7 +20,6 @@ use state::State;
 /*
 BUGs:
 1. (ui) menu's position doesn't update when the signcolumn changes;
-2. (panic!) calling `:CompleetStart{!}` twice panics;
 
 TODOs: On Hold
 
