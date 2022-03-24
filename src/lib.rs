@@ -32,23 +32,19 @@ TODOs
    async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
    lua-loop-threading`.
 
-2. Better error reporting for wrongly formed preferences, e.g.:
+2. border should have different defaults for menu and details;
 
-   * `Invalid option "foo" for `ui.menu.anchor`, valid options are "cursor"
-   and "match"`;
+3. border chars should be either 0 or 1 chars
 
-   * `Wrong type `boolean` for `ui.menu.anchor`: valid options are "cursor"
-   and "match"`;
+4. details window should shift when scrolling options instead of redrawing;
 
-   * `Invalid field `ui.foo`, valid fields are `ui.menu`, `ui.details` and
-   `ui.hint`;
+5. add doc comments and solve as many TODOs as possible.
 */
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    // Because the plugin is run in the main thread, panics will take down the
-    // whole neovim process. We can't do a lot except relaying the panic
-    // infos.
+    // Because the plugin runs in the main thread, panics will take down the
+    // whole neovim process. We can't do a lot except relaying the panic infos.
     panic::set_hook(Box::new(|infos| {
         eprintln!(
             "[nvim-compleet] {infos}. \
@@ -85,11 +81,11 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
         api::setup(lua, &state, preferences)
     })?;
 
-    let exports = lua.create_table_with_capacity(0, 5)?;
-    exports.set("has_completions", has_completions)?;
-    exports.set("is_completion_selected", is_completion_selected)?;
-    exports.set("is_hint_visible", is_hint_visible)?;
-    exports.set("is_menu_visible", is_menu_visible)?;
-    exports.set("setup", setup)?;
-    Ok(exports)
+    Ok(lua.create_table_from([
+        ("has_completions", has_completions),
+        ("is_completion_selected", is_completion_selected),
+        ("is_hint_visible", is_hint_visible),
+        ("is_menu_visible", is_menu_visible),
+        ("setup", setup),
+    ])?)
 }

@@ -1,7 +1,4 @@
-use mlua::{
-    prelude::{LuaError, LuaResult, LuaValue},
-    Lua, LuaSerdeExt,
-};
+use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use neovim::Neovim;
 use std::sync::{Arc, Mutex};
 
@@ -34,20 +31,27 @@ pub fn setup(
 
     _state.settings = match preferences {
         LuaValue::Table(t) => {
-            match lua.from_value::<Settings>(LuaValue::Table(t)) {
+            // Using the `serde_path_to_error` crate to get the full path
+            // of the option where the error occured.
+            match serde_path_to_error::deserialize::<_, Settings>(
+                mlua::serde::Deserializer::new(LuaValue::Table(t)),
+            ) {
                 Ok(settings) => settings,
 
-                Err(e) => match e {
+                Err(e) => match e.inner() {
                     LuaError::DeserializeError(msg) => {
                         let chunks = [
                             ("[nvim-compleet]", Some("ErrorMsg")),
-                            (&format!(" {}", msg), None),
+                            (" Error for `", None),
+                            (&e.path().to_string(), Some("Statement")),
+                            (&format!("`: {msg}"), None),
                         ];
+
                         api.echo(&chunks, true)?;
                         return Ok(());
                     },
 
-                    _ => return Err(e),
+                    _ => return Err(e.into_inner()),
                 },
             }
         },
