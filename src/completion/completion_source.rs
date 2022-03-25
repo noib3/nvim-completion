@@ -1,6 +1,7 @@
+use std::fmt;
+
 use mlua::prelude::LuaResult;
 use neovim::Api;
-use std::fmt;
 
 use super::{CompletionItem, Cursor};
 

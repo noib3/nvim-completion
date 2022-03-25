@@ -1,6 +1,7 @@
+use std::sync::{Arc, Mutex};
+
 use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use neovim::Neovim;
-use std::sync::{Arc, Mutex};
 
 use crate::completion::{sources, CompletionSource};
 use crate::settings::{sources::SourcesSettings, Settings};

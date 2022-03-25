@@ -27,9 +27,7 @@ impl Cursor {
     }
 
     /// TODO: docs
-    pub fn _is_at_sol(&self) -> bool {
-        self.at_bytes == 0
-    }
+    pub fn _is_at_sol(&self) -> bool { self.at_bytes == 0 }
 
     /// TODO: docs
     fn non_whitespace_bytes_pre(&self) -> usize {
@@ -83,9 +81,7 @@ mod tests {
 
     #[test]
     // `|`
-    fn empty_line() {
-        assert_eq!("".len(), _get_matched_bytes("", 0))
-    }
+    fn empty_line() { assert_eq!("".len(), _get_matched_bytes("", 0)) }
 
     #[test]
     // `|foo`

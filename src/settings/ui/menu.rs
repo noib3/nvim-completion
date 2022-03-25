@@ -1,5 +1,6 @@
-use serde::{Deserialize, Deserializer};
 use std::num::NonZeroU32;
+
+use serde::{Deserialize, Deserializer};
 
 use super::border::{Border, BorderString, BorderStyle, IncompleteBorder};
 
@@ -28,18 +29,12 @@ pub enum MenuAnchor {
 }
 
 impl Default for MenuAnchor {
-    fn default() -> Self {
-        MenuAnchor::Cursor
-    }
+    fn default() -> Self { MenuAnchor::Cursor }
 }
 
-fn default_autoshow() -> bool {
-    true
-}
+fn default_autoshow() -> bool { true }
 
-fn default_border_enable() -> bool {
-    false
-}
+fn default_border_enable() -> bool { false }
 
 fn default_border_style() -> BorderStyle {
     BorderStyle::String(BorderString::Single)
@@ -56,9 +51,12 @@ fn deserialize_menu_border<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Border, D::Error> {
     Deserialize::deserialize(deserializer).map(
-        |IncompleteBorder { enable, style }| {
-            let enable = match (enable, &style) {
-                (Some(b), _) => b,
+        |IncompleteBorder {
+             maybe_enable,
+             maybe_style,
+         }| {
+            let enable = match (maybe_enable, &maybe_style) {
+                (Some(bool), _) => bool,
                 // If the `enable` field is missing but `style` is set the
                 // border is enabled automatically.
                 (None, Some(_)) => true,
@@ -67,7 +65,7 @@ fn deserialize_menu_border<'de, D: Deserializer<'de>>(
 
             Border {
                 enable,
-                style: style.unwrap_or(default_border_style()),
+                style: maybe_style.unwrap_or(default_border_style()),
             }
         },
     )

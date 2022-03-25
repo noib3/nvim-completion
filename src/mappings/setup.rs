@@ -1,6 +1,7 @@
+use std::sync::{Arc, Mutex};
+
 use mlua::prelude::{Lua, LuaResult};
 use neovim::Api;
-use std::sync::{Arc, Mutex};
 
 use crate::state::State;
 

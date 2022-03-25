@@ -1,7 +1,8 @@
-use mlua::{prelude::LuaResult, Lua, Table};
-use neovim::Neovim;
 use std::panic;
 use std::sync::{Arc, Mutex};
+
+use mlua::{prelude::LuaResult, Lua, Table};
+use neovim::Neovim;
 
 mod api;
 mod autocmds;
@@ -32,13 +33,11 @@ TODOs
    async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
    lua-loop-threading`.
 
-** 2. border should have different defaults for menu and details;
+** 2. details window should shift when scrolling options instead of redrawing;
 
-** 3. details window should shift when scrolling options instead of redrawing;
+3. add doc comments and solve as many TODOs as possible.
 
-4. add doc comments and solve as many TODOs as possible.
-
-5. remove as much overhead as possible from the ui code.
+4. remove as much overhead as possible from the ui code.
 */
 
 #[mlua::lua_module]

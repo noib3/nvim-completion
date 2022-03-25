@@ -2,17 +2,19 @@ use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use super::{
-    details::CompletionDetails, hint::CompletionHint, menu::CompletionMenu,
+    details::CompletionDetails,
+    hint::CompletionHint,
+    menu::CompletionMenu,
     QueuedUpdates,
 };
-
 use crate::completion::{CompletionItem, Cursor};
 use crate::settings::Settings;
 
 /// `nvim-compleet`'s UI is composed of the following 3 independent pieces.
 #[derive(Debug)]
 pub struct Ui {
-    /// A completion menu used to show all the available completion candidates.
+    /// A completion menu used to show all the available completion
+    /// candidates.
     pub completion_menu: CompletionMenu,
 
     /// A hint used to show the text that would be inserted in the buffer if

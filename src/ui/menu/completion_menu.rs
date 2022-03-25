@@ -23,8 +23,8 @@ pub struct CompletionMenu {
     /// TODO: docs
     pub width: Option<u32>,
 
-    /// The handle of the floating window used to show the completion items, or
-    /// `None` if the completion menu is not currently visible.
+    /// The handle of the floating window used to show the completion items,
+    /// or `None` if the completion menu is not currently visible.
     pub winid: Option<u32>,
 }
 
@@ -102,14 +102,10 @@ impl CompletionMenu {
     }
 
     /// Whether a completion item is currently selected.
-    pub fn is_item_selected(&self) -> bool {
-        self.selected_index.is_some()
-    }
+    pub fn is_item_selected(&self) -> bool { self.selected_index.is_some() }
 
     /// Whether the completion menu is visible.
-    pub fn is_visible(&self) -> bool {
-        self.winid.is_some()
-    }
+    pub fn is_visible(&self) -> bool { self.winid.is_some() }
 
     /// Moves the completion menu to a new position.
     pub fn shift(
@@ -162,7 +158,8 @@ impl CompletionMenu {
         api.win_set_option(
             winid,
             "winhl",
-            "CursorLine:CompleetMenuSelected,FloatBorder:CompleetMenuBorder,Normal:CompleetMenu,Search:None",
+            "CursorLine:CompleetMenuSelected,FloatBorder:CompleetMenuBorder,\
+             Normal:CompleetMenu,Search:None",
         )?;
         api.win_set_option(winid, "scrolloff", 0)?;
 

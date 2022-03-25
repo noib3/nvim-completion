@@ -10,9 +10,7 @@ pub struct DetailsSettings {
     pub border: Border,
 }
 
-fn default_border_enable() -> bool {
-    true
-}
+fn default_border_enable() -> bool { true }
 
 fn default_border_style() -> BorderStyle {
     BorderStyle::Array4([
@@ -34,9 +32,12 @@ fn deserialize_details_border<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Border, D::Error> {
     Deserialize::deserialize(deserializer).map(
-        |IncompleteBorder { enable, style }| {
-            let enable = match (enable, &style) {
-                (Some(b), _) => b,
+        |IncompleteBorder {
+             maybe_enable,
+             maybe_style,
+         }| {
+            let enable = match (maybe_enable, &maybe_style) {
+                (Some(bool), _) => bool,
                 // If the `enable` field is missing but `style` is set the
                 // border is enabled automatically.
                 (None, Some(_)) => true,
@@ -45,7 +46,7 @@ fn deserialize_details_border<'de, D: Deserializer<'de>>(
 
             Border {
                 enable,
-                style: style.unwrap_or(default_border_style()),
+                style: maybe_style.unwrap_or(default_border_style()),
             }
         },
     )

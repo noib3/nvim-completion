@@ -1,10 +1,10 @@
-use mlua::prelude::{Lua, LuaResult, LuaValue, ToLua};
+use std::fmt;
 
+use mlua::prelude::{Lua, LuaResult, LuaValue, ToLua};
 use serde::{
     de::{self, Deserializer, Visitor},
     Deserialize,
 };
-use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum BorderItem {

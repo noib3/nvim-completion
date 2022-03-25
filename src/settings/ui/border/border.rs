@@ -18,8 +18,8 @@ pub struct Border {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IncompleteBorder {
-    pub enable: Option<bool>,
-    pub style: Option<BorderStyle>,
+    pub maybe_enable: Option<bool>,
+    pub maybe_style: Option<BorderStyle>,
 }
 
 impl Border {

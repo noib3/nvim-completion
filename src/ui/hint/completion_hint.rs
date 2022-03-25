@@ -28,9 +28,7 @@ impl CompletionHint {
         Ok(())
     }
 
-    pub fn is_visible(&self) -> bool {
-        self.hinted_index.is_some()
-    }
+    pub fn is_visible(&self) -> bool { self.hinted_index.is_some() }
 
     pub fn set(
         &mut self,

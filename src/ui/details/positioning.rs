@@ -1,6 +1,7 @@
+use std::cmp;
+
 use mlua::prelude::LuaResult;
 use neovim::Api;
-use std::cmp;
 
 use crate::settings::ui::border::Border;
 use crate::ui::WindowPosition;

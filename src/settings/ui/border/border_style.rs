@@ -6,9 +6,9 @@ use super::BorderItem;
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum BorderStyle {
-    // Here we need another `BorderString` enum to hold all the string variants
-    // ("single", "double", "rounded", etc.). Can be removed if/when
-    // https://github.com/serde-rs/serde/issues/1402 is implemented.
+    // Here we need another `BorderString` enum to hold all the string
+    // variants ("single", "double", "rounded", etc.). Can be removed
+    // if/when https://github.com/serde-rs/serde/issues/1402 is implemented.
     String(BorderString),
 
     // These variants allow the users to pass a table to customize the

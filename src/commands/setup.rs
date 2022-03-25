@@ -1,9 +1,10 @@
+use std::sync::{Arc, Mutex};
+
 use mlua::{
     prelude::{Lua, LuaResult},
     Table,
 };
 use neovim::{Api, Neovim};
-use std::sync::{Arc, Mutex};
 
 use crate::State;
 

@@ -1,6 +1,7 @@
+use std::cmp;
+
 use mlua::{prelude::LuaResult, Lua};
 use neovim::{Api, Neovim};
-use std::cmp;
 
 use crate::state::State;
 use crate::ui::menu;

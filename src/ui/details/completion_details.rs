@@ -6,8 +6,8 @@ use crate::ui::WindowPosition;
 
 #[derive(Debug)]
 pub struct CompletionDetails {
-    /// The handle of the buffer used to show the completion details. It is set
-    /// once on initialization and never changes.
+    /// The handle of the buffer used to show the completion details. It is
+    /// set once on initialization and never changes.
     bufnr: u32,
 
     /// The handle of the floating window used to show the completion details,
@@ -35,9 +35,7 @@ impl CompletionDetails {
     }
 
     /// TODO: docs
-    pub fn is_visible(&self) -> bool {
-        self.winid.is_some()
-    }
+    pub fn is_visible(&self) -> bool { self.winid.is_some() }
 
     /// TODO: docs
     pub fn fill(&mut self, api: &Api, lines: &[String]) -> LuaResult<()> {
@@ -97,7 +95,8 @@ impl CompletionDetails {
         api.win_set_option(
             winid,
             "winhl",
-            "FloatBorder:CompleetDetailsBorder,Normal:CompleetDetails,Search:None",
+            "FloatBorder:CompleetDetailsBorder,Normal:CompleetDetails,Search:\
+             None",
         )?;
         api.win_set_option(winid, "scrolloff", 0)?;
 

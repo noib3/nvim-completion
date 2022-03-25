@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use mlua::prelude::{LuaRegistryKey, LuaResult};
 use neovim::Api;
-use std::collections::HashMap;
 
 use crate::completion::{CompletionItem, CompletionSource, Cursor};
 use crate::settings::Settings;
