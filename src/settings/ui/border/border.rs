@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use super::BorderStyle;
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Border {
@@ -8,7 +10,16 @@ pub struct Border {
 
     /// The style of the border. Can be any of the values listed in `:h
     /// nvim_open_win`.
-    pub style: super::BorderStyle,
+    pub style: BorderStyle,
+}
+
+/// Helper struct used to deserialize the borders in the completion menu and in
+/// the details window with different defaults.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct IncompleteBorder {
+    pub enable: Option<bool>,
+    pub style: Option<BorderStyle>,
 }
 
 impl Border {
