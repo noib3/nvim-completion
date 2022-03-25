@@ -15,11 +15,14 @@ pub fn setup(
 ) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
 
+    // Here we create the highlight groups used in the error messages.
+    hlgroups::setup_error_msg(lua, &api)?;
+
     // If the Neovim version isn't >= 0.7 we echo an error message and return
     // early.
     if !api.call_function::<_, u8>("has", vec!["nvim-0.7"])? == 1 {
         let chunks = [
-            ("[nvim-compleet]", Some("ErrorMsg")),
+            ("[nvim-compleet]", Some("CompleetErrorMsgTag")),
             (" Neovim v0.7+ is required", None),
         ];
         api.echo(&chunks, true)?;
@@ -40,14 +43,18 @@ pub fn setup(
 
                 Err(e) => match e.inner() {
                     LuaError::DeserializeError(msg) => {
-                        let chunks = [
+                        let path = e.path().to_string();
+                        let mut chunks = vec![
                             ("[nvim-compleet]", Some("ErrorMsg")),
                             (" Error for `", None),
-                            (&e.path().to_string(), Some("Statement")),
-                            (&format!("`: {msg}"), None),
+                            (&path, Some("CompleetErrorMsgOptionPath")),
+                            ("`: ", None),
                         ];
 
+                        chunks.append(&mut to_chunks(msg));
+
                         api.echo(&chunks, true)?;
+
                         return Ok(());
                     },
 
@@ -60,7 +67,7 @@ pub fn setup(
 
         _ => {
             let chunks = [
-                ("[nvim-compleet]", Some("ErrorMsg")),
+                ("[nvim-compleet]", Some("CompleetErrorMsgTag")),
                 (" Invalid value '", None),
                 (&format!("{:?}", preferences), Some("Statement")),
                 ("'. Please pass either a table or ", None),
@@ -75,9 +82,9 @@ pub fn setup(
     // Collect all the enabled sources.
     _state.sources = get_enabled_sources(&_state.settings.sources);
 
-    // Used for debugging.
-    let nvim = Neovim::new(lua)?;
-    nvim.print(format!("{:?}", &_state.settings))?;
+    // // Used for debugging.
+    // let nvim = Neovim::new(lua)?;
+    // nvim.print(format!("{:?}", &_state.settings))?;
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
@@ -116,4 +123,19 @@ fn get_enabled_sources(
     }
 
     sources
+}
+
+fn to_chunks(msg: &str) -> Vec<(&'_ str, Option<&'static str>)> {
+    msg.split('`')
+        .enumerate()
+        .map(|(i, str)| match i % 2 == 1 {
+            true => vec![
+                ("`", None),
+                (str, Some("CompleetErrorMsgField")),
+                ("`", None),
+            ],
+            false => vec![(str, None)],
+        })
+        .flatten()
+        .collect()
 }

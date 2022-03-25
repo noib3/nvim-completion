@@ -12,7 +12,12 @@ repository = "https://github.com/noib3/nvim-compleet"
 crate-type = ["cdylib"]
 
 [dependencies]
-mlua = { version = "0.7.4", features = ["luajit", "vendored", "module", "serialize"] }
+neovim = { path = "./neovim" }
+
+mlua = { version = "0.7", features = ["luajit", "vendored", "module", "serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_path_to_error = "0.1"
-neovim = { path = "./neovim" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

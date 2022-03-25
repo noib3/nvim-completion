@@ -4,7 +4,10 @@ use neovim::Api;
 /// Creates our highlight groups, linking them to other default groups. This
 /// can be used by colorscheme plugin authors to style the UI.
 pub fn setup(lua: &Lua, api: &Api) -> LuaResult<()> {
-    let opts = lua.create_table_with_capacity(0, 1)?;
+    let opts = lua.create_table_with_capacity(0, 2)?;
+
+    // Don't override existing definitions.
+    opts.set("default", true)?;
 
     // `CompleetMenu`
     // Used to highlight the completion menu.
@@ -40,7 +43,7 @@ pub fn setup(lua: &Lua, api: &Api) -> LuaResult<()> {
     // `CompleetHint`
     // Used to highlight the completion hint.
     opts.set("link", "Comment")?;
-    api.set_hl(0, "CompleetHint", opts)?;
+    api.set_hl(0, "CompleetHint", opts.clone())?;
 
     Ok(())
 }
