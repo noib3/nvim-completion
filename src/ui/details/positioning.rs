@@ -23,8 +23,8 @@ pub fn get_position(
     let height = lines.len() as u32;
 
     let total_details_width = width
-        + if border.is_left_edge_set() { 1 } else { 0 }
-        + if border.is_right_edge_set() { 1 } else { 0 };
+        + if border.has_left_edge() { 1 } else { 0 }
+        + if border.has_right_edge() { 1 } else { 0 };
 
     let (cols_before, cols_after) =
         get_cols_before_after_menu(api, menu_winid, menu_width, menu_border)?;
@@ -36,17 +36,13 @@ pub fn get_position(
     // that also fails we give up and return `None`.
     let col = if cols_after >= total_details_width {
         i32::try_from(menu_width).unwrap()
-            + if menu_border.is_right_edge_set() {
-                1
-            } else {
-                0
-            }
+            + if menu_border.has_right_edge() { 1 } else { 0 }
     } else if cols_before >= total_details_width {
         -i32::try_from(width).unwrap()
-            - if menu_border.is_left_edge_set() { 1 } else { 0 }
+            - if menu_border.has_left_edge() { 1 } else { 0 }
             // TODO: why? do I need this
-            - if border.is_left_edge_set() { 1 } else { 0 }
-            - if border.is_right_edge_set() { 1 } else { 0 }
+            - if border.has_left_edge() { 1 } else { 0 }
+            - if border.has_right_edge() { 1 } else { 0 }
     } else {
         // TODO: a better fallback behaviour might be to try to place the
         // details window above or below the completion_menu.
@@ -58,7 +54,7 @@ pub fn get_position(
     // The top edge of the details window always lines up with the top edge of
     // the completion menu. This is likely to change in the future as we allow
     // it to be placed above or below the completion menu.
-    let row = if menu_border.is_top_edge_set() { -1 } else { 0 };
+    let row = if menu_border.has_top_edge() { -1 } else { 0 };
 
     Ok(Some(WindowPosition {
         height,
@@ -83,13 +79,9 @@ fn get_cols_before_after_menu(
     let cols_after = total_cols
         - cols_before
         - menu_width
-        - if menu_border.is_right_edge_set() {
-            1
-        } else {
-            0
-        };
+        - if menu_border.has_right_edge() { 1 } else { 0 };
 
-    if menu_border.is_left_edge_set() {
+    if menu_border.has_left_edge() {
         cols_before -= 1;
     }
 

@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::num::NonZeroU32;
 
 use super::border;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MenuSettings {
     #[serde(default)]
@@ -15,7 +15,6 @@ pub struct MenuSettings {
     #[serde(default)]
     pub max_height: Option<NonZeroU32>,
 
-    #[serde(default)]
     pub border: super::border::BorderSettings,
 }
 
@@ -25,12 +24,17 @@ impl Default for MenuSettings {
             anchor: MenuAnchor::default(),
             autoshow: default_menu_autoshow(),
             max_height: Option::default(),
-            border: border::BorderSettings::default(),
+            border: border::BorderSettings {
+                enable: false,
+                style: border::BorderStyle::String(
+                    border::BorderString::Single,
+                ),
+            },
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum MenuAnchor {
     Cursor,

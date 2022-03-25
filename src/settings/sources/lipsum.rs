@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use super::sources::SourceSettings;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct LipsumSettings {
     #[serde(flatten, default = "lipsum_default_source")]
     pub source: SourceSettings,

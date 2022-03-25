@@ -1,28 +1,45 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-use super::border;
+// use super::border::{BorderItem, BorderSettings, BorderStyle};
+use super::border::{self, BorderSettings, BorderStyle};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DetailsSettings {
-    // #[serde(default)]
-    pub border: border::BorderSettings,
+    pub border: BorderSettings,
 }
 
 impl Default for DetailsSettings {
     fn default() -> Self {
         DetailsSettings {
-            border: border::BorderSettings {
+            border: BorderSettings {
                 enable: true,
-                style: border::BorderStyle::ArrayWithHlgroup8([
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    [" ".to_string(), "CompleetDetails".to_string()],
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    ["".to_string(), "CompleetDetails".to_string()],
-                    [" ".to_string(), "CompleetDetails".to_string()],
+                // style: BorderStyle::Array4([
+                //     BorderItem::String("".into()),
+                //     BorderItem::String("".into()),
+                //     BorderItem::String("".into()),
+                //     BorderItem::Tuple((
+                //         " ".into(),
+                //         Some("CompleetDetails".into()),
+                //     )),
+                // ]),
+                style: BorderStyle::Array4WithHlgroup([
+                    (
+                        border::OnecharOrEmpty("".to_string()),
+                        "CompleetDetails".to_string(),
+                    ),
+                    (
+                        border::OnecharOrEmpty("".to_string()),
+                        "CompleetDetails".to_string(),
+                    ),
+                    (
+                        border::OnecharOrEmpty("".to_string()),
+                        "CompleetDetails".to_string(),
+                    ),
+                    (
+                        border::OnecharOrEmpty(" ".to_string()),
+                        "CompleetDetails".to_string(),
+                    ),
                 ]),
             },
         }

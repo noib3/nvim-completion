@@ -39,12 +39,12 @@ pub fn get_position(
     }
     // If the left edge of the border is present we need to offset it by
     // placing the menu one more column to the left.
-    - if border.is_left_edge_set() { 1 } else { 0 };
+    - if border.has_left_edge() { 1 } else { 0 };
 
     let (rows_above, rows_below) = get_rows_above_below_cursor(api)?;
     let total_menu_height = height
-        + if border.is_bottom_edge_set() { 1 } else { 0 }
-        + if border.is_top_edge_set() { 1 } else { 0 };
+        + if border.has_bottom_edge() { 1 } else { 0 }
+        + if border.has_top_edge() { 1 } else { 0 };
 
     let row = if rows_below >= total_menu_height {
         1

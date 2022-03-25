@@ -34,11 +34,9 @@ TODOs
 
 2. border should have different defaults for menu and details;
 
-3. border chars should be either 0 or 1 chars
+3. details window should shift when scrolling options instead of redrawing;
 
-4. details window should shift when scrolling options instead of redrawing;
-
-5. add doc comments and solve as many TODOs as possible.
+4. add doc comments and solve as many TODOs as possible.
 */
 
 #[mlua::lua_module]
