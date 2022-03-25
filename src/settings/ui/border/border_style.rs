@@ -1,7 +1,7 @@
 use mlua::prelude::{Lua, LuaResult, LuaValue, ToLua};
 use serde::Deserialize;
 
-use super::OnecharOrEmpty;
+use super::BorderItem;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -11,39 +11,30 @@ pub enum BorderStyle {
     // https://github.com/serde-rs/serde/issues/1402 is implemented.
     String(BorderString),
 
-    // TODO: should actually be
-    // Array1([OnecharOrEmpty | (OnecharOrEmpty, Option<String>); 1]),
-    // Array2([OnecharOrEmpty | (OnecharOrEmpty, Option<String>); 2]),
-    // Array4([OnecharOrEmpty | (OnecharOrEmpty, Option<String>); 4]),
-    // Array8([OnecharOrEmpty | (OnecharOrEmpty, Option<String>); 8]),
-    // Add an enum `BorderItem`?
-
     // These variants allow the users to pass a table to customize the
     // characters used in the borders at the corner and edge level, for
     // example:
     // ```lua
     // style = {"a", "b", "c", "d"}
-    // ```
-    Array1([OnecharOrEmpty; 1]),
-    Array2([OnecharOrEmpty; 2]),
-    Array4([OnecharOrEmpty; 4]),
-    Array8([OnecharOrEmpty; 8]),
-
-    // Same as before, but now every item in the table is a tuple instead of a
-    // string, with the second element specifying a highlight group, for
-    // example
-    // ```lua
+    //
     // style = {
     //   {"a", "FloatBorder"},
     //   {"b", "FloatBorder"},
     //   {"c", "FloatBorder"},
     //   {"d", "FloatBorder"},
     // }
+    //
+    // style = {
+    //   "a",
+    //   {"b", "FloatBorder"},
+    //   {"c"},
+    //   "",
+    // }
     // ```
-    Array1WithHlgroup([(OnecharOrEmpty, String); 1]),
-    Array2WithHlgroup([(OnecharOrEmpty, String); 2]),
-    Array4WithHlgroup([(OnecharOrEmpty, String); 4]),
-    Array8WithHlgroup([(OnecharOrEmpty, String); 8]),
+    Array1([BorderItem; 1]),
+    Array2([BorderItem; 2]),
+    Array4([BorderItem; 4]),
+    Array8([BorderItem; 8]),
 }
 
 #[derive(Debug, Deserialize)]
@@ -123,40 +114,10 @@ impl BorderStyle {
                 BorderString::Shadow => "shadow".to_lua(lua),
             },
 
-            // Well this is annoying..
             BorderStyle::Array1(a) => a.to_vec().to_lua(lua),
             BorderStyle::Array2(a) => a.to_vec().to_lua(lua),
             BorderStyle::Array4(a) => a.to_vec().to_lua(lua),
             BorderStyle::Array8(a) => a.to_vec().to_lua(lua),
-
-            // ..and this even more so!
-            BorderStyle::Array1WithHlgroup(a) => a
-                .to_vec()
-                .into_iter()
-                .map(|(c, hl)| [c.0, hl])
-                .collect::<Vec<[String; 2]>>()
-                .to_lua(lua),
-
-            BorderStyle::Array2WithHlgroup(a) => a
-                .to_vec()
-                .into_iter()
-                .map(|(c, hl)| [c.0, hl])
-                .collect::<Vec<[String; 2]>>()
-                .to_lua(lua),
-
-            BorderStyle::Array4WithHlgroup(a) => a
-                .to_vec()
-                .into_iter()
-                .map(|(c, hl)| [c.0, hl])
-                .collect::<Vec<[String; 2]>>()
-                .to_lua(lua),
-
-            BorderStyle::Array8WithHlgroup(a) => a
-                .to_vec()
-                .into_iter()
-                .map(|(c, hl)| [c.0, hl])
-                .collect::<Vec<[String; 2]>>()
-                .to_lua(lua),
         }
     }
 }

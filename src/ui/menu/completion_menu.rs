@@ -2,7 +2,7 @@ use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use crate::completion::CompletionItem;
-use crate::settings::ui::border::BorderSettings;
+use crate::settings::ui::border::Border;
 use crate::ui::WindowPosition;
 
 #[derive(Debug)]
@@ -142,7 +142,7 @@ impl CompletionMenu {
         lua: &Lua,
         api: &Api,
         position: &WindowPosition,
-        border: &BorderSettings,
+        border: &Border,
     ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 8)?;
         opts.set("relative", "cursor")?;

@@ -75,9 +75,9 @@ pub fn setup(
     // Collect all the enabled sources.
     _state.sources = get_enabled_sources(&_state.settings.sources);
 
-    // // Used for debugging.
-    // let nvim = Neovim::new(lua)?;
-    // nvim.print(format!("{:?}", &_state.settings))?;
+    // Used for debugging.
+    let nvim = Neovim::new(lua)?;
+    nvim.print(format!("{:?}", &_state.settings))?;
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {

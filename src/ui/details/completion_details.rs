@@ -1,7 +1,7 @@
 use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
-use crate::settings::ui::border::BorderSettings;
+use crate::settings::ui::border::Border;
 use crate::ui::WindowPosition;
 
 #[derive(Debug)]
@@ -76,7 +76,7 @@ impl CompletionDetails {
         api: &Api,
         menu_winid: u32,
         position: &WindowPosition,
-        border: &BorderSettings,
+        border: &Border,
     ) -> LuaResult<()> {
         let opts = lua.create_table_with_capacity(0, 9)?;
         opts.set("relative", "win")?;
@@ -112,10 +112,10 @@ impl CompletionDetails {
         lua: &Lua,
         api: &Api,
         new_lines: Option<&Vec<String>>,
-        border: &BorderSettings,
+        border: &Border,
         menu_width: u32,
         menu_winid: u32,
-        menu_border: &BorderSettings,
+        menu_border: &Border,
     ) -> LuaResult<()> {
         match new_lines {
             // If the are new lines to fill the buffer with try to get a

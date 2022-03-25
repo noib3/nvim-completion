@@ -83,7 +83,7 @@ fn get_text_to_insert<'a>(
     // E.g. `f|ar`, completion is `foobar`.
     if bytes_after_cursor < bytes_rest_of_completion {
         for j in (0..bytes_after_cursor).rev() {
-            if completion_wo_prefix.ends_with(&line_after_cursor[..j + 1]) {
+            if completion_wo_prefix.ends_with(&line_after_cursor[..=j]) {
                 take_this_many_bytes_from_completion -= j + 1;
                 break;
             }

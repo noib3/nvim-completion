@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct BorderSettings {
+pub struct Border {
     /// Whether to enable the border.
     pub enable: bool,
 
@@ -11,7 +11,7 @@ pub struct BorderSettings {
     pub style: super::BorderStyle,
 }
 
-impl BorderSettings {
+impl Border {
     pub fn has_top_edge(&self) -> bool {
         self.enable && self.style.has_top_edge()
     }

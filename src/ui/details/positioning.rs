@@ -2,16 +2,16 @@ use mlua::prelude::LuaResult;
 use neovim::Api;
 use std::cmp;
 
-use crate::settings::ui::border::BorderSettings;
+use crate::settings::ui::border::Border;
 use crate::ui::WindowPosition;
 
 pub fn get_position(
     api: &Api,
     lines: &[String],
-    border: &BorderSettings,
+    border: &Border,
     menu_winid: u32,
     menu_width: u32,
-    menu_border: &BorderSettings,
+    menu_border: &Border,
 ) -> LuaResult<Option<WindowPosition>> {
     let longest_line = lines
         .iter()
@@ -70,7 +70,7 @@ fn get_cols_before_after_menu(
     api: &Api,
     menu_winid: u32,
     menu_width: u32,
-    menu_border: &BorderSettings,
+    menu_border: &Border,
 ) -> LuaResult<(u32, u32)> {
     let total_cols = api.get_option::<u32>("columns")?;
 
