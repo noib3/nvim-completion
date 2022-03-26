@@ -43,7 +43,7 @@ impl CompletionDetails {
     }
 
     /// TODO: docs
-    pub fn _shift(
+    pub fn shift(
         &mut self,
         lua: &Lua,
         api: &Api,
@@ -110,62 +110,59 @@ impl CompletionDetails {
         &mut self,
         lua: &Lua,
         api: &Api,
-        new_lines: Option<&Vec<String>>,
+        maybe_lines: Option<&Vec<String>>,
         border: &Border,
         menu_width: u32,
         menu_winid: u32,
         menu_border: &Border,
+        force_redraw: bool,
     ) -> LuaResult<()> {
-        match new_lines {
-            // If the are new lines to fill the buffer with try to get a
-            // position for the floating window.
-            Some(lines) => {
-                match (
-                    self.is_visible(),
-                    &super::get_position(
-                        api,
-                        lines,
-                        border,
-                        menu_winid,
-                        menu_width,
-                        menu_border,
-                    )?,
-                ) {
-                    (true, Some(position)) => {
-                        // TODO: Understand why closing and reopening the
-                        // details window works but setting a new config makes
-                        // it lag by 1 column. I tried reproducing this by
-                        // replicating the same command sequence manually but
-                        // everything seems to work fine. What is going on
-                        // here?
-                        //
-                        // This lags 1 column behind.
-                        //
-                        // self.shift(lua, api, menu_winid, position)?;
+        if maybe_lines.is_none() {
+            self.close(api)?;
+            return Ok(());
+        }
 
-                        // So closing and reopening works but shifting
-                        // doesn't?
-                        self.close(api)?;
-                        self.spawn(lua, api, menu_winid, position, border)?;
+        let lines = maybe_lines.expect("Already checked `None` variant");
+        let maybe_position = super::get_position(
+            api,
+            lines,
+            border,
+            menu_winid,
+            menu_width,
+            menu_border,
+        )?;
 
-                        self.fill(api, lines)?;
-                    },
-
-                    (false, Some(position)) => {
-                        self.spawn(lua, api, menu_winid, position, border)?;
-                        self.fill(api, lines)?;
-                    },
-
-                    (true, None) => {
-                        self.close(api)?;
-                    },
-
-                    (false, None) => {},
+        match (self.is_visible(), maybe_position) {
+            // The window is already visible and we have a new position. We
+            // should just shift the window, but unfortunately because of a bug
+            // (https://github.com/neovim/neovim/issues/17853) this doesn't
+            // always work, sometimes we need to close and reopen it.
+            (true, Some(position)) => {
+                if force_redraw {
+                    self.close(api)?;
+                    self.spawn(lua, api, menu_winid, &position, border)?
+                } else {
+                    self.shift(lua, api, menu_winid, &position)?;
                 }
+                self.fill(api, lines)?;
             },
 
-            // Otherwise close the window.
-            None => self.close(api)?,
+            // The window wasn't open but now we have a new position. We create
+            // a new one and fill the buffer.
+            (false, Some(position)) => {
+                self.spawn(lua, api, menu_winid, &position, border)?;
+                self.fill(api, lines)?;
+            },
+
+            // The window was open but there's nothign to display anymore. We
+            // just close it.
+            (true, None) => {
+                self.close(api)?;
+            },
+
+            // The window wasn't open and there's still nothing to
+            // display. This is a no-op.
+            (false, None) => {},
         }
 
         Ok(())

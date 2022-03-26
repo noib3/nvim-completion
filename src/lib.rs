@@ -18,13 +18,19 @@ use state::State;
 
 /*
 BUGs:
-1. (ui) menu's position doesn't update when the signcolumn changes;
+1. (ui) menu's position doesn't update when the signcolumn changes. Not really
+   sure how to solve this, there's no `SignColumnChanged` autocmd to listen to;
+
+2. fix bug with CompleetStart;
 
 TODOs: On Hold
 
 1. Show scroll indicator if number of completions is bigger than the completion
    menu's max height. This needs floating windows to support scrollbars. See
    `:h api-floatwin`.
+
+2. Add option `ui.details.add_menu_spacing` to add 1 column of horizontal
+   spacing between the completion menu and the details window.
 
 TODOs
 
@@ -33,17 +39,15 @@ TODOs
    async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
    lua-loop-threading`.
 
-** 2. details window should shift when scrolling options instead of redrawing;
+2. add doc comments and solve as many TODOs as possible.
 
-3. add doc comments and solve as many TODOs as possible.
-
-4. remove as much overhead as possible from the ui code.
+3. remove as much overhead as possible from the ui code.
 */
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    // Because the plugin runs in the main thread, panics will take down the
-    // whole neovim process. We can't do a lot except relaying the panic infos.
+    // The plugin runs in the main thread, so panics will take down the whole
+    // Neovim process. We can't do a lot except relaying the panic infos.
     panic::set_hook(Box::new(|infos| {
         eprintln!(
             "[nvim-compleet] {infos}. \

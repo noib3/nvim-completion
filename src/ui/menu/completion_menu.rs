@@ -76,23 +76,22 @@ impl CompletionMenu {
 
         api.buf_set_lines(self.bufnr, 0, -1, false, &lines)?;
 
-        // Highlight some characters of the completion item.
+        // Highlight the matching characters of every completion item.
+        let mut id = 0u16;
         let opts = lua.create_table_with_capacity(0, 4)?;
         for (row, completion) in completions.iter().enumerate() {
-            for range in &completion.hl_ranges {
-                // TODO: the id has to be unique not only for every line
-                // but also for every range.
-                //
-                // Every range is a tuple of the form (range, highlight_group).
-                opts.set("hl_group", range.1)?;
-                opts.set("id", row + 1)?;
+            for (range, hl_group) in &completion.hl_ranges {
+                id += 1;
+                opts.set("id", id)?;
                 opts.set("end_row", row)?;
-                opts.set("end_col", range.0.end)?;
+                opts.set("end_col", range.end)?;
+                opts.set("hl_group", *hl_group)?;
+                opts.set("priority", 10000)?;
                 api.buf_set_extmark(
                     self.bufnr,
                     self.mc_nsid,
                     row as u32,
-                    range.0.start as u32,
+                    range.start as u32,
                     opts.clone(),
                 )?;
             }

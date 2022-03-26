@@ -106,6 +106,7 @@ impl Ui {
                         position.width,
                         winid,
                         &settings.ui.menu.border,
+                        true,
                     )?;
                 } else {
                     details.close(&api)?;

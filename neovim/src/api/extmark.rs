@@ -16,7 +16,8 @@ impl<'a> Api<'a> {
     /// * `hl_group`   Name of the highlight group to use.
     /// * `line`       Line to highlight (zero-indexed).
     /// * `col_start`  Start of column range to highlight (byte-indexed).
-    /// * `col_end`    End of column range to highlight, or -1 to  highlight to end of line (byte-indexed).
+    /// * `col_end`    End of column range to highlight, or -1 to  highlight to
+    ///   end of line (byte-indexed).
     pub fn buf_add_highlight(
         &self,
         bufnr: u32,
@@ -42,7 +43,8 @@ impl<'a> Api<'a> {
     /// * `bufnr`       Buffer handle, or 0 for current buffer.
     /// * `ns_id`       Namespace to clear.
     /// * `line_start`  Start of range of lines to clear (zero-indexed).
-    /// * `line_end`    End of range of lines to clear (zero-indexed and exclusive).
+    /// * `line_end`    End of range of lines to clear (zero-indexed and
+    ///   exclusive).
     pub fn buf_clear_namespace(
         &self,
         bufnr: u32,
@@ -67,7 +69,8 @@ impl<'a> Api<'a> {
     /// * `ns_id`  Namespace id.
     /// * `row`    Row where to place the extmark (0-indexed).
     /// * `col`    Column where to place the extmark (0-indexed).
-    /// * `opts`   Optional parameters. See `:h nvim_buf_set_extmark` for  details.
+    /// * `opts`   Optional parameters. See `:h nvim_buf_set_extmark` for
+    ///   details.
     pub fn buf_set_extmark(
         &self,
         bufnr: u32,

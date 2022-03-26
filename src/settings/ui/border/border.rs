@@ -18,7 +18,10 @@ pub struct Border {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IncompleteBorder {
+    #[serde(rename = "enable")]
     pub maybe_enable: Option<bool>,
+
+    #[serde(rename = "style")]
     pub maybe_style: Option<BorderStyle>,
 }
 

@@ -69,6 +69,7 @@ pub fn select_completion(
         menu_width,
         menu_winid,
         &state.settings.ui.menu.border,
+        false,
     )?;
 
     Ok(())
