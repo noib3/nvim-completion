@@ -154,7 +154,7 @@ impl CompletionDetails {
                 self.fill(api, lines)?;
             },
 
-            // The window was open but there's nothign to display anymore. We
+            // The window was open but there's nothing to display anymore. We
             // just close it.
             (true, None) => {
                 self.close(api)?;

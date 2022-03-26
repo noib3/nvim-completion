@@ -21,8 +21,6 @@ BUGs:
 1. (ui) menu's position doesn't update when the signcolumn changes. Not really
    sure how to solve this, there's no `SignColumnChanged` autocmd to listen to;
 
-2. fix bug with CompleetStart;
-
 TODOs: On Hold
 
 1. Show scroll indicator if number of completions is bigger than the completion

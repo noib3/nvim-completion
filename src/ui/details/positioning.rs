@@ -75,8 +75,10 @@ fn get_cols_before_after_menu(
 ) -> LuaResult<(u32, u32)> {
     let total_cols = api.get_option::<u32>("columns")?;
 
+    // BUG: doesn't work?
     let mut cols_before = api.win_get_position(menu_winid)?.1;
 
+    println!("{total_cols}, {cols_before}, {menu_width}");
     let cols_after = total_cols
         - cols_before
         - menu_width

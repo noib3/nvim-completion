@@ -21,15 +21,22 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let nvim = Neovim::new(lua)?;
     let api = &nvim.api;
 
-    // BUG: `augroup_id.is_some()` is the wrong condition to check, it fails
-    // with `CompleetStop!` -> `CompleetStart` -> change buffer ->
-    // `CompleetStart!`.
-    if state.augroup_id.is_some() {
-        api.notify(
-            "[nvim-compleet] Completion is already on",
-            LogLevel::Error,
-        )?;
-        return Ok(());
+    // If the augroup is already set we check if the autocmd for the `BufEnter`
+    // event exists. If it does, completion is already on.
+    if let Some(id) = state.augroup_id {
+        let is_bufenter_autocmd_set = {
+            let opts = lua.create_table_with_capacity(0, 2)?;
+            opts.set("group", id)?;
+            opts.set("event", "BufEnter")?;
+            api.get_autocmds(opts)?.raw_len() != 0
+        };
+        if is_bufenter_autocmd_set {
+            api.notify(
+                "[nvim-compleet] Completion is already on",
+                LogLevel::Error,
+            )?;
+            return Ok(());
+        }
     }
 
     state.buffers_to_be_detached.clear();
