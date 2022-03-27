@@ -79,7 +79,12 @@ pub fn on_bytes(
     let completions = &mut state.completions;
 
     completions.clear();
-    for source in state.sources.iter() {
+    for source in state
+        .sources
+        .get(&bufnr)
+        .expect("The buffer is attached so it has sources")
+        .iter()
+    {
         completions.append(&mut source.complete(&api, &cursor)?);
     }
 

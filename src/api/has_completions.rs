@@ -8,7 +8,8 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     let api = Neovim::new(lua)?.api;
 
     // If the buffer is not attached we return early.
-    if !state.attached_buffers.contains(&api.get_current_buf()?) {
+    let bufnr = api.get_current_buf()?;
+    if !state.attached_buffers.contains(&bufnr) {
         return Ok(false);
     }
 
@@ -19,7 +20,12 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     cursor.line = api.get_current_line()?;
 
     completions.clear();
-    for source in state.sources.iter() {
+    for source in state
+        .sources
+        .get(&bufnr)
+        .expect("The buffer is attached so it has sources")
+        .iter()
+    {
         completions.append(&mut source.complete(&api, &cursor)?);
     }
 

@@ -1,7 +1,7 @@
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 use neovim::{api::LogLevel, Neovim};
 
-use crate::state::State;
+use crate::state::{Sources, State};
 
 /// Executed on every `BufEnter` event and by the `CompleetStart{!}` user
 /// command.
@@ -16,6 +16,16 @@ pub fn try_buf_attach(
 
     let bufnr = api.get_current_buf()?;
 
+    // Collect all the completion sources that want to attach to the current
+    // buffer.
+    let sources = state
+        .settings
+        .sources
+        .iter()
+        .filter(|&s| s.attach(&api, bufnr).unwrap_or(false))
+        .map(|s| s.clone())
+        .collect::<Sources>();
+
     // Don't attach if:
     //
     // 1. we've already attached;
@@ -23,8 +33,11 @@ pub fn try_buf_attach(
     // 2. the buffer has the `modifiable` option turned off. This should catch
     //    a large number of buffers we'd like to ignore like netwr, startify,
     //    terminal buffers, help buffers, etc.
+    //
+    // 3. there are no compatible sources for the current buffer;
     if state.attached_buffers.contains(&bufnr)
         || !api.buf_get_option::<bool>(0, "modifiable")?
+        || sources.is_empty()
     {
         return Ok(());
     }
@@ -33,9 +46,6 @@ pub fn try_buf_attach(
 
     if api.buf_attach(0, false, opts)? {
         state.attached_buffers.push(bufnr);
-
-        // We only add two buffer-local autocommands to update and cleanup the
-        // ui once we've successfully attached to the buffer.
 
         let mut buffer_autocmd_ids = Vec::with_capacity(2);
 
@@ -54,6 +64,10 @@ pub fn try_buf_attach(
         state
             .buffer_local_autocmds
             .insert(bufnr, buffer_autocmd_ids);
+
+        if state.sources.get(&bufnr).is_none() {
+            state.sources.insert(bufnr, sources);
+        }
 
         #[cfg(debug)]
         {

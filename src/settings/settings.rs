@@ -1,27 +1,20 @@
 use serde::Deserialize;
 
-use super::{completion, sources, ui};
+use super::{completion::CompletionSettings, sources, ui::UiSettings};
+use crate::state::Sources;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     #[serde(default)]
-    pub ui: ui::UiSettings,
+    pub ui: UiSettings,
 
     #[serde(default)]
-    pub completion: completion::CompletionSettings,
+    pub completion: CompletionSettings,
 
-    // TODO: this should be something like `Vec<Box<dyn CompletionSource>>`.
-    #[serde(default)]
-    pub sources: sources::SourcesSettings,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Settings {
-            ui: ui::UiSettings::default(),
-            completion: completion::CompletionSettings::default(),
-            sources: sources::SourcesSettings::default(),
-        }
-    }
+    #[serde(
+        default = "sources::default",
+        deserialize_with = "sources::deserialize"
+    )]
+    pub sources: Sources,
 }

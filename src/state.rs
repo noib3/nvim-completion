@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use mlua::prelude::{LuaRegistryKey, LuaResult};
 use neovim::Api;
@@ -6,6 +7,8 @@ use neovim::Api;
 use crate::completion::{CompletionItem, CompletionSource, Cursor};
 use crate::settings::Settings;
 use crate::ui::Ui;
+
+pub type Sources = Vec<Arc<dyn CompletionSource>>;
 
 #[derive(Debug)]
 pub struct State {
@@ -39,7 +42,7 @@ pub struct State {
     /// A hashmap where the keys are the numbers of the currently attached
     /// buffers and the values are the completion sources enabled in that
     /// buffer.
-    pub sources: Vec<Box<dyn CompletionSource>>,
+    pub sources: HashMap<u32, Sources>,
 
     /// A registry key pointing to the `try_buf_attach` Lua function used to
     /// attach to new buffers.
@@ -60,7 +63,7 @@ impl State {
             cursor: Cursor::new(),
             did_setup: false,
             settings: Settings::default(),
-            sources: Vec::new(),
+            sources: HashMap::new(),
             try_buf_attach: None,
             ui: Ui::new(api)?,
         })

@@ -1,5 +1,6 @@
 use mlua::prelude::LuaResult;
 use neovim::Api;
+use serde::Deserialize;
 
 use crate::completion::{CompletionItem, CompletionSource, Cursor};
 
@@ -157,16 +158,23 @@ const LOREMS: [&'static str; 128] = [
     "dignissim",
 ];
 
-#[derive(Debug)]
-pub struct Lipsum;
+#[derive(Deserialize, Debug)]
+pub struct Lipsum {
+    #[serde(default = "default_enable")]
+    pub enable: bool,
+}
 
-impl Lipsum {
-    pub fn new() -> Self { Lipsum {} }
+fn default_enable() -> bool { false }
+
+impl Default for Lipsum {
+    fn default() -> Self {
+        Lipsum {
+            enable: default_enable(),
+        }
+    }
 }
 
 impl CompletionSource for Lipsum {
-    fn enable(&self) -> bool { false }
-
     fn attach(&self, _: &Api, _: u32) -> LuaResult<bool> { Ok(true) }
 
     fn complete(

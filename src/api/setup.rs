@@ -3,8 +3,7 @@ use std::sync::{Arc, Mutex};
 use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use neovim::Neovim;
 
-use crate::completion::{sources, CompletionSource};
-use crate::settings::{sources::SourcesSettings, Settings};
+use crate::settings::Settings;
 use crate::state::State;
 use crate::{autocmds, commands, hlgroups, mappings};
 
@@ -86,9 +85,6 @@ pub fn setup(
         nvim.print(format!("{:#?}", &_state.settings))?;
     }
 
-    // Collect all the enabled sources.
-    _state.sources = get_enabled_sources(&_state.settings.sources);
-
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
         let aux = autocmds::setup(lua, &api, state)?;
@@ -112,20 +108,6 @@ pub fn setup(
     }
 
     Ok(())
-}
-
-fn get_enabled_sources(
-    settings: &SourcesSettings,
-) -> Vec<Box<dyn CompletionSource>> {
-    let mut sources = Vec::new();
-
-    if settings.lipsum.enable {
-        sources.push(
-            Box::new(sources::Lipsum::new()) as Box<dyn CompletionSource>
-        );
-    }
-
-    sources
 }
 
 fn to_chunks(msg: &str) -> Vec<(&'_ str, Option<&'static str>)> {
