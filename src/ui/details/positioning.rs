@@ -41,9 +41,9 @@ pub fn get_position(
     } else if cols_before >= total_details_width {
         -i32::try_from(width).unwrap()
             - if menu_border.has_left_edge() { 1 } else { 0 }
+            - if border.has_right_edge() { 1 } else { 0 }
             // TODO: why? do I need this
             - if border.has_left_edge() { 1 } else { 0 }
-            - if border.has_right_edge() { 1 } else { 0 }
     } else {
         // TODO: a better fallback behaviour might be to try to place the
         // details window above or below the completion_menu.
@@ -75,10 +75,10 @@ fn get_cols_before_after_menu(
 ) -> LuaResult<(u32, u32)> {
     let total_cols = api.get_option::<u32>("columns")?;
 
-    // BUG: doesn't work?
+    // BUG: the `col` of `win_get_position` is sometimes bigger that the total
+    // number of columns, causing the subtractions to overflow. Open an issue
+    // upstream.
     let mut cols_before = api.win_get_position(menu_winid)?.1;
-
-    println!("{total_cols}, {cols_before}, {menu_width}");
     let cols_after = total_cols
         - cols_before
         - menu_width

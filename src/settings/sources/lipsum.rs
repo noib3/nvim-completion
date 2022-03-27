@@ -1,21 +1,20 @@
 use serde::Deserialize;
 
-use super::sources::SourceSettings;
+use crate::completion::{sources, CompletionSource};
 
 #[derive(Debug, Deserialize)]
-pub struct LipsumSettings {
-    #[serde(flatten, default = "lipsum_default_source")]
-    pub source: SourceSettings,
+pub struct Lipsum {
+    #[serde(default = "default_enable")]
+    pub enable: bool,
 }
 
-impl Default for LipsumSettings {
+impl Default for Lipsum {
     fn default() -> Self {
-        LipsumSettings {
-            source: lipsum_default_source(),
+        let lipsum = sources::Lipsum::new();
+        Lipsum {
+            enable: lipsum.enable(),
         }
     }
 }
 
-fn lipsum_default_source() -> SourceSettings {
-    SourceSettings { enable: false }
-}
+fn default_enable() -> bool { sources::Lipsum::new().enable() }

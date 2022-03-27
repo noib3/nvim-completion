@@ -58,9 +58,9 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     opts.set("callback", try_buf_attach.clone())?;
     api.create_autocmd(&["BufEnter"], opts)?;
 
-    // We can't call `autocmds::try_buf_attach` here or the state's mutex would
-    // deadlock. Instead we schedule it for a later time in neovim's event loop
-    // via `vim.schedule`.
+    // NOTE: We can't call `autocmds::try_buf_attach` here or the state's Mutex
+    // would deadlock. Instead we schedule it for a later time in Neovim's
+    // event loop via `vim.schedule`.
     nvim.schedule(try_buf_attach)?;
 
     state.augroup_id = Some(augroup_id);

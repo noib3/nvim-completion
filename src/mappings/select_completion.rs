@@ -45,12 +45,6 @@ pub fn select_completion(
     // Select the new completion.
     menu.select(&api, new_index)?;
 
-    // Update the completion hint.
-    if state.settings.ui.hint.enable && cursor.is_at_eol() {
-        let new_completion_w_i = new_index.map(|i| (&completions[i], i));
-        hint.update(lua, &api, new_completion_w_i, cursor)?;
-    }
-
     // Update the completion details.
     let menu_winid = menu
         .winid
@@ -71,6 +65,17 @@ pub fn select_completion(
         &state.settings.ui.menu.border,
         false,
     )?;
+
+    // Update the completion hint.
+    if state.settings.ui.hint.enable && cursor.is_at_eol() {
+        if let Some(index) = new_index {
+            let completion = &completions[index];
+            let text = &completion.text[(completion.matched_bytes as usize)..];
+            hint.set(lua, &api, text, cursor, index)?;
+        } else {
+            hint.erase(&api)?;
+        }
+    }
 
     Ok(())
 }

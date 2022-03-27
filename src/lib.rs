@@ -37,9 +37,7 @@ TODOs
    async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
    lua-loop-threading`.
 
-2. add doc comments and solve as many TODOs as possible.
-
-3. remove as much overhead as possible from the ui code.
+2. make sources a hashmap, remove get_enabled_sources from `api::setup`.
 */
 
 #[mlua::lua_module]

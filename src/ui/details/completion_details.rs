@@ -34,15 +34,16 @@ impl CompletionDetails {
         Ok(())
     }
 
-    /// TODO: docs
+    /// Whether the details window is currently visible.
     pub fn is_visible(&self) -> bool { self.winid.is_some() }
 
-    /// TODO: docs
+    /// Fills the details window's buffer with a slice of strings.
     pub fn fill(&mut self, api: &Api, lines: &[String]) -> LuaResult<()> {
         api.buf_set_lines(self.bufnr, 0, -1, false, lines)
     }
 
-    /// TODO: docs
+    /// Moves the details window to a new position relative to the completion
+    /// menu.
     pub fn shift(
         &mut self,
         lua: &Lua,
@@ -67,7 +68,8 @@ impl CompletionDetails {
         Ok(())
     }
 
-    /// TODO: docs
+    /// Creates a new details window positioned relative to the completion
+    /// menu.
     fn spawn(
         &mut self,
         lua: &Lua,
@@ -105,7 +107,7 @@ impl CompletionDetails {
         Ok(())
     }
 
-    /// TODO: docs
+    /// Updates the details window and its buffer.
     pub fn update(
         &mut self,
         lua: &Lua,

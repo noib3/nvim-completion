@@ -15,10 +15,13 @@ pub struct State {
     /// The id of the `Compleet` augroup, or `None` if it isn't set.
     pub augroup_id: Option<u32>,
 
-    /// TODO: docs
+    /// A hashmap where the keys are the numbers of the currently attached
+    /// buffers and the values are the ids of the autocommands registered on
+    /// that buffer.
     pub buffer_local_autocmds: HashMap<u32, Vec<u32>>,
 
-    /// TODO: docs
+    /// A vector of buffers numbers to be detached on the next call to
+    /// `completion::on_bytes`.
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The currently available completion items.
@@ -33,10 +36,13 @@ pub struct State {
     /// Used to store the current configuration.
     pub settings: Settings,
 
-    /// TODO: docs
+    /// A hashmap where the keys are the numbers of the currently attached
+    /// buffers and the values are the completion sources enabled in that
+    /// buffer.
     pub sources: Vec<Box<dyn CompletionSource>>,
 
-    /// TODO: docs
+    /// A registry key pointing to the `try_buf_attach` Lua function used to
+    /// attach to new buffers.
     pub try_buf_attach: Option<LuaRegistryKey>,
 
     /// Holds state about the currently displayed UI.

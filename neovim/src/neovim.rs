@@ -44,10 +44,10 @@ impl<'a> Neovim<'a> {
     }
 
     /// TODO: docs
-    pub fn print<S: std::fmt::Debug>(&self, msg: S) -> Result<()> {
+    pub fn print<S: std::fmt::Display>(&self, msg: S) -> Result<()> {
         self._g
             .get::<&str, Function>("print")?
-            .call::<_, ()>(format!("{:?}", msg))
+            .call::<_, ()>(msg.to_string())
     }
 
     /// TODO: docs

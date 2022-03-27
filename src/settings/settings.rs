@@ -11,6 +11,7 @@ pub struct Settings {
     #[serde(default)]
     pub completion: completion::CompletionSettings,
 
+    // TODO: this should be something like `Vec<Box<dyn CompletionSource>>`.
     #[serde(default)]
     pub sources: sources::SourcesSettings,
 }

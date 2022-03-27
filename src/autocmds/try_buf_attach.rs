@@ -55,10 +55,14 @@ pub fn try_buf_attach(
             .buffer_local_autocmds
             .insert(bufnr, buffer_autocmd_ids);
 
-        // let ft = api.buf_get_option::<String>(bufnr, "filetype")?;
-        // let bt = api.buf_get_option::<String>(bufnr, "buftype")?;
-        // nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
-        // nvim.print(format!("{:?}", &state.attached_buffers))?;
+        #[cfg(debug)]
+        {
+            let nvim = Neovim::new(lua)?;
+            let ft = api.buf_get_option::<String>(bufnr, "filetype")?;
+            let bt = api.buf_get_option::<String>(bufnr, "buftype")?;
+            nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
+            nvim.print(format!("{:?}", &state.attached_buffers))?;
+        }
     } else {
         api.notify(
             "[nvim-compleet] Couldn't attach to buffer",

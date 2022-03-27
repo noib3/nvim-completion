@@ -6,7 +6,8 @@ use neovim::{Api, Neovim};
 use crate::state::State;
 use crate::ui::menu;
 
-/// Executed every time some bytes in the current buffer are changed.
+/// Executed every time a byte or a group of bytes in an attached buffer is
+/// modified.
 pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
@@ -21,6 +22,8 @@ pub fn on_bytes(
     // If this buffer is queued to be detached we return `true`, as explained
     // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
     // function but it seems to have been removed.
+    // NOTE: this is needed until https://github.com/neovim/neovim/issues/17874
+    // gets addressed.
     if state.buffers_to_be_detached.contains(&bufnr) {
         state.buffers_to_be_detached.retain(|&b| b != bufnr);
         return Ok(Some(true));
@@ -33,18 +36,13 @@ pub fn on_bytes(
         return Ok(None);
     }
 
-    let ui = &mut state.ui;
-    let completions = &mut state.completions;
-    let cursor = &mut state.cursor;
-    let menu = &mut ui.completion_menu;
-    let settings = &state.settings;
+    // Reset the value of `next_menu_position` in case a previous call set it
+    // to `Some(..)` and it get consumed by `ui.update`.
+    state.ui.next_menu_position = None;
 
-    // First we reset all the ui updates to `None`.
-    ui.queued_updates.reset();
-
-    // If we've added or deleted a line we return early. If we've deleted
-    // characters we continue only if the `complete_while_deleting` option is
-    // set.
+    // If we've added or deleted a line we return early. If we've stayed on the
+    // same line but we've deleted characters we only continue if the
+    // `completion.while_deleting` option is set.
     if rows_added != 0
         || rows_deleted != 0
         || (bytes_deleted != 0 && !state.settings.completion.while_deleting)
@@ -52,55 +50,53 @@ pub fn on_bytes(
         return Ok(None);
     }
 
+    // Update the cursor.
+    let cursor = &mut state.cursor;
+
     cursor.row = start_row;
     cursor.line = get_current_line(&api, cursor.row)?;
-    cursor.at_bytes =
+    cursor.bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
 
-    // // Used for debugging.
-    // let nvim = Neovim::new(lua)?;
-    // nvim.print(format!("Start row: {start_row}"))?;
-    // nvim.print(format!("Start col: {start_col}"))?;
-    // nvim.print(format!("Rows deleted: {rows_deleted}"))?;
-    // nvim.print(format!("Bytes deleted: {bytes_deleted}"))?;
-    // nvim.print(format!("Rows added: {rows_added}"))?;
-    // nvim.print(format!("Bytes added: {bytes_added}"))?;
+    #[cfg(debug)]
+    {
+        debug_cursor_position(
+            lua,
+            start_row,
+            start_col,
+            rows_deleted,
+            bytes_deleted,
+            rows_added,
+            bytes_added,
+            cursor,
+        )?;
+    }
 
-    // // Used for debugging.
-    // let nvim = Neovim::new(lua)?;
-    // let mut current_line = cursor.line.clone();
-    // current_line.insert(cursor.bytes as usize, '|');
-    // nvim.print(format!("Current row: {}", cursor.row))?;
-    // nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
+    // TODO: if `setting.ui.menu.autoshow` is false we look at
+    // `settings.hint.enable`. If that is also false we can just return early,
+    // otherwise we just need to compute the first completion.
+
+    let completions = &mut state.completions;
 
     completions.clear();
     for source in state.sources.iter() {
         completions.append(&mut source.complete(&api, &cursor)?);
     }
 
-    if completions.is_empty() {
-        return Ok(None);
-    }
-
     // Queue an update for the completion menu.
-    if settings.ui.menu.autoshow {
-        ui.queued_updates.menu_position = menu::positioning::get_position(
+    if !completions.is_empty() && state.settings.ui.menu.autoshow {
+        state.ui.next_menu_position = menu::positioning::get_position(
             &api,
             &completions,
-            &settings.ui.menu,
+            &state.settings.ui.menu,
         )?;
 
-        // Update the selected completion.
-        menu.selected_index = menu
-            .selected_index
-            .map(|old| cmp::min(old, completions.len() - 1));
-    }
+        let menu = &mut state.ui.completion_menu;
 
-    // If hints are enabled and the cursor is at the end of the line, queue an
-    // update for the completion hint.
-    if settings.ui.hint.enable && cursor.is_at_eol() {
-        ui.queued_updates.hinted_index =
-            Some(ui.completion_menu.selected_index.unwrap_or(0));
+        // Update the selected completion.
+        if let Some(old) = menu.selected_index {
+            menu.selected_index = Some(cmp::min(old, completions.len() - 1));
+        }
     }
 
     Ok(None)
@@ -119,4 +115,35 @@ fn get_current_line(api: &Api, current_row: u32) -> LuaResult<String> {
         .expect("There's always at least 1 line in this range");
 
     Ok(current_line)
+}
+
+#[cfg(debug)]
+fn debug_cursor_position(
+    lua: &Lua,
+    start_row: u32,
+    start_col: u32,
+    rows_deleted: u32,
+    bytes_deleted: u32,
+    rows_added: u32,
+    bytes_added: u32,
+    cursor: &crate::completion::Cursor,
+) -> LuaResult<()> {
+    let nvim = Neovim::new(lua)?;
+
+    nvim.print("----------------")?;
+    nvim.print(format!("Start row: {start_row}"))?;
+    nvim.print(format!("Start col: {start_col}"))?;
+    nvim.print(format!("Rows deleted: {rows_deleted}"))?;
+    nvim.print(format!("Bytes deleted: {bytes_deleted}"))?;
+    nvim.print(format!("Rows added: {rows_added}"))?;
+    nvim.print(format!("Bytes added: {bytes_added}"))?;
+    nvim.print("")?;
+
+    let mut current_line = cursor.line.clone();
+    current_line.insert(cursor.bytes as usize, '|');
+    nvim.print(format!("Current row: {}", cursor.row))?;
+    nvim.print(format!("Current bytes: {}", cursor.bytes))?;
+    nvim.print(format!("Current line (`|` is cursor): '{current_line}'"))?;
+
+    Ok(())
 }

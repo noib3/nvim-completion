@@ -48,56 +48,61 @@ pub enum BorderString {
     Shadow,
 }
 
+impl BorderString {
+    pub fn has_edges(&self) -> bool {
+        match self {
+            Self::None | Self::Shadow => false,
+            _ => true,
+        }
+    }
+}
+
 impl BorderStyle {
+    /// Whether the top edge of the border is set (i.e. takes up 1 row).
     pub fn has_top_edge(&self) -> bool {
         match self {
-            Self::String(s) => match s {
-                BorderString::None => false,
-                BorderString::Shadow => false,
-                _ => true,
-            },
+            Self::String(s) => s.has_edges(),
 
-            // TODO
-            _ => true,
+            Self::Array1([item])
+            | Self::Array2([_, item])
+            | Self::Array4([_, item, _, _])
+            | Self::Array8([_, item, ..]) => item.has_width(),
         }
     }
 
+    /// Whether the bottom edge of the border is set (i.e. takes up 1 row).
     pub fn has_bottom_edge(&self) -> bool {
         match self {
-            Self::String(s) => match s {
-                BorderString::None => false,
-                BorderString::Shadow => false,
-                _ => true,
-            },
+            Self::String(s) => s.has_edges(),
 
-            // TODO
-            _ => true,
+            Self::Array1([item])
+            | Self::Array2([_, item])
+            | Self::Array4([_, item, _, _])
+            | Self::Array8([.., item, _, _]) => item.has_width(),
         }
     }
 
+    /// Whether the left edge of the border is set (i.e. takes up 1 column).
     pub fn has_left_edge(&self) -> bool {
         match self {
-            Self::String(s) => match s {
-                BorderString::None => false,
-                BorderString::Shadow => false,
-                _ => true,
-            },
+            Self::String(s) => s.has_edges(),
 
-            // TODO
-            _ => true,
+            Self::Array1([item])
+            | Self::Array2([_, item])
+            | Self::Array4([_, _, _, item])
+            | Self::Array8([.., item]) => item.has_width(),
         }
     }
 
+    /// Whether the right edge of the border is set (i.e. takes up 1 column).
     pub fn has_right_edge(&self) -> bool {
         match self {
-            Self::String(s) => match s {
-                BorderString::None => false,
-                BorderString::Shadow => false,
-                _ => true,
-            },
+            Self::String(s) => s.has_edges(),
 
-            // TODO
-            _ => true,
+            Self::Array1([item])
+            | Self::Array2([_, item])
+            | Self::Array4([_, _, _, item])
+            | Self::Array8([_, _, _, item, ..]) => item.has_width(),
         }
     }
 }
@@ -105,7 +110,7 @@ impl BorderStyle {
 impl BorderStyle {
     pub fn to_lua<'lua>(&self, lua: &'lua Lua) -> LuaResult<LuaValue<'lua>> {
         match self {
-            BorderStyle::String(s) => match s {
+            Self::String(s) => match s {
                 BorderString::None => "none".to_lua(lua),
                 BorderString::Single => "single".to_lua(lua),
                 BorderString::Double => "double".to_lua(lua),
@@ -114,10 +119,10 @@ impl BorderStyle {
                 BorderString::Shadow => "shadow".to_lua(lua),
             },
 
-            BorderStyle::Array1(a) => a.to_vec().to_lua(lua),
-            BorderStyle::Array2(a) => a.to_vec().to_lua(lua),
-            BorderStyle::Array4(a) => a.to_vec().to_lua(lua),
-            BorderStyle::Array8(a) => a.to_vec().to_lua(lua),
+            Self::Array1(a) => a.to_vec().to_lua(lua),
+            Self::Array2(a) => a.to_vec().to_lua(lua),
+            Self::Array4(a) => a.to_vec().to_lua(lua),
+            Self::Array8(a) => a.to_vec().to_lua(lua),
         }
     }
 }

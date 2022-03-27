@@ -165,6 +165,10 @@ impl Lipsum {
 }
 
 impl CompletionSource for Lipsum {
+    fn enable(&self) -> bool { false }
+
+    fn attach(&self, _: &Api, _: u32) -> LuaResult<bool> { Ok(true) }
+
     fn complete(
         &self,
         _: &Api,
@@ -192,6 +196,6 @@ impl CompletionSource for Lipsum {
                 source: "Lipsum",
                 text: word.to_string(),
             })
-            .collect::<Vec<CompletionItem>>())
+            .collect())
     }
 }

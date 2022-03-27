@@ -1,24 +1,18 @@
 use serde::Deserialize;
 
-use super::lipsum;
+use super::lipsum::Lipsum;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SourcesSettings {
     #[serde(default)]
-    pub lipsum: lipsum::LipsumSettings,
+    pub lipsum: Lipsum,
 }
 
 impl Default for SourcesSettings {
     fn default() -> Self {
         SourcesSettings {
-            lipsum: lipsum::LipsumSettings::default(),
+            lipsum: Lipsum::default(),
         }
     }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SourceSettings {
-    pub enable: bool,
 }

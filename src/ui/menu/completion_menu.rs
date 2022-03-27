@@ -20,7 +20,9 @@ pub struct CompletionMenu {
     /// completion is selected.
     pub selected_index: Option<usize>,
 
-    /// TODO: docs
+    /// The width of the completion menu if it's currently visible, or `None`
+    /// otherwise. Used by the details window to figure out where to position
+    /// itself.
     pub width: Option<u32>,
 
     /// The handle of the floating window used to show the completion items,
@@ -139,7 +141,7 @@ impl CompletionMenu {
         position: &WindowPosition,
         border: &Border,
     ) -> LuaResult<()> {
-        let opts = lua.create_table_with_capacity(0, 8)?;
+        let opts = lua.create_table_with_capacity(0, 9)?;
         opts.set("relative", "cursor")?;
         opts.set("height", position.height)?;
         opts.set("width", position.width)?;

@@ -10,8 +10,10 @@ impl<'a> Api<'a> {
     /// # Arguments
     ///
     /// * `bufnr`        Buffer handle, or 0 for current buffer.
-    /// * `send_buffer`  Whether the initial notification should contain the whole buffer.
-    /// * `opts`         Optional parameters. See `:h nvim_buf_attach` for  details.
+    /// * `send_buffer`  Whether the initial notification should contain the
+    ///   whole buffer.
+    /// * `opts`         Optional parameters. See `:h nvim_buf_attach` for
+    ///   details.
     pub fn buf_attach(
         &self,
         bufnr: u32,

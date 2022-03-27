@@ -5,7 +5,7 @@ use super::{
     details::CompletionDetails,
     hint::CompletionHint,
     menu::CompletionMenu,
-    QueuedUpdates,
+    WindowPosition,
 };
 use crate::completion::{CompletionItem, Cursor};
 use crate::settings::Settings;
@@ -25,8 +25,8 @@ pub struct Ui {
     /// selected completion item.
     pub completion_details: CompletionDetails,
 
-    /// TODO: docs
-    pub queued_updates: QueuedUpdates,
+    /// The next menu position already computed in `completion::on_bytes`.
+    pub next_menu_position: Option<WindowPosition>,
 }
 
 impl Ui {
@@ -35,13 +35,13 @@ impl Ui {
             completion_menu: CompletionMenu::new(api)?,
             completion_hint: CompletionHint::new(api)?,
             completion_details: CompletionDetails::new(api)?,
-            queued_updates: QueuedUpdates::new(),
+            next_menu_position: None,
         })
     }
 }
 
 impl Ui {
-    /// Executed on every `InsertLeft` event of attached buffers.
+    /// Executed on every `InsertLeave` event in attached buffers.
     pub fn cleanup(&mut self, api: &Api) -> LuaResult<()> {
         if self.completion_menu.is_visible() {
             self.completion_menu.close(api)?;
@@ -60,7 +60,7 @@ impl Ui {
         Ok(())
     }
 
-    /// Executed on every `CursorMovedI` event of attached buffers.
+    /// Executed on every `CursorMovedI` event in attached buffers.
     pub fn update(
         &mut self,
         lua: &Lua,
@@ -72,10 +72,9 @@ impl Ui {
         let menu = &mut self.completion_menu;
         let details = &mut self.completion_details;
         let hint = &mut self.completion_hint;
-        let updates = &mut self.queued_updates;
 
         // Update the completion menu and completion details.
-        match (menu.winid, updates.menu_position.as_ref()) {
+        match (menu.winid, self.next_menu_position.as_ref()) {
             (Some(winid), Some(position)) => {
                 menu.shift(lua, api, position)?;
                 menu.fill(lua, api, completions)?;
@@ -111,11 +110,14 @@ impl Ui {
                 } else {
                     details.close(&api)?;
                 }
+
+                self.next_menu_position = None;
             },
 
             (None, Some(position)) => {
                 menu.spawn(lua, api, position, &settings.ui.menu.border)?;
                 menu.fill(lua, api, completions)?;
+                self.next_menu_position = None;
             },
 
             (Some(_), None) => {
@@ -127,11 +129,17 @@ impl Ui {
         }
 
         // Update the completion hint.
-        let comp_with_i = updates.hinted_index.map(|i| (&completions[i], i));
-        hint.update(lua, api, comp_with_i, cursor)?;
-
-        // After we've consumed all the instructions we reset them.
-        updates.reset();
+        if settings.ui.hint.enable
+            && cursor.is_at_eol()
+            && !completions.is_empty()
+        {
+            let index = menu.selected_index.unwrap_or(0);
+            let completion = &completions[index];
+            let text = &completion.text[(completion.matched_bytes as usize)..];
+            hint.set(lua, api, text, cursor, index)?;
+        } else if hint.is_visible() {
+            hint.erase(api)?;
+        }
 
         Ok(())
     }

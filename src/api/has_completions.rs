@@ -15,7 +15,7 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     let cursor = &mut state.cursor;
     let completions = &mut state.completions;
 
-    cursor.at_bytes = api.win_get_cursor(0)?.1;
+    cursor.bytes = api.win_get_cursor(0)?.1;
     cursor.line = api.get_current_line()?;
 
     completions.clear();

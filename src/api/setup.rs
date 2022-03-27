@@ -80,16 +80,17 @@ pub fn setup(
         },
     };
 
-    // // Used for debugging.
-    // let nvim = Neovim::new(lua)?;
-    // nvim.print(format!("{:?}", &_state.settings))?;
+    #[cfg(debug)]
+    {
+        let nvim = Neovim::new(lua)?;
+        nvim.print(format!("{:#?}", &_state.settings))?;
+    }
 
     // Collect all the enabled sources.
     _state.sources = get_enabled_sources(&_state.settings.sources);
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
-        // Save the id of the autocmd for the `BufEnter` event.
         let aux = autocmds::setup(lua, &api, state)?;
         _state.augroup_id = Some(aux.0);
         _state.try_buf_attach = Some(aux.1);
@@ -101,13 +102,14 @@ pub fn setup(
         _state.did_setup = true;
     }
 
-    // // See how many times the state has been cloned across all the various
-    // // functions.
-    // let nvim = Neovim::new(lua)?;
-    // nvim.print(format!(
-    //     "State cloned {} times in total!",
-    //     Arc::<Mutex<State>>::strong_count(state)
-    // ))?;
+    #[cfg(debug)]
+    {
+        let nvim = Neovim::new(lua)?;
+        nvim.print(format!(
+            "State cloned {} times in total!",
+            Arc::<Mutex<State>>::strong_count(state)
+        ))?;
+    }
 
     Ok(())
 }
@@ -117,7 +119,7 @@ fn get_enabled_sources(
 ) -> Vec<Box<dyn CompletionSource>> {
     let mut sources = Vec::new();
 
-    if settings.lipsum.source.enable {
+    if settings.lipsum.enable {
         sources.push(
             Box::new(sources::Lipsum::new()) as Box<dyn CompletionSource>
         );

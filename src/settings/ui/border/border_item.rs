@@ -12,6 +12,14 @@ pub enum BorderItem {
     Tuple((String, Option<String>)),
 }
 
+impl BorderItem {
+    pub fn has_width(&self) -> bool {
+        match self {
+            Self::Char(c) | Self::Tuple((c, _)) => !c.is_empty(),
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for BorderItem {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

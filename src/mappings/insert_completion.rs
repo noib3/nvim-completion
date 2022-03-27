@@ -15,22 +15,20 @@ pub fn insert_completion(
 
     let text_to_insert = get_text_to_insert(
         completion.matched_bytes as usize,
-        &cursor.line[cursor.at_bytes as usize..],
+        &cursor.line[cursor.bytes as usize..],
         &completion.text,
     );
 
-    let end_column = (cursor.at_bytes - completion.matched_bytes) as usize
+    let end_column = (cursor.bytes - completion.matched_bytes) as usize
         + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
     // triggers `completion::bytes_changed`, which causes the Mutex wrapping
-    // the global state to deadlock (I don't really understand why right now
-    // tbh).
+    // the global state to deadlock.
     //
     // To avoid this we wrap the call to `api.buf_set_text` in a closure and
-    // pass it to `nvim.schedule`. This seems to solve the issue.
-    //
-    // TODO: Understand why this happens.
+    // pass it to `nvim.schedule` to be executed at a later time in Neovim's
+    // event loop.
 
     let insert_completion = lua.create_function(
         move |lua, (row, col, text): (u32, u32, String)| {
@@ -45,7 +43,7 @@ pub fn insert_completion(
 
     nvim.schedule(insert_completion.bind((
         cursor.row,
-        cursor.at_bytes,
+        cursor.bytes,
         text_to_insert.to_string(),
     ))?)?;
 
