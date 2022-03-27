@@ -36,8 +36,6 @@ TODOs
    with possibly thousands of completion results from LSPs. Can we leverage
    async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
    lua-loop-threading`.
-
-2. make sources a hashmap, remove get_enabled_sources from `api::setup`.
 */
 
 #[mlua::lua_module]

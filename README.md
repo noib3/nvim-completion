@@ -7,11 +7,13 @@ This plugin is still in early development.
 ## :book: Table of Contents
 
 - [Installation](#package-installation)
+- [Features](#rocket-features)
 - [Configuration](#wrench-configuration)
-- [Sources](#blossom-sources)
+- [Sources](https://github.com/noib3/nvim-compleet/wiki/Sources)
 - [Commands](#heavy_exclamation_mark-commands)
 - [Mappings](#musical_keyboard-mappings)
-- [Colors](#art-colors)
+- [Colors](https://github.com/noib3/nvim-compleet/wiki/Highlight-groups)
+- [Roadmap](#chart_with_upwards_trend-roadmap)
 
 ## :package: Installation
 
@@ -32,6 +34,14 @@ require("packer").startup(function()
   })
 end)
 ```
+
+## :rocket: Features
+
+### Config validation
+
+![validation1](.github/assets/validation1.png)
+![validation2](.github/assets/validation2.png)
+![validation3](.github/assets/validation3.png)
 
 ## :wrench: Configuration
 
@@ -68,13 +78,9 @@ require('compleet').setup({
 
         -- Same as `ui.menu.border.style`.
         style = {
-          {"",  "CompleetDetails"},
-          {"",  "CompleetDetails"},
-          {"",  "CompleetDetails"},
-          {" ", "CompleetDetails"},
-          {"",  "CompleetDetails"},
-          {"",  "CompleetDetails"},
-          {"",  "CompleetDetails"},
+          "",
+          "",
+          "",
           {" ", "CompleetDetails"},
         }
       },
@@ -92,21 +98,12 @@ require('compleet').setup({
   },
 
   sources = {
-    -- Completes words from a Lorem Ipsum paragraph. Mostly used for testing.
     lipsum = {
       enable = false,
     },
   }
 })
 ```
-
-## :blossom: Sources
-
-The only completion source currently available is `lipsum`, which completes
-words from a [Lorem ipsum](https://en.wikipedia.org/wiki/Lorem_ipsum)
-paragraph.
-
-Actually useful sources are yet to be developed.
 
 ## :heavy_exclamation_mark: Commands
 
@@ -177,28 +174,12 @@ keymap.set("i", "<Right>", right, opts)
 keymap.set("i", "<CR>", cr, opts)
 ```
 
-## :art: Colors
+## :chart_with_upwards_trend: Roadmap
 
-The following highlight groups can be used to theme `nvim-compleet`'s UI:
-
-  * `CompleetMenu`: used to highlight the completion menu. Linked to
-    `NormalFloat` by default;
-
-  * `CompleetMenuSelected`: used to highlight the currently selected completion
-    item. Linked to `PmenuSel` by default;
-
-  * `CompleetMenuMatchingChars`: used to highlight the characters where a
-    completion item matches the current completion prefix. Linked to
-    `Statement` by default;
-
-  * `CompleetMenuBorder`: used to highlight the border of the completion menu.
-    Linked to `FloatBorder` by default;
-
-  * `CompleetDetails`: used to highlight the details window. Linked to
-    `NormalFloat` by default;
-
-  * `CompleetDetailsBorder`:  used to highlight the border of the details
-    window. Linked to `FloatBorder` by default;
-
-  * `CompleetHint`: used to highlight the completion hint. Linked to `Comment`
-    by default.
+- [ ] Add LSP source;
+- [ ] Add Filepath source;
+- [ ] Add Treesitter source;
+- [ ] Integrate with snippets engines;
+- [ ] Stabilize api, document how to add sources in Rust, add option to provide
+  user-defined sources in Lua;
+- [ ] ...

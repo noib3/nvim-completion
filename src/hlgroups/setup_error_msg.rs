@@ -22,7 +22,7 @@ pub fn setup_error_msg(lua: &Lua, api: &Api) -> LuaResult<()> {
     // `CompleetErrorMsgField`
     // Used to highlight any field of the error message enclosed by backticks
     // ('``), except for the option path.
-    opts.set("link", "WarningMsg")?;
+    opts.set("link", "Special")?;
     api.set_hl(0, "CompleetErrorMsgField", opts)?;
 
     Ok(())
