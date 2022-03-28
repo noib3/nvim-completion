@@ -2,7 +2,7 @@
 
 This plugin is still in early development.
 
-![preview](./.github/assets/lipsum.gif)
+![preview](https://user-images.githubusercontent.com/2746374/160488112-4686a0f2-92ac-4bbb-974b-a8e86e27c042.gif)
 
 ## :book: Table of Contents
 
@@ -41,9 +41,9 @@ end)
 
 ### Config validation
 
-![validation1](.github/assets/validation1.png)
-![validation2](.github/assets/validation2.png)
-![validation3](.github/assets/validation3.png)
+![validation1](https://user-images.githubusercontent.com/2746374/160488191-13cb17f2-de50-49f3-a97a-adc595d54af9.png)
+![validation2](https://user-images.githubusercontent.com/2746374/160488196-e628541a-d615-47bc-8e33-c43102af12eb.png)
+![validation3](https://user-images.githubusercontent.com/2746374/160488210-7f0c0946-f814-4553-9a2d-ede74e969042.png)
 
 ## :wrench: Configuration
 
