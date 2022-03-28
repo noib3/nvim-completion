@@ -20,9 +20,11 @@ impl<'de> Visitor<'de> for SourcesVisitor {
     where
         M: MapAccess<'de>,
     {
-        let mut sources = Vec::new();
+        let mut sources = match access.size_hint() {
+            Some(len) => Vec::with_capacity(len),
+            None => Vec::new(),
+        };
 
-        // TODO: create the remaining completion sources.
         while let Some(source) = access.next_key::<CompletionSource>()? {
             match source {
                 CompletionSource::Lipsum => {

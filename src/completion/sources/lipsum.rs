@@ -160,16 +160,14 @@ const LOREMS: [&'static str; 128] = [
 
 #[derive(Deserialize, Debug)]
 pub struct Lipsum {
-    #[serde(default = "default_enable")]
+    #[serde(default)]
     pub enable: bool,
 }
-
-fn default_enable() -> bool { false }
 
 impl Default for Lipsum {
     fn default() -> Self {
         Lipsum {
-            enable: default_enable(),
+            enable: Default::default(),
         }
     }
 }

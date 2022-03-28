@@ -12,9 +12,6 @@ pub struct Settings {
     #[serde(default)]
     pub completion: CompletionSettings,
 
-    #[serde(
-        default = "sources::default",
-        deserialize_with = "sources::deserialize"
-    )]
+    #[serde(default, with = "sources")]
     pub sources: Sources,
 }
