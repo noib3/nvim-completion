@@ -18,8 +18,10 @@ This plugin is still in early development.
 ## :package: Installation
 
 `nvim-compleet` requires Neovim 0.7+. Also, since the Rust code has to be
-compiled it needs the `rustup` toolchain to be available (specifically
-`cargo`), together with the `make` and `ar` utilities.
+compiled it needs the `rustup` toolchain to be available (follow [this
+guide](https://www.rust-lang.org/tools/install) for instructions on how to
+install Rust) with `rustc` version 1.58+, together with the `make` and `ar`
+utilities.
 
 Then installing the plugin is as easy as
 
