@@ -1,11 +1,12 @@
+use std::cmp;
+
 use mlua::{prelude::LuaResult, Lua};
 use neovim::Api;
 
 use super::{
     details::CompletionDetails,
     hint::CompletionHint,
-    menu::CompletionMenu,
-    WindowPosition,
+    menu::{self, CompletionMenu},
 };
 use crate::completion::{CompletionItem, Cursor};
 use crate::settings::Settings;
@@ -24,9 +25,6 @@ pub struct Ui {
     /// A details pane used to show some informations about the currently
     /// selected completion item.
     pub completion_details: CompletionDetails,
-
-    /// The next menu position already computed in `completion::on_bytes`.
-    pub next_menu_position: Option<WindowPosition>,
 }
 
 impl Ui {
@@ -35,7 +33,6 @@ impl Ui {
             completion_menu: CompletionMenu::new(api)?,
             completion_hint: CompletionHint::new(api)?,
             completion_details: CompletionDetails::new(api)?,
-            next_menu_position: None,
         })
     }
 }
@@ -69,70 +66,25 @@ impl Ui {
         cursor: &Cursor,
         settings: &Settings,
     ) -> LuaResult<()> {
-        let menu = &mut self.completion_menu;
-        let details = &mut self.completion_details;
-        let hint = &mut self.completion_hint;
-
-        // Update the completion menu and completion details.
-        match (menu.winid, self.next_menu_position.as_ref()) {
-            (Some(winid), Some(position)) => {
-                menu.shift(lua, api, position)?;
-                menu.fill(lua, api, completions)?;
-
-                // Reset the cursor to the first row of the window.
-                api.win_set_cursor(winid, 1, 0)?;
-
-                if let Some(index) = menu.selected_index {
-                    // Shifting the window resets the `cursorline` option to
-                    // `false`. If a completion is selected it needs to be set
-                    // back to `true`.
-                    api.win_set_option(winid, "cursorline", true)?;
-
-                    // Set the cursor row to the selected completion.
-                    api.win_set_cursor(
-                        winid,
-                        (index + 1).try_into().unwrap(),
-                        0,
-                    )?;
-
-                    // Update the completion details.
-                    let lines = completions[index].details.as_ref();
-                    details.update(
-                        lua,
-                        api,
-                        lines,
-                        &settings.ui.details.border,
-                        position.width,
-                        winid,
-                        &settings.ui.menu.border,
-                        true,
-                    )?;
-                } else {
-                    details.close(&api)?;
-                }
-
-                self.next_menu_position = None;
-            },
-
-            (None, Some(position)) => {
-                menu.spawn(lua, api, position, &settings.ui.menu.border)?;
-                menu.fill(lua, api, completions)?;
-                self.next_menu_position = None;
-            },
-
-            (Some(_), None) => {
-                menu.close(api)?;
-                details.close(api)?;
-            },
-
-            (None, None) => {},
+        // If there are no completions to display simply cleanup the UI and
+        // return early.
+        if completions.is_empty() {
+            // TODO: reset selected & hinted indexes.
+            self.cleanup(api)?;
+            return Ok(());
         }
 
-        // Update the completion hint.
-        if settings.ui.hint.enable
-            && cursor.is_at_eol()
-            && !completions.is_empty()
-        {
+        let hint = &mut self.completion_hint;
+        let menu = &mut self.completion_menu;
+        let details = &mut self.completion_details;
+
+        // Update the selected completion index if it was set.
+        if let Some(old) = menu.selected_index {
+            menu.selected_index = Some(cmp::min(old, completions.len() - 1));
+        }
+
+        // Let's first update the completion hint.
+        if settings.ui.hint.enable && cursor.is_at_eol() {
             let index = menu.selected_index.unwrap_or(0);
             let completion = &completions[index];
             let text = &completion.text[(completion.matched_bytes as usize)..];
@@ -140,6 +92,69 @@ impl Ui {
         } else if hint.is_visible() {
             hint.erase(api)?;
         }
+
+        // Now the completion menu. The first step is to compute how big it
+        // should be and where it should be placed relative to the cursor.
+        let menu_position = match menu::positioning::get_position(
+            api,
+            completions,
+            &settings.ui.menu,
+        )? {
+            Some(position) => position,
+
+            // If it wasn't possible to get a position for the menu we just
+            // clean the menu and the details window, then return.
+            None => {
+                menu.close(api)?;
+                details.close(api)?;
+                return Ok(());
+            },
+        };
+
+        // If the menu was already visible we move it to its new position.
+        if let Some(winid) = menu.winid {
+            menu.shift(lua, api, &menu_position)?;
+
+            // Reset the cursor to the first row of the window.
+            // TODO: document why.
+            api.win_set_cursor(winid, 1, 0)?;
+
+            // If there'a a completion item already selected we also need to
+            // update the details window.
+            if let Some(index) = menu.selected_index {
+                // Shifting the window resets the `cursorline` option to
+                // `false`. If a completion is selected it needs to be set back
+                // to `true`.
+                api.win_set_option(winid, "cursorline", true)?;
+
+                // Set the cursor row to the selected completion.
+                api.win_set_cursor(winid, (index + 1).try_into().unwrap(), 0)?;
+
+                // Update the completion details.
+                let lines = completions[index].details.as_ref();
+                details.update(
+                    lua,
+                    api,
+                    lines,
+                    &settings.ui.details.border,
+                    menu_position.width,
+                    winid,
+                    &settings.ui.menu.border,
+                    true,
+                )?;
+            }
+            // If not we close it.
+            else {
+                details.close(api)?;
+            }
+        }
+        // If the menu wasn't visible we create a new window.
+        else {
+            menu.spawn(lua, api, &menu_position, &settings.ui.menu.border)?;
+        }
+
+        // Finally, we fill the menu's buffer with the new completion items.
+        menu.fill(lua, api, completions)?;
 
         Ok(())
     }

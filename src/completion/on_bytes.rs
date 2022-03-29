@@ -1,10 +1,7 @@
-use std::cmp;
-
 use mlua::{prelude::LuaResult, Lua};
 use neovim::{Api, Neovim};
 
 use crate::state::State;
-use crate::ui::menu;
 
 /// Executed every time a byte or a group of bytes in an attached buffer is
 /// modified.
@@ -35,10 +32,6 @@ pub fn on_bytes(
     if api.get_mode()?.0 != "i" {
         return Ok(None);
     }
-
-    // Reset the value of `next_menu_position` in case a previous call set it
-    // to `Some(..)` and it get consumed by `ui.update`.
-    state.ui.next_menu_position = None;
 
     // If we've added or deleted a line we return early. If we've stayed on the
     // same line but we've deleted characters we only continue if the
@@ -86,22 +79,6 @@ pub fn on_bytes(
         .iter()
     {
         completions.append(&mut source.complete(&api, &cursor)?);
-    }
-
-    // Queue an update for the completion menu.
-    if !completions.is_empty() && state.settings.ui.menu.autoshow {
-        state.ui.next_menu_position = menu::positioning::get_position(
-            &api,
-            &completions,
-            &state.settings.ui.menu,
-        )?;
-
-        let menu = &mut state.ui.completion_menu;
-
-        // Update the selected completion.
-        if let Some(old) = menu.selected_index {
-            menu.selected_index = Some(cmp::min(old, completions.len() - 1));
-        }
     }
 
     Ok(None)

@@ -158,18 +158,13 @@ const LOREMS: [&'static str; 128] = [
     "dignissim",
 ];
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Lipsum {
-    #[serde(default)]
     pub enable: bool,
 }
 
 impl Default for Lipsum {
-    fn default() -> Self {
-        Lipsum {
-            enable: Default::default(),
-        }
-    }
+    fn default() -> Self { Lipsum { enable: false } }
 }
 
 impl CompletionSource for Lipsum {
@@ -185,6 +180,9 @@ impl CompletionSource for Lipsum {
         if word_pre.is_empty() {
             return Ok(Vec::new());
         }
+
+        // Simulate a slow source, this shouldn't block.
+        // std::thread::sleep(std::time::Duration::from_secs(2));
 
         Ok(LOREMS
             .iter()
