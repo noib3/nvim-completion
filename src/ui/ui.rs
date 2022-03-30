@@ -93,6 +93,8 @@ impl Ui {
             hint.erase(api)?;
         }
 
+        // TODO: respect `settings.menu.autoshow`.
+
         // Now the completion menu. The first step is to compute how big it
         // should be and where it should be placed relative to the cursor.
         let menu_position = match menu::positioning::get_position(

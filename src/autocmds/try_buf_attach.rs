@@ -1,7 +1,8 @@
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 use neovim::{api::LogLevel, Neovim};
 
-use crate::state::{Sources, State};
+use crate::completion::Sources;
+use crate::state::State;
 
 /// Executed on every `BufEnter` event and by the `CompleetStart{!}` user
 /// command.
@@ -10,7 +11,7 @@ pub fn try_buf_attach(
     state: &mut State,
     on_bytes: LuaFunction,
     update_ui: LuaFunction,
-    cleanup_ui: LuaFunction,
+    insert_leave: LuaFunction,
 ) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
 
@@ -57,7 +58,7 @@ pub fn try_buf_attach(
         buffer_autocmd_ids
             .push(api.create_autocmd(&["CursorMovedI"], opts.clone())?);
 
-        opts.set("callback", cleanup_ui)?;
+        opts.set("callback", insert_leave)?;
         buffer_autocmd_ids
             .push(api.create_autocmd(&["InsertLeave"], opts.clone())?);
 

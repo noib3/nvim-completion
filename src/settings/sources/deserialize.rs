@@ -4,8 +4,7 @@ use std::sync::Arc;
 use serde::de::{Deserializer, MapAccess, Visitor};
 
 use super::CompletionSource;
-use crate::completion::{self, sources::*};
-use crate::state::Sources;
+use crate::completion::{self, sources::*, Sources};
 
 struct SourcesVisitor;
 

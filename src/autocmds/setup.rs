@@ -1,7 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
 use neovim::{Api, Neovim};
+use parking_lot::Mutex;
 
 use crate::completion;
 use crate::state::State;
@@ -12,16 +13,20 @@ pub fn setup(
     state: &Arc<Mutex<State>>,
 ) -> LuaResult<(u32, LuaRegistryKey)> {
     let _state = state.clone();
-    let cleanup_ui = move |lua: &Lua, ()| {
+    let insert_leave = move |lua: &Lua, ()| {
+        let state = &mut *_state.lock();
         let api = Neovim::new(&lua)?.api;
-        let ui = &mut _state.lock().unwrap().ui;
-        ui.cleanup(&api)
+        // Abort all pending tasks.
+        state.handles.iter().for_each(|handle| handle.abort());
+        state.handles.clear();
+        // Cleanup the UI.
+        state.ui.cleanup(&api)
     };
 
     let _state = state.clone();
     let update_ui = move |lua: &Lua, ()| {
+        let state = &mut *_state.lock();
         let api = Neovim::new(lua)?.api;
-        let state = &mut *_state.lock().unwrap();
         state.ui.update(
             lua,
             &api,
@@ -50,7 +55,7 @@ pub fn setup(
         ): (String, _, u32, _, _, u32, _, u32, _, _, u32, _)| {
             completion::on_bytes(
                 lua,
-                &mut _state.lock().unwrap(),
+                &mut _state.lock(),
                 bufnr,
                 start_row,
                 start_col,
@@ -65,10 +70,10 @@ pub fn setup(
     let try_buf_attach = lua.create_function(move |lua: &Lua, ()| {
         super::try_buf_attach(
             lua,
-            &mut _state.lock().unwrap(),
+            &mut _state.lock(),
             lua.create_function(on_bytes.clone())?,
             lua.create_function(update_ui.clone())?,
-            lua.create_function(cleanup_ui.clone())?,
+            lua.create_function(insert_leave.clone())?,
         )
     })?;
 

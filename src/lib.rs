@@ -1,8 +1,9 @@
 use std::panic;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mlua::{prelude::LuaResult, Lua, Table};
 use neovim::Neovim;
+use parking_lot::Mutex;
 
 mod api;
 mod autocmds;
@@ -29,13 +30,6 @@ TODOs: On Hold
 
 2. Add option `ui.details.add_menu_spacing` to add 1 column of horizontal
    spacing between the completion menu and the details window.
-
-TODOs
-
-1. Right now everything is sync. This will be a problem when we start dealing
-   with possibly thousands of completion results from LSPs. Can we leverage
-   async on the Rust end w/ Tokyo? Also look into `:h vim.loop` and `:h
-   lua-loop-threading`.
 */
 
 #[mlua::lua_module]
@@ -56,22 +50,22 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
 
     let _state = state.clone();
     let has_completions = lua.create_function(move |lua, ()| {
-        api::has_completions(lua, &mut _state.lock().unwrap())
+        api::has_completions(lua, &mut _state.lock())
     })?;
 
     let _state = state.clone();
     let is_completion_selected = lua.create_function(move |_, ()| {
-        Ok(_state.lock().unwrap().ui.completion_menu.is_item_selected())
+        Ok(_state.lock().ui.completion_menu.is_item_selected())
     })?;
 
     let _state = state.clone();
     let is_hint_visible = lua.create_function(move |_, ()| {
-        Ok(_state.lock().unwrap().ui.completion_hint.is_visible())
+        Ok(_state.lock().ui.completion_hint.is_visible())
     })?;
 
     let _state = state.clone();
     let is_menu_visible = lua.create_function(move |_, ()| {
-        Ok(_state.lock().unwrap().ui.completion_menu.is_visible())
+        Ok(_state.lock().ui.completion_menu.is_visible())
     })?;
 
     let setup = lua.create_function(move |lua, preferences| {

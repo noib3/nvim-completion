@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use mlua::prelude::{LuaRegistryKey, LuaResult};
 use neovim::Api;
+use tokio::runtime::Runtime;
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::task::JoinHandle;
 
-use crate::completion::{CompletionItem, CompletionSource, Cursor};
+use crate::completion::{Completions, Cursor, Sources};
 use crate::settings::Settings;
 use crate::ui::Ui;
-
-pub type Sources = Vec<Arc<dyn CompletionSource>>;
 
 #[derive(Debug)]
 pub struct State {
@@ -28,13 +29,25 @@ pub struct State {
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The currently available completion items.
-    pub completions: Vec<CompletionItem>,
+    pub completions: Completions,
 
     /// Holds state about the cursor position in the current buffer.
     pub cursor: Cursor,
 
     /// Whether the `require('compleet').setup` function has been called yet.
     pub did_setup: bool,
+
+    /// TODO
+    pub handles: Vec<JoinHandle<()>>,
+
+    /// The async runtime used to get completions from sources.
+    pub runtime: Option<Runtime>,
+
+    /// TODO
+    pub rx: Option<Receiver<Completions>>,
+
+    /// TODO
+    pub tx: Option<Arc<Sender<Completions>>>,
 
     /// Used to store the current configuration.
     pub settings: Settings,
@@ -62,6 +75,10 @@ impl State {
             completions: Vec::new(),
             cursor: Cursor::new(),
             did_setup: false,
+            handles: Vec::new(),
+            runtime: None,
+            rx: None,
+            tx: None,
             settings: Settings::default(),
             sources: HashMap::new(),
             try_buf_attach: None,

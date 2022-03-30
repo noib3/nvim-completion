@@ -1,7 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mlua::prelude::{Lua, LuaResult};
 use neovim::Api;
+use parking_lot::Mutex;
 
 use crate::state::State;
 
@@ -13,7 +14,7 @@ pub fn setup(
     // Insert the currently hinted completion.
     let _state = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
-        let _state = &mut _state.lock().unwrap();
+        let _state = &mut _state.lock();
         if let Some(index) = _state.ui.completion_hint.hinted_index {
             super::insert_completion(lua, _state, index)?;
         }
@@ -23,7 +24,7 @@ pub fn setup(
     // Insert the currently selected completion.
     let _state = state.clone();
     let insert_selected_completion = lua.create_function(move |lua, ()| {
-        let _state = &mut _state.lock().unwrap();
+        let _state = &mut _state.lock();
         if let Some(index) = _state.ui.completion_menu.selected_index {
             super::insert_completion(lua, _state, index)?;
         }
@@ -34,14 +35,14 @@ pub fn setup(
     // based on the value of `step`.
     let _state = state.clone();
     let select_completion = lua.create_function(move |lua, step| {
-        super::select_completion(lua, &mut _state.lock().unwrap(), step)
+        super::select_completion(lua, &mut _state.lock(), step)
     })?;
 
     // Show the completion menu with all the currently available completion
     // candidates.
     let _state = state.clone();
     let show_completions = lua.create_function(move |lua, ()| {
-        super::show_completions(lua, &mut _state.lock().unwrap())
+        super::show_completions(lua, &mut _state.lock())
     })?;
 
     let opts = lua.create_table_from([("silent", true)])?;

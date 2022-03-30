@@ -6,18 +6,42 @@ edition = "2021"
 description = "A Neovim autocompletion framework written in Rust"
 repository = "https://github.com/noib3/nvim-compleet"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
 crate-type = ["cdylib"]
 
-[dependencies]
-neovim = { path = "./neovim" }
+# Use async functions in traits.
+[dependencies.async-trait]
+version = "0.1"
 
-mlua = { version = "0.7", features = ["luajit", "vendored", "module", "serialize"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_path_to_error = "0.1"
+# Rust bindings to Lua.
+[dependencies.mlua]
+version = "0.7"
+features = ["async", "luajit", "vendored", "module", "serialize"]
 
+# Bindings to Neovim's `vim.*` Lua table.
+[dependencies.neovim]
+path = "./neovim"
+
+# Better `Mutex`es.
+[dependencies.parking_lot]
+version = "0.10"
+
+# Used to deserialize the Lua table passed to `require('compleet').setup`.
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
+# Used to get the path of the config option that caused a deserialization
+# error.
+[dependencies.serde_path_to_error]
+version = "0.1"
+
+# Async runtime.
+[dependencies.tokio]
+version = "1.17.0"
+features = ["full"]
+
+# Sacrifice compilation speed for runtime performance.
 [profile.release]
 lto = "fat"
 codegen-units = 1

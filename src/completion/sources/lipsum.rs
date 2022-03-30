@@ -1,8 +1,14 @@
+use async_trait::async_trait;
 use mlua::prelude::LuaResult;
 use neovim::Api;
 use serde::Deserialize;
 
-use crate::completion::{CompletionItem, CompletionSource, Cursor};
+use crate::completion::{
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+};
 
 const LOREM_IPSUM: [&'static str; 12] = [
     "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit,",
@@ -167,24 +173,23 @@ impl Default for Lipsum {
     fn default() -> Self { Lipsum { enable: false } }
 }
 
+#[async_trait]
 impl CompletionSource for Lipsum {
-    fn attach(&self, _: &Api, _: u32) -> LuaResult<bool> { Ok(true) }
+    // Attach to all buffers.
+    fn attach(&self, _api: &Api, _bufnr: u32) -> LuaResult<bool> { Ok(true) }
 
-    fn complete(
-        &self,
-        _: &Api,
-        cursor: &Cursor,
-    ) -> LuaResult<Vec<CompletionItem>> {
+    async fn complete(&self, cursor: &Cursor) -> Completions {
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {
-            return Ok(Vec::new());
+            return Vec::new();
         }
 
         // Simulate a slow source, this shouldn't block.
-        // std::thread::sleep(std::time::Duration::from_secs(2));
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        println!("Done!");
 
-        Ok(LOREMS
+        LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
             .map(|&word| CompletionItem {
@@ -200,6 +205,6 @@ impl CompletionSource for Lipsum {
                 source: "Lipsum",
                 text: word.to_string(),
             })
-            .collect())
+            .collect()
     }
 }

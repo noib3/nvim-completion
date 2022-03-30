@@ -1,8 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use neovim::Neovim;
+use parking_lot::Mutex;
+use tokio::runtime;
 
+use crate::completion::Completions;
 use crate::settings::Settings;
 use crate::state::State;
 use crate::{autocmds, commands, hlgroups, mappings};
@@ -30,7 +33,7 @@ pub fn setup(
     }
 
     let _state = state.clone();
-    let _state = &mut _state.lock().unwrap();
+    let _state = &mut _state.lock();
 
     _state.settings = match preferences {
         LuaValue::Table(t) => {
@@ -45,7 +48,7 @@ pub fn setup(
                     LuaError::DeserializeError(msg) => {
                         let path = e.path().to_string();
                         let mut chunks = vec![
-                            ("[nvim-compleet]", Some("ErrorMsg")),
+                            ("[nvim-compleet]", Some("CompleetErrorMsgTag")),
                             (" Error for `", None),
                             (&path, Some("CompleetErrorMsgOptionPath")),
                             ("`: ", None),
@@ -79,6 +82,11 @@ pub fn setup(
         },
     };
 
+    // TODO: print warning message and return.
+    if _state.settings.sources.is_empty() {
+        todo!()
+    }
+
     #[cfg(debug)]
     {
         let nvim = Neovim::new(lua)?;
@@ -95,12 +103,29 @@ pub fn setup(
         hlgroups::setup(lua, &api)?;
         mappings::setup(lua, &api, state)?;
 
+        // Create the multi-threaded async runtime with one thread per
+        // completion source.
+        _state.runtime = Some(
+            runtime::Builder::new_multi_thread()
+                .worker_threads(_state.settings.sources.len())
+                .enable_io()
+                // TODO: remove this, it's only for testing
+                .enable_time()
+                .thread_name("compleet-sources-pool")
+                .build()
+                .expect("Creating Tokio runtime"),
+        );
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<Completions>(100);
+        // let (tx, rx) = std::sync::mpsc::channel::<Completions>();
+        _state.tx = Some(Arc::new(tx));
+        _state.rx = Some(rx);
+
         _state.did_setup = true;
     }
 
     #[cfg(debug)]
     {
-        let nvim = Neovim::new(lua)?;
         nvim.print(format!(
             "State cloned {} times in total!",
             Arc::<Mutex<State>>::strong_count(state)

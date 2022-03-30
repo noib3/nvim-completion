@@ -2,7 +2,7 @@ use mlua::prelude::LuaResult;
 use neovim::Api;
 use serde::Deserialize;
 
-use crate::completion::{CompletionItem, CompletionSource, Cursor};
+use crate::completion::{CompletionSource, Completions, Cursor};
 
 #[derive(Debug, Deserialize)]
 pub struct Lsp {
@@ -36,11 +36,7 @@ impl CompletionSource for Lsp {
         Ok(true)
     }
 
-    fn complete(
-        &self,
-        _: &Api,
-        _cursor: &Cursor,
-    ) -> LuaResult<Vec<CompletionItem>> {
+    fn complete(&self, _: &Api, _cursor: &Cursor) -> LuaResult<Completions> {
         Ok(Vec::new())
     }
 }

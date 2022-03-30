@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use mlua::{prelude::LuaResult, Lua};
 use neovim::{Api, Neovim};
 
@@ -69,8 +71,24 @@ pub fn on_bytes(
     // `settings.hint.enable`. If that is also false we can just return early,
     // otherwise we just need to compute the first completion.
 
-    let completions = &mut state.completions;
+    let c = Arc::new(cursor.clone());
 
+    let completions = &mut state.completions;
+    let handles = &mut state.handles;
+    let runtime = state.runtime.as_ref().expect("Runtime already created");
+    let tx = state.tx.as_ref().expect("Runtime already created");
+    let rx = state.rx.as_mut().expect("Runtime already created");
+
+    // Abort any previous task. I guess this only works if the task associated
+    // w/ the handle reaches a `.await`, which it currently doesn't.
+
+    // NOTE: tokio tasks (aka green threads) can only be cancelled when they
+    // reach a `.await` breakpoint.
+
+    // Abort all previous tasks.
+    handles.iter().for_each(|handle| handle.abort());
+
+    handles.clear();
     completions.clear();
     for source in state
         .sources
@@ -78,8 +96,26 @@ pub fn on_bytes(
         .expect("The buffer is attached so it has sources")
         .iter()
     {
-        completions.append(&mut source.complete(&api, &cursor)?);
+        // TODO: avoid cloning here, wrap cursor in an Arc.
+        let cr = c.clone();
+
+        let s = source.clone();
+        let t = tx.clone();
+
+        let handle = runtime.spawn(async move {
+            let comps = s.complete(&cr).await;
+            if let Err(_) = t.send(comps).await {
+                println!("receiver dropped");
+                return;
+            }
+        });
+
+        state.handles.push(handle);
     }
+
+    // while let Some(comps) = &mut rx.recv() {
+    //     completions.append(comps);
+    // }
 
     Ok(None)
 }
