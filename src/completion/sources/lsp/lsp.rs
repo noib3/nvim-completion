@@ -1,8 +1,14 @@
+use async_trait::async_trait;
 use mlua::prelude::LuaResult;
 use neovim::Api;
 use serde::Deserialize;
 
-use crate::completion::{CompletionSource, Completions, Cursor};
+use crate::completion::{
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Lsp {
@@ -30,13 +36,27 @@ returns a `handle` and a `pid`
 3. add the source on `LspStart`
 */
 
+#[async_trait]
 impl CompletionSource for Lsp {
     fn attach(&self, _: &Api, _bufnr: u32) -> LuaResult<bool> {
         // let clients = nvim.lsp.buf_get_clients(bufnr)?;
         Ok(true)
     }
 
-    fn complete(&self, _: &Api, _cursor: &Cursor) -> LuaResult<Completions> {
-        Ok(Vec::new())
+    async fn complete(&self, _cursor: &Cursor) -> Completions {
+        // Simulate a slow source, this shouldn't block.
+        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // std::thread::sleep(std::time::Duration::from_secs(5));
+
+        let item = CompletionItem {
+            details: None,
+            format: " Lsp".into(),
+            hl_ranges: vec![],
+            matched_bytes: 1,
+            source: "Lsp",
+            text: "Lsp".into(),
+        };
+
+        vec![item]
     }
 }

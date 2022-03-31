@@ -88,34 +88,36 @@ pub fn on_bytes(
     // Abort all previous tasks.
     handles.iter().for_each(|handle| handle.abort());
 
-    handles.clear();
-    completions.clear();
-    for source in state
-        .sources
-        .get(&bufnr)
-        .expect("The buffer is attached so it has sources")
-        .iter()
-    {
-        // TODO: avoid cloning here, wrap cursor in an Arc.
-        let cr = c.clone();
+    // handles.clear();
+    // completions.clear();
+    // for source in state
+    //     .sources
+    //     .get(&bufnr)
+    //     .expect("The buffer is attached so it has sources")
+    //     .iter()
+    // {
+    //     // TODO: avoid cloning here, wrap cursor in an Arc.
+    //     let cr = c.clone();
 
-        let s = source.clone();
-        let t = tx.clone();
+    //     let s = source.clone();
+    //     let t = tx.clone();
 
-        let handle = runtime.spawn(async move {
-            let comps = s.complete(&cr).await;
-            if let Err(_) = t.send(comps).await {
-                println!("receiver dropped");
-                return;
-            }
-        });
+    //     let handle = runtime.spawn(async move {
+    //         let comps = s.complete(&cr).await;
+    //         if let Err(_) = t.send(comps).await {
+    //             println!("receiver dropped");
+    //             return;
+    //         }
+    //     });
 
-        state.handles.push(handle);
-    }
+    //     state.handles.push(handle);
+    // }
 
     // while let Some(comps) = &mut rx.recv() {
     //     completions.append(comps);
     // }
+
+    state.did_on_bytes = true;
 
     Ok(None)
 }

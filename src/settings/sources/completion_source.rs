@@ -11,4 +11,5 @@ use serde::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum CompletionSource {
     Lipsum,
+    Lsp,
 }

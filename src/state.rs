@@ -34,11 +34,14 @@ pub struct State {
     /// Holds state about the cursor position in the current buffer.
     pub cursor: Cursor,
 
+    /// TODO: docs
+    pub did_on_bytes: bool,
+
     /// Whether the `require('compleet').setup` function has been called yet.
     pub did_setup: bool,
 
     /// TODO
-    pub handles: Vec<JoinHandle<()>>,
+    pub handles: Vec<JoinHandle<Completions>>,
 
     /// The async runtime used to get completions from sources.
     pub runtime: Option<Runtime>,
@@ -74,6 +77,7 @@ impl State {
             buffers_to_be_detached: Vec::new(),
             completions: Vec::new(),
             cursor: Cursor::new(),
+            did_on_bytes: false,
             did_setup: false,
             handles: Vec::new(),
             runtime: None,

@@ -33,6 +33,14 @@ impl<'de> Visitor<'de> for SourcesVisitor {
                             as Arc<dyn completion::CompletionSource>);
                     }
                 },
+
+                CompletionSource::Lsp => {
+                    let lsp = access.next_value::<Lsp>()?;
+                    if lsp.enable {
+                        sources.push(Arc::new(lsp)
+                            as Arc<dyn completion::CompletionSource>);
+                    }
+                },
             }
         }
 

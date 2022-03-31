@@ -186,8 +186,8 @@ impl CompletionSource for Lipsum {
         }
 
         // Simulate a slow source, this shouldn't block.
-        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        println!("Done!");
+        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // std::thread::sleep(std::time::Duration::from_secs(5));
 
         LOREMS
             .iter()

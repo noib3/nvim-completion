@@ -1,5 +1,5 @@
 mod lipsum;
-// mod lsp;
+mod lsp;
 
 pub use lipsum::Lipsum;
-// pub use lsp::Lsp;
+pub use lsp::Lsp;

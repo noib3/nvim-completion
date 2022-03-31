@@ -9,9 +9,9 @@ use crate::state::State;
 pub fn try_buf_attach(
     lua: &Lua,
     state: &mut State,
-    on_bytes: LuaFunction,
-    update_ui: LuaFunction,
     insert_leave: LuaFunction,
+    cursor_moved_i: LuaFunction,
+    on_bytes: LuaFunction,
 ) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
 
@@ -54,13 +54,12 @@ pub fn try_buf_attach(
         opts.set("group", state.augroup_id.expect("The augroup is set"))?;
         opts.set("buffer", bufnr)?;
 
-        opts.set("callback", update_ui)?;
+        opts.set("callback", cursor_moved_i)?;
         buffer_autocmd_ids
             .push(api.create_autocmd(&["CursorMovedI"], opts.clone())?);
 
         opts.set("callback", insert_leave)?;
-        buffer_autocmd_ids
-            .push(api.create_autocmd(&["InsertLeave"], opts.clone())?);
+        buffer_autocmd_ids.push(api.create_autocmd(&["InsertLeave"], opts)?);
 
         state
             .buffer_local_autocmds

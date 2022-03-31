@@ -5,6 +5,10 @@ use neovim::Neovim;
 
 use crate::state::State;
 
+// TODO: even tough this has to block the thread in runs in, it shouldn't block
+// the UI thread. An `InsertLeave` event, inserting or deleting characters
+// should make this return `false` immediately.
+
 /// Executed by the `require("compleet").has_completions` Lua function.
 pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     let api = Neovim::new(lua)?.api;
@@ -20,46 +24,37 @@ pub fn has_completions(lua: &Lua, state: &mut State) -> LuaResult<bool> {
     cursor.bytes = api.win_get_cursor(0)?.1;
     cursor.line = api.get_current_line()?;
 
+    // TODO: make cursor an arc
     let c = Arc::new(cursor.clone());
 
     let completions = &mut state.completions;
-    let handles = &mut state.handles;
     let runtime = state.runtime.as_ref().expect("Runtime already created");
-    let tx = state.tx.as_ref().expect("Runtime already created");
-    let rx = state.rx.as_mut().expect("Runtime already created");
 
     // Abort all previous tasks.
-    handles.iter().for_each(|handle| handle.abort());
+    state.handles.iter().for_each(|handle| handle.abort());
+    state.handles.clear();
 
-    handles.clear();
-    completions.clear();
-    for source in state
+    // Get handles to the new ones.
+    let handles = state
         .sources
         .get(&bufnr)
         .expect("The buffer is attached so it has sources")
         .iter()
-    {
-        // TODO: avoid cloning cursor, wrap it in an Arc.
-        let cr = c.clone();
+        .map(|source| {
+            let s = source.clone();
+            let curs = c.clone();
+            runtime.spawn(async move { s.complete(&curs).await })
+        })
+        .collect::<Vec<_>>();
 
-        let s = source.clone();
-        let t = tx.clone();
-
-        let handle = runtime.spawn(async move {
-            let comps = s.complete(&cr).await;
-            if let Err(_) = t.send(comps).await {
-                println!("receiver dropped");
-                return;
+    completions.clear();
+    runtime.block_on(async {
+        for handle in handles {
+            if let Ok(comps) = handle.await {
+                completions.extend(comps);
             }
-        });
-
-        state.handles.push(handle);
-    }
-
-    // TODO: make this work
-    // while let Some(comps) = &mut rx.recv().await {
-    //     completions.append(comps);
-    // }
+        }
+    });
 
     Ok(!completions.is_empty())
 }

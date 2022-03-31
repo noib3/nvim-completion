@@ -37,8 +37,6 @@ pub fn setup(
 
     _state.settings = match preferences {
         LuaValue::Table(t) => {
-            // Using the `serde_path_to_error` crate to get the full path
-            // of the option where the error occured.
             match serde_path_to_error::deserialize::<_, Settings>(
                 mlua::serde::Deserializer::new(LuaValue::Table(t)),
             ) {
