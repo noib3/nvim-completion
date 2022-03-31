@@ -69,14 +69,14 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
     })?;
 
     let setup = lua.create_function(move |lua, preferences| {
-        api::setup(lua, &state, preferences)
+        api::setup(lua, state.clone(), preferences)
     })?;
 
-    Ok(lua.create_table_from([
+    lua.create_table_from([
         ("has_completions", has_completions),
         ("is_completion_selected", is_completion_selected),
         ("is_hint_visible", is_hint_visible),
         ("is_menu_visible", is_menu_visible),
         ("setup", setup),
-    ])?)
+    ])
 }

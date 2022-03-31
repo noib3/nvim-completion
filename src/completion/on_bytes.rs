@@ -30,20 +30,21 @@ pub fn on_bytes(
 
     let api = Neovim::new(lua)?.api;
 
-    // We only care about insert mode events.
-    if api.get_mode()?.0 != "i" {
-        return Ok(None);
-    }
-
     // If we've added or deleted a line we return early. If we've stayed on the
     // same line but we've deleted characters we only continue if the
     // `completion.while_deleting` option is set.
     if rows_added != 0
         || rows_deleted != 0
         || (bytes_deleted != 0 && !state.settings.completion.while_deleting)
+        // We only care about insert mode events.
+        || api.get_mode()?.0 != "i"
     {
         return Ok(None);
     }
+
+    // Abort all previous tasks.
+    state.handles.iter().for_each(|handle| handle.abort());
+    state.handles.clear();
 
     // Update the cursor.
     let cursor = &mut state.cursor;
@@ -74,48 +75,28 @@ pub fn on_bytes(
     let c = Arc::new(cursor.clone());
 
     let completions = &mut state.completions;
-    let handles = &mut state.handles;
     let runtime = state.runtime.as_ref().expect("Runtime already created");
     let tx = state.tx.as_ref().expect("Runtime already created");
-    let rx = state.rx.as_mut().expect("Runtime already created");
 
-    // Abort any previous task. I guess this only works if the task associated
-    // w/ the handle reaches a `.await`, which it currently doesn't.
-
-    // NOTE: tokio tasks (aka green threads) can only be cancelled when they
-    // reach a `.await` breakpoint.
-
-    // Abort all previous tasks.
-    handles.iter().for_each(|handle| handle.abort());
-
-    // handles.clear();
-    // completions.clear();
-    // for source in state
-    //     .sources
-    //     .get(&bufnr)
-    //     .expect("The buffer is attached so it has sources")
-    //     .iter()
-    // {
-    //     // TODO: avoid cloning here, wrap cursor in an Arc.
-    //     let cr = c.clone();
-
-    //     let s = source.clone();
-    //     let t = tx.clone();
-
-    //     let handle = runtime.spawn(async move {
-    //         let comps = s.complete(&cr).await;
-    //         if let Err(_) = t.send(comps).await {
-    //             println!("receiver dropped");
-    //             return;
-    //         }
-    //     });
-
-    //     state.handles.push(handle);
-    // }
-
-    // while let Some(comps) = &mut rx.recv() {
-    //     completions.append(comps);
-    // }
+    completions.clear();
+    for source in state
+        .sources
+        .get(&bufnr)
+        .expect("The buffer is attached so it has sources")
+        .iter()
+    {
+        let source = source.clone();
+        let cr = c.clone();
+        let tx = tx.clone();
+        state.handles.push(runtime.spawn(async move {
+            let comps = source.complete(&cr).await;
+            match tx.send((cr, comps)).await {
+                Ok(()) => {},
+                // TODO: better error handling
+                Err(_) => panic!("Receiver dropped!"),
+            }
+        }))
+    }
 
     state.did_on_bytes = true;
 

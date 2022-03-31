@@ -38,7 +38,6 @@ impl Ui {
 }
 
 impl Ui {
-    /// Executed on every `InsertLeave` event in attached buffers.
     pub fn cleanup(&mut self, api: &Api) -> LuaResult<()> {
         if self.completion_menu.is_visible() {
             self.completion_menu.close(api)?;
@@ -57,7 +56,6 @@ impl Ui {
         Ok(())
     }
 
-    /// Executed on every `CursorMovedI` event in attached buffers.
     pub fn update(
         &mut self,
         lua: &Lua,

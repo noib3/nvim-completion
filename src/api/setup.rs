@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
+use mlua::prelude::{Lua, LuaError, LuaExternalResult, LuaResult, LuaValue};
 use neovim::Neovim;
 use parking_lot::Mutex;
 use tokio::runtime;
 
-use crate::completion::Completions;
+use crate::completion::{Completions, Cursor};
 use crate::settings::Settings;
 use crate::state::State;
 use crate::{autocmds, commands, hlgroups, mappings};
@@ -13,7 +13,7 @@ use crate::{autocmds, commands, hlgroups, mappings};
 /// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
-    state: &Arc<Mutex<State>>,
+    state: Arc<Mutex<State>>,
     preferences: LuaValue,
 ) -> LuaResult<()> {
     let api = Neovim::new(lua)?.api;
@@ -93,31 +93,51 @@ pub fn setup(
 
     // Only execute this block the first time this function is called.
     if !_state.did_setup {
-        let aux = autocmds::setup(lua, &api, state)?;
+        let aux = autocmds::setup(lua, &api, &state)?;
         _state.augroup_id = Some(aux.0);
         _state.try_buf_attach = Some(aux.1);
 
-        commands::setup(lua, &api, state)?;
+        commands::setup(lua, &api, &state)?;
         hlgroups::setup(lua, &api)?;
-        mappings::setup(lua, &api, state)?;
+        mappings::setup(lua, &api, &state)?;
 
         // Create the multi-threaded async runtime with one thread per
         // completion source.
-        _state.runtime = Some(
-            runtime::Builder::new_multi_thread()
-                .worker_threads(_state.settings.sources.len())
-                .enable_io()
-                // TODO: remove this, it's only for testing
-                .enable_time()
-                .thread_name("compleet-sources-pool")
-                .build()
-                .expect("Creating Tokio runtime"),
-        );
+        let runtime = runtime::Builder::new_multi_thread()
+            .worker_threads(_state.settings.sources.len())
+            .enable_io()
+            // TODO: remove this, it's only for testing
+            .enable_time()
+            .thread_name("compleet-sources-pool")
+            .build()
+            .to_lua_err()?;
 
-        let (tx, rx) = tokio::sync::mpsc::channel::<Completions>(100);
+        let (tx, mut rx) =
+            tokio::sync::mpsc::channel::<(Arc<Cursor>, Completions)>(100);
         // let (tx, rx) = std::sync::mpsc::channel::<Completions>();
+
+        runtime.spawn(async move {
+            while let Some((_, completions)) = rx.recv().await {
+                println!("Got {} completions!", completions.len());
+                let state = &mut state.lock();
+                state.completions.extend(completions);
+                // TODO: get this to work
+                // let api = Neovim::new(lua).unwrap().api;
+                // state
+                //     .ui
+                //     .update(
+                //         lua,
+                //         &api,
+                //         &state.completions,
+                //         &cursor,
+                //         &state.settings,
+                //     )
+                //     .unwrap();
+            }
+        });
+
+        _state.runtime = Some(runtime);
         _state.tx = Some(Arc::new(tx));
-        _state.rx = Some(rx);
 
         _state.did_setup = true;
     }

@@ -41,7 +41,7 @@ pub struct State {
     pub did_setup: bool,
 
     /// TODO
-    pub handles: Vec<JoinHandle<Completions>>,
+    pub handles: Vec<JoinHandle<()>>,
 
     /// The async runtime used to get completions from sources.
     pub runtime: Option<Runtime>,
@@ -50,7 +50,7 @@ pub struct State {
     pub rx: Option<Receiver<Completions>>,
 
     /// TODO
-    pub tx: Option<Arc<Sender<Completions>>>,
+    pub tx: Option<Arc<Sender<(Arc<Cursor>, Completions)>>>,
 
     /// Used to store the current configuration.
     pub settings: Settings,
