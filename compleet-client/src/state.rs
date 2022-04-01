@@ -1,19 +1,11 @@
-use mlua::prelude::{Lua, LuaFunction, LuaResult};
+use mlua::prelude::{Lua, LuaResult};
 
 use crate::channel::Channel;
 
 pub struct State {
-    pub channel: Channel,
+    pub channel: Option<Channel>,
 }
 
 impl State {
-    pub fn new(
-        lua: &Lua,
-        on_exit: LuaFunction,
-        on_stderr: LuaFunction,
-    ) -> LuaResult<State> {
-        let channel = Channel::new(lua, on_exit, on_stderr)?;
-
-        Ok(State { channel })
-    }
+    pub fn new(_lua: &Lua) -> LuaResult<State> { Ok(State { channel: None }) }
 }

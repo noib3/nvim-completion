@@ -3,7 +3,7 @@
 set -e
 
 mkdir -p ./lua/deps
-rm -r ./lua/compleet.so
+rm -r ./lua/compleet.so || true
 rm -f ./lua/deps/* || true
 
 cp ./target/debug/libcompleet_client.so ./lua/compleet.so

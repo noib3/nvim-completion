@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+  "compleet",
   "compleet-client",
   "compleet-server",
 ]

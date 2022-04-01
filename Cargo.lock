@@ -57,10 +57,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "compleet"
+version = "0.1.0"
+
+[[package]]
 name = "compleet-client"
 version = "0.1.0"
 dependencies = [
- "compleet-server",
+ "compleet",
  "mlua",
  "parking_lot 0.10.2",
  "serde",
@@ -71,6 +75,7 @@ dependencies = [
 name = "compleet-server"
 version = "0.1.0"
 dependencies = [
+ "compleet",
  "parking_lot 0.10.2",
  "tokio",
 ]

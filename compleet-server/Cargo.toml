@@ -3,6 +3,9 @@ name = "compleet-server"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies.compleet]
+path = "../compleet"
+
 # Better `Mutex`es.
 [dependencies.parking_lot]
 version = "0.10"
