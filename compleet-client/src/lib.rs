@@ -2,42 +2,46 @@ use std::sync::Arc;
 
 use mlua::{prelude::LuaResult, Lua, Table};
 use parking_lot::Mutex;
+use state::State;
 
+mod autocmds;
 mod bindings;
 mod channel;
+mod commands;
 mod constants;
+mod hlgroups;
+mod mappings;
+mod settings;
 mod setup;
 mod state;
 mod ui;
 mod utils;
 
-use state::State;
-
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
     let state = Arc::new(Mutex::new(State::new(lua)?));
 
-    let s = state.clone();
+    let clone = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {
-        let _ = &mut s.lock();
+        let _ = &mut clone.lock();
         Ok(false)
     })?;
 
-    let s = state.clone();
+    let clone = state.clone();
     let is_completion_selected = lua.create_function(move |_lua, ()| {
-        let _ = &mut s.lock();
+        let _ = &mut clone.lock();
         Ok(false)
     })?;
 
-    let s = state.clone();
+    let clone = state.clone();
     let is_hint_visible = lua.create_function(move |_lua, ()| {
-        let _ = &mut s.lock();
+        let _ = &mut clone.lock();
         Ok(false)
     })?;
 
-    let s = state.clone();
+    let clone = state.clone();
     let is_menu_visible = lua.create_function(move |_lua, ()| {
-        let _ = &mut s.lock();
+        let _ = &mut clone.lock();
         Ok(false)
     })?;
 

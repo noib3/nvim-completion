@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies.compleet]
-path = "../compleet"
+path = "../compleet-server"
 
 # Rust bindings to Lua
 [dependencies.mlua]

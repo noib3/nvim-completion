@@ -1,14 +1,19 @@
 [package]
-name = "compleet-server"
+name = "compleet"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies.compleet]
-path = "../compleet"
+# Use async functions in traits.
+[dependencies.async-trait]
+version = "0.1"
 
 # Better `Mutex`es.
 [dependencies.parking_lot]
 version = "0.10"
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
 
 # Async runtime.
 [dependencies.tokio]

@@ -1,9 +1,9 @@
+use compleet::source::Sources;
 use serde::Deserialize;
 
 use super::completion::CompletionSettings;
 use super::sources;
 use super::ui::UiSettings;
-use crate::completion::Sources;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]

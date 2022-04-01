@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "async-trait"
+version = "0.1.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed6aa3524a2dfcf9fe180c51eae2b58738348d819517ceadf95789c51fff7600"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -59,6 +70,12 @@ dependencies = [
 [[package]]
 name = "compleet"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "parking_lot 0.10.2",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "compleet-client"
@@ -69,15 +86,6 @@ dependencies = [
  "parking_lot 0.10.2",
  "serde",
  "serde_path_to_error",
-]
-
-[[package]]
-name = "compleet-server"
-version = "0.1.0"
-dependencies = [
- "compleet",
- "parking_lot 0.10.2",
- "tokio",
 ]
 
 [[package]]
