@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use mlua::serde::Deserializer;
@@ -14,7 +14,7 @@ use crate::{autocmds, commands, hlgroups, mappings, utils};
 /// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
-    state: &Arc<Mutex<State>>,
+    state: &Rc<Mutex<State>>,
     preferences: LuaValue,
 ) -> LuaResult<()> {
     // Setup the highlight groups used in the error messages.

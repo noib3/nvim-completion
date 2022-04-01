@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use mlua::{prelude::LuaResult, Lua, Table};
 use parking_lot::Mutex;
@@ -19,7 +19,7 @@ mod utils;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    let state = Arc::new(Mutex::new(State::new(lua)?));
+    let state = Rc::new(Mutex::new(State::new(lua)?));
 
     let clone = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {

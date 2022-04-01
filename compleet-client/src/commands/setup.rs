@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use mlua::{
     prelude::{Lua, LuaResult},
@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use crate::bindings::api;
 use crate::State;
 
-pub fn setup(lua: &Lua, state: &Arc<Mutex<State>>) -> LuaResult<()> {
+pub fn setup(lua: &Lua, state: &Rc<Mutex<State>>) -> LuaResult<()> {
     let cloned = state.clone();
     let start = lua.create_function(move |lua, opts: Table| {
         let bang = opts.get::<_, bool>("bang")?;

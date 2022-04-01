@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use mlua::prelude::{Lua, LuaResult};
 use parking_lot::Mutex;
@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use crate::bindings::api;
 use crate::state::State;
 
-pub fn setup(lua: &Lua, state: &Arc<Mutex<State>>) -> LuaResult<()> {
+pub fn setup(lua: &Lua, state: &Rc<Mutex<State>>) -> LuaResult<()> {
     // Insert the currently hinted completion.
     let cloned = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {

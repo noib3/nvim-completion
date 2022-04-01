@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
 use parking_lot::Mutex;
@@ -9,7 +9,7 @@ use crate::state::State;
 
 pub fn setup(
     lua: &Lua,
-    state: &Arc<Mutex<State>>,
+    state: &Rc<Mutex<State>>,
 ) -> LuaResult<(u32, LuaRegistryKey)> {
     // Called on every `InsertLeave` event of attached buffers.
     let clone = state.clone();
