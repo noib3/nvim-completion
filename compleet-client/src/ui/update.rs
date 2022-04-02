@@ -1,5 +1,18 @@
+use compleet::completion::Completions;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::State;
+use crate::state::State;
 
-pub fn update(_lua: &Lua, _state: &mut State) -> LuaResult<()> { Ok(()) }
+/// Executed when new completions arrive to the channel.
+pub fn update(
+    lua: &Lua,
+    state: &mut State,
+    new: Option<Completions>,
+) -> LuaResult<()> {
+    let hint = &mut state.ui.as_mut().unwrap().hint;
+    let menu = &mut state.ui.as_mut().unwrap().menu;
+    let details = &mut state.ui.as_mut().unwrap().details;
+
+    // Update the selected completion.
+    Ok(())
+}

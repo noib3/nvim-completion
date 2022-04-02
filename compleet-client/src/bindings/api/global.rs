@@ -88,16 +88,17 @@ pub fn get_runtime_file(
 }
 
 /// Binding to `vim.api.nvim_notify`.
-// pub fn notify<S: AsRef<str>>(
-//     lua: &Lua,
-//     msg: S,
-//     level: super::LogLevel,
-// ) -> LuaResult<()> {
-//     super::api(lua)?
-//         .get::<&str, LuaFunction>("nvim_notify")?
-//         .call((msg.as_ref(), level as u8, Vec::<u8>::new()))
-// }
+pub fn notify<S: AsRef<str>>(
+    lua: &Lua,
+    msg: S,
+    level: super::LogLevel,
+) -> LuaResult<()> {
+    super::api(lua)?
+        .get::<&str, LuaFunction>("nvim_notify")?
+        .call((msg.as_ref(), level as u8, Vec::<u8>::new()))
+}
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_replace_termcodes`
 pub fn replace_termcodes(
     lua: &Lua,

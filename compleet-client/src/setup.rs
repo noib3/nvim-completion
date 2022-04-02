@@ -8,6 +8,7 @@ use crate::bindings::r#fn;
 use crate::channel::Channel;
 use crate::settings::Settings;
 use crate::state::State;
+use crate::ui::Ui;
 use crate::{autocmds, commands, hlgroups, mappings, utils};
 
 /// Executed by the `require("compleet").setup` Lua function.
@@ -88,19 +89,17 @@ pub fn setup(
     borrowed.settings = settings;
 
     if !borrowed.did_setup {
-        let (id, registry_key) = autocmds::setup(lua, state)?;
-
-        borrowed.augroup_id = Some(id);
-        borrowed.try_buf_attach = Some(registry_key);
-
         commands::setup(lua, state)?;
         hlgroups::setup(lua)?;
         mappings::setup(lua, state)?;
 
-        // Spawn the RPC channel to commicate with the compleet server.
-        borrowed.channel = Some(Channel::new(lua)?);
+        let (id, registry_key) = autocmds::setup(lua, state)?;
+        borrowed.augroup_id = Some(id);
+        borrowed.try_buf_attach = Some(registry_key);
 
+        borrowed.channel = Some(Channel::new(lua)?);
         borrowed.did_setup = true;
+        borrowed.ui = Some(Ui::new(lua, &borrowed.settings.ui)?);
     }
 
     Ok(())

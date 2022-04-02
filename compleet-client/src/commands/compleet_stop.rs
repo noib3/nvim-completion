@@ -1,6 +1,6 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
+use crate::bindings::api::{self, LogLevel};
 use crate::ui;
 use crate::State;
 
@@ -38,17 +38,17 @@ fn detach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
         // autocmd. Unlikely but possible).
         ui::cleanup(lua, &mut state.ui.as_mut().unwrap())?;
 
-        // api::notify(
-        //     lua,
-        //     "[nvim-compleet] Stopped completion in all buffers",
-        //     LogLevel::Info,
-        // )?;
+        api::notify(
+            lua,
+            "[nvim-compleet] Stopped completion in all buffers",
+            LogLevel::Info,
+        )?;
     } else {
-        // api::notify(
-        //     lua,
-        //     "[nvim-compleet] Completion is already off",
-        //     LogLevel::Error,
-        // )?;
+        api::notify(
+            lua,
+            "[nvim-compleet] Completion is already off",
+            LogLevel::Error,
+        )?;
     }
 
     Ok(())
@@ -58,11 +58,11 @@ fn detach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let bufnr = api::get_current_buf(lua)?;
 
     if !state.attached_buffers.contains(&bufnr) {
-        // api::notify(
-        //     lua,
-        //     "[nvim-compleet] Completion is already off in this buffer",
-        //     LogLevel::Error,
-        // )?;
+        api::notify(
+            lua,
+            "[nvim-compleet] Completion is already off in this buffer",
+            LogLevel::Error,
+        )?;
         return Ok(());
     }
 
@@ -80,11 +80,11 @@ fn detach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
         api::del_autocmd(lua, *autocmd_id)?;
     }
 
-    // api::notify(
-    //     lua,
-    //     &format!("[nvim-compleet] Stopped completion for buffer {bufnr}"),
-    //     LogLevel::Info,
-    // )?;
+    api::notify(
+        lua,
+        &format!("[nvim-compleet] Stopped completion for buffer {bufnr}"),
+        LogLevel::Info,
+    )?;
 
     Ok(())
 }

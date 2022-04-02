@@ -1,5 +1,4 @@
-// TODO: remove `Clone`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.
     pub bytes: u32,

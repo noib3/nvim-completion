@@ -1,7 +1,7 @@
 use compleet::source::Sources;
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 
-use crate::bindings::api;
+use crate::bindings::api::{self, LogLevel};
 use crate::state::State;
 
 /// Executed on every `BufEnter` event and by the `CompleetStart{!}` user
@@ -83,10 +83,11 @@ pub fn try_buf_attach(
             nvim.print(format!("{:?}", &state.attached_buffers))?;
         }
     } else {
-        // api.notify(
-        //     "[nvim-compleet] Couldn't attach to buffer",
-        //     LogLevel::Error,
-        // )?;
+        api::notify(
+            lua,
+            "[nvim-compleet] Couldn't attach to buffer",
+            LogLevel::Error,
+        )?;
     }
 
     Ok(())

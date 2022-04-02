@@ -6,7 +6,7 @@ mod global;
 mod win_config;
 mod window;
 
-pub use api::api;
+pub use api::{api, LogLevel};
 pub use autocmd::*;
 pub use buffer::*;
 pub use extmark::*;

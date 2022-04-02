@@ -18,7 +18,7 @@ mod utils;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    let state = Rc::new(RefCell::new(State::new(lua)?));
+    let state = Rc::new(RefCell::new(State::new()));
 
     let cloned = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {

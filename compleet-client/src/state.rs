@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use compleet::completion::Completions;
 use compleet::cursor::Cursor;
-use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
+use mlua::prelude::LuaRegistryKey;
 
 use crate::channel::Channel;
 use crate::settings::Settings;
@@ -52,8 +52,8 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(lua: &Lua) -> LuaResult<State> {
-        Ok(State {
+    pub fn new() -> Self {
+        State {
             attached_buffers: Vec::new(),
             augroup_id: None,
             channel: None,
@@ -66,6 +66,6 @@ impl State {
             settings: Settings::default(),
             try_buf_attach: None,
             ui: None,
-        })
+        }
     }
 }

@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
 
 use crate::bindings::api;
-use crate::channel;
+use crate::channel::{self, message::Notification};
 use crate::state::State;
 use crate::ui;
 
@@ -14,10 +14,15 @@ pub fn setup(
     // Called on every `InsertLeave` event of attached buffers.
     let cloned = state.clone();
     let insert_leave = move |lua, ()| {
-        // Send a notification to the server to stop any running tasks and
+        let mut borrowed = cloned.borrow_mut();
+        // Send a notification to the server to stop all running tasks, then
         // cleanup the UI.
-        // TODO
-        ui::cleanup(lua, &mut cloned.borrow_mut().ui.as_mut().unwrap())?;
+        borrowed
+            .channel
+            .as_ref()
+            .unwrap()
+            .notify(lua, Notification::StopTasks)?;
+        ui::cleanup(lua, &mut borrowed.ui.as_mut().unwrap())?;
         Ok(())
     };
 
@@ -33,7 +38,11 @@ pub fn setup(
         // If not we send a notification to the server to stop any running
         // tasks and cleanup the UI.
         else {
-            // TODO
+            borrowed
+                .channel
+                .as_ref()
+                .unwrap()
+                .notify(lua, Notification::StopTasks)?;
             ui::cleanup(lua, &mut borrowed.ui.as_mut().unwrap())?;
         }
         Ok(())

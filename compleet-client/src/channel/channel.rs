@@ -3,12 +3,11 @@ use mlua::{
     Lua,
 };
 
-use crate::bindings::{api, r#fn};
+use super::message::{Notification, Request};
+use crate::bindings::{api, nvim, r#fn};
 
 #[derive(Debug)]
-pub struct Channel {
-    _id: u32,
-}
+pub struct Channel(u32);
 
 impl Channel {
     /// Spawns a new RPC channel via `vim.fn.jobstart`.
@@ -40,13 +39,25 @@ impl Channel {
             id => id as u32,
         };
 
-        Ok(Channel { _id: id })
+        Ok(Channel(id))
+    }
+
+    /// Sends a notification to the server.
+    pub fn notify(&self, lua: &Lua, ntf: Notification) -> LuaResult<()> {
+        let (event, args) = ntf.into();
+        nvim::rpcnotify(lua, self.0, event, args)
+    }
+
+    /// Sends a request to the server and waits for the response.
+    pub fn _request(&self, lua: &Lua, req: Request) -> LuaResult<()> {
+        let (method, args) = req.into();
+        nvim::rpcrequest(lua, self.0, method, args)
     }
 }
 
 /// Returns the full path of the `compleet-server` binary.
 fn get_compleet_server_path(lua: &Lua) -> LuaResult<String> {
-    match api::get_runtime_file(lua, "lua/compleet-server", false)? {
+    match api::get_runtime_file(lua, "lua/compleet", false)? {
         v if v.is_empty() => Err(LuaError::RuntimeError(
             "Couldn't find the `compleet-server` binary :(".into(),
         )),

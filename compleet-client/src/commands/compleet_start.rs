@@ -1,6 +1,9 @@
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 
-use crate::bindings::{api, nvim};
+use crate::bindings::{
+    api::{self, LogLevel},
+    nvim,
+};
 use crate::State;
 
 /// Executed by the `CompleetStart` user command.
@@ -28,10 +31,11 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
             api::get_autocmds(lua, opts)?.raw_len() != 0
         };
         if is_bufenter_autocmd_set {
-            // api.notify(
-            //     "[nvim-compleet] Completion is already on",
-            //     LogLevel::Error,
-            // )?;
+            api::notify(
+                lua,
+                "[nvim-compleet] Completion is already on",
+                LogLevel::Error,
+            )?;
             return Ok(());
         }
     }
@@ -55,18 +59,18 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
     opts.set("callback", try_buf_attach.clone())?;
     api::create_autocmd(lua, &["BufEnter"], opts)?;
 
-    // NOTE: We can't call `autocmds::try_buf_attach` here or the state's Mutex
-    // would deadlock. Instead we schedule it for a later time in Neovim's
+    // NOTE: We can't call `autocmds::try_buf_attach` here or the state's
+    // RefCell would panic. Instead we schedule it for a later time in Neovim's
     // event loop via `vim.schedule`.
-    // nvim::schedule(try_buf_attach)?;
+    nvim::schedule(lua, try_buf_attach)?;
 
     state.augroup_id = Some(augroup_id);
 
-    // api::notify(
-    //     lua,
-    //     "[nvim-compleet] Started completion in all buffers",
-    //     LogLevel::Info,
-    // )?;
+    api::notify(
+        lua,
+        "[nvim-compleet] Started completion in all buffers",
+        LogLevel::Info,
+    )?;
 
     Ok(())
 }
@@ -75,11 +79,11 @@ fn attach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let bufnr = api::get_current_buf(lua)?;
 
     if state.attached_buffers.contains(&bufnr) {
-        // api::notify(
-        //     lua,
-        //     "[nvim-compleet] Completion is already on in this buffer",
-        //     LogLevel::Error,
-        // )?;
+        api::notify(
+            lua,
+            "[nvim-compleet] Completion is already on in this buffer",
+            LogLevel::Error,
+        )?;
         return Ok(());
     }
 
@@ -103,16 +107,16 @@ fn attach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
             .expect("`try_buf_attach` has already been created"),
     )?;
 
-    // // Schedule a `try_buf_attach` to attach to the current buffer.
-    // nvim::schedule(lua, try_buf_attach)?;
+    // Schedule a `try_buf_attach` to attach to the current buffer.
+    nvim::schedule(lua, try_buf_attach)?;
 
-    // // TODO: only display this once we've successfully attached to the
-    // // buffer.
-    // api::notify(
-    //     lua,
-    //     &format!("[nvim-compleet] Started completion in buffer {bufnr}"),
-    //     LogLevel::Info,
-    // )?;
+    // TODO: only display this once we've successfully attached to the
+    // buffer.
+    api::notify(
+        lua,
+        &format!("[nvim-compleet] Started completion in buffer {bufnr}"),
+        LogLevel::Info,
+    )?;
 
     Ok(())
 }
