@@ -36,7 +36,7 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
         }
     }
 
-    // state.buffers_to_be_detached.clear();
+    state.buffers_to_be_detached.clear();
 
     let try_buf_attach = lua.registry_value::<LuaFunction>(
         state
@@ -74,34 +74,34 @@ fn attach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
 fn attach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let bufnr = api::get_current_buf(lua)?;
 
-    // if state.attached_buffers.contains(&bufnr) {
-    //     api::notify(
-    //         lua,
-    //         "[nvim-compleet] Completion is already on in this buffer",
-    //         LogLevel::Error,
-    //     )?;
-    //     return Ok(());
-    // }
+    if state.attached_buffers.contains(&bufnr) {
+        // api::notify(
+        //     lua,
+        //     "[nvim-compleet] Completion is already on in this buffer",
+        //     LogLevel::Error,
+        // )?;
+        return Ok(());
+    }
 
-    // // If this buffer was queued to be detached from buffer update events
-    // (the // ones setup by `nvim_buf_attach`, not autocmds) now it no
-    // longer needs // to.
-    // if state.buffers_to_be_detached.contains(&bufnr) {
-    //     state.buffers_to_be_detached.retain(|&b| b != bufnr);
-    // }
+    // If this buffer was queued to be detached from buffer update events (the
+    // ones setup by `nvim_buf_attach`, not autocmds) now it no longer needs
+    // to.
+    if state.buffers_to_be_detached.contains(&bufnr) {
+        state.buffers_to_be_detached.retain(|&b| b != bufnr);
+    }
 
-    // // If there's currently no `Compleet` augroup we need to recreate it.
-    // if state.augroup_id.is_none() {
-    //     let opts = lua.create_table_from([("clear", true)])?;
-    //     state.augroup_id = Some(lua, api::create_augroup("Compleet",
-    // opts)?); }
+    // If there's currently no `Compleet` augroup we need to recreate it.
+    if state.augroup_id.is_none() {
+        let opts = lua.create_table_from([("clear", true)])?;
+        state.augroup_id = Some(api::create_augroup(lua, "Compleet", opts)?);
+    }
 
-    // let try_buf_attach = lua.registry_value::<LuaFunction>(
-    //     state
-    //         .try_buf_attach
-    //         .as_ref()
-    //         .expect("`try_buf_attach` has already been created"),
-    // )?;
+    let try_buf_attach = lua.registry_value::<LuaFunction>(
+        state
+            .try_buf_attach
+            .as_ref()
+            .expect("`try_buf_attach` has already been created"),
+    )?;
 
     // // Schedule a `try_buf_attach` to attach to the current buffer.
     // nvim::schedule(lua, try_buf_attach)?;

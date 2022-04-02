@@ -10,31 +10,33 @@ pub fn select_completion(
     state: &mut State,
     step: i8, // either 1 or -1
 ) -> LuaResult<()> {
-    // if !state.ui.completion_menu.is_visible() {
-    //     return Ok(());
-    // }
+    let ui = &mut state.ui.as_mut().unwrap();
+
+    if !ui.menu.floater.is_open() {
+        return Ok(());
+    }
 
     // let menu = &mut state.ui.completion_menu;
     // let completions = &state.completions;
 
-    // let last_index = completions.len() - 1;
-    // let new_index = match step {
-    //     // Selecting the next completion
-    //     1 => match menu.selected_index {
-    //         Some(index) if index == last_index => None,
-    //         Some(index) => Some(index + 1),
-    //         None => Some(0),
-    //     },
+    let last_index = state.completions.len() - 1;
+    let new_index = match step {
+        // Selecting the next completion
+        1 => match ui.menu.selected_index {
+            Some(index) if index == last_index => None,
+            Some(index) => Some(index + 1),
+            None => Some(0),
+        },
 
-    //     // Selecting the previous completion
-    //     -1 => match menu.selected_index {
-    //         Some(index) if index == 0 => None,
-    //         Some(index) => Some(index - 1),
-    //         None => Some(last_index),
-    //     },
+        // Selecting the previous completion
+        -1 => match ui.menu.selected_index {
+            Some(index) if index == 0 => None,
+            Some(index) => Some(index - 1),
+            None => Some(last_index),
+        },
 
-    //     _ => unreachable!(),
-    // };
+        _ => unreachable!(),
+    };
 
     // let hint = &mut state.ui.completion_hint;
     // let details = &mut state.ui.completion_details;

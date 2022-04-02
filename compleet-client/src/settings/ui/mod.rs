@@ -1,5 +1,5 @@
 pub mod border;
-mod details;
+pub mod details;
 mod hint;
 pub mod menu;
 mod ui;

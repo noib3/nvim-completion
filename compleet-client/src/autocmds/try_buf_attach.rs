@@ -11,13 +11,13 @@ pub fn try_buf_attach(
     state: &mut State,
     insert_leave: LuaFunction,
     cursor_moved_i: LuaFunction,
-    // on_bytes: LuaFunction,
+    on_bytes: LuaFunction,
 ) -> LuaResult<()> {
     let bufnr = api::get_current_buf(lua)?;
 
     // Collect all the completion sources that want to attach to the current
     // buffer.
-    let _sources = state
+    let sources = state
         .settings
         .sources
         .iter()
@@ -34,54 +34,60 @@ pub fn try_buf_attach(
     //    terminal buffers, help buffers, etc.
     //
     // 3. there are no compatible sources for the current buffer;
-    // if state.attached_buffers.contains(&bufnr)
-    //     || !api.buf_get_option::<bool>(0, "modifiable")?
-    //     || sources.is_empty()
-    // {
-    //     return Ok(());
-    // }
+    if state.attached_buffers.contains(&bufnr)
+        || !api::buf_get_option::<bool>(lua, 0, "modifiable")?
+        || sources.is_empty()
+    {
+        return Ok(());
+    }
 
-    // let opts = lua.create_table_from([("on_bytes", on_bytes)])?;
+    let opts = lua.create_table_from([("on_bytes", on_bytes)])?;
 
-    // if api.buf_attach(0, false, opts)? {
-    //     state.attached_buffers.push(bufnr);
+    if api::buf_attach(lua, 0, false, opts)? {
+        state.attached_buffers.push(bufnr);
 
-    //     let mut buffer_autocmd_ids = Vec::with_capacity(2);
+        let mut buffer_autocmd_ids = Vec::with_capacity(2);
 
-    //     let opts = lua.create_table_with_capacity(0, 3)?;
-    //     opts.set("group", state.augroup_id.expect("The augroup is set"))?;
-    //     opts.set("buffer", bufnr)?;
+        let opts = lua.create_table_with_capacity(0, 3)?;
+        opts.set("group", state.augroup_id.expect("The augroup is set"))?;
+        opts.set("buffer", bufnr)?;
 
-    //     opts.set("callback", cursor_moved_i)?;
-    //     buffer_autocmd_ids
-    //         .push(api.create_autocmd(&["CursorMovedI"], opts.clone())?);
+        opts.set("callback", cursor_moved_i)?;
+        buffer_autocmd_ids.push(api::create_autocmd(
+            lua,
+            &["CursorMovedI"],
+            opts.clone(),
+        )?);
 
-    //     opts.set("callback", insert_leave)?;
-    //     buffer_autocmd_ids.push(api.create_autocmd(&["InsertLeave"],
-    // opts)?);
+        opts.set("callback", insert_leave)?;
+        buffer_autocmd_ids.push(api::create_autocmd(
+            lua,
+            &["InsertLeave"],
+            opts,
+        )?);
 
-    //     state
-    //         .buffer_local_autocmds
-    //         .insert(bufnr, buffer_autocmd_ids);
+        state
+            .buffer_local_autocmds
+            .insert(bufnr, buffer_autocmd_ids);
 
-    //     if state.sources.get(&bufnr).is_none() {
-    //         state.sources.insert(bufnr, sources);
-    //     }
+        // if state.sources.get(&bufnr).is_none() {
+        //     state.sources.insert(bufnr, sources);
+        // }
 
-    //     #[cfg(debug)]
-    //     {
-    //         let nvim = Neovim::new(lua)?;
-    //         let ft = api.buf_get_option::<String>(bufnr, "filetype")?;
-    //         let bt = api.buf_get_option::<String>(bufnr, "buftype")?;
-    //         nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
-    //         nvim.print(format!("{:?}", &state.attached_buffers))?;
-    //     }
-    // } else {
-    //     api.notify(
-    //         "[nvim-compleet] Couldn't attach to buffer",
-    //         LogLevel::Error,
-    //     )?;
-    // }
+        #[cfg(debug)]
+        {
+            let nvim = Neovim::new(lua)?;
+            let ft = api.buf_get_option::<String>(bufnr, "filetype")?;
+            let bt = api.buf_get_option::<String>(bufnr, "buftype")?;
+            nvim.print(format!("{bufnr}, {ft}, {bt}"))?;
+            nvim.print(format!("{:?}", &state.attached_buffers))?;
+        }
+    } else {
+        // api.notify(
+        //     "[nvim-compleet] Couldn't attach to buffer",
+        //     LogLevel::Error,
+        // )?;
+    }
 
     Ok(())
 }

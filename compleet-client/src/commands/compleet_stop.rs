@@ -1,6 +1,7 @@
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::bindings::api;
+use crate::ui;
 use crate::State;
 
 /// Executed by the `CompleetStop` user command.
@@ -20,35 +21,35 @@ pub fn compleet_stop(
 }
 
 fn detach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    // if let Some(id) = state.augroup_id {
-    //     // Delete the `Compleet` augroup containing all the autocmds.
-    //     api::del_augroup_by_id(lua, id)?;
+    if let Some(id) = state.augroup_id {
+        // Delete the `Compleet` augroup containing all the autocmds.
+        api::del_augroup_by_id(lua, id)?;
 
-    //     state.augroup_id = None;
+        state.augroup_id = None;
 
-    //     // Move all the buffer numbers from the `attached_buffers` vector to
-    //     // `buffers_to_be_detached`.
-    //     state
-    //         .buffers_to_be_detached
-    //         .append(&mut state.attached_buffers);
+        // Move all the buffer numbers from the `attached_buffers` vector to
+        // `buffers_to_be_detached`.
+        state
+            .buffers_to_be_detached
+            .append(&mut state.attached_buffers);
 
-    //     // Cleanup the UI in case the user has somehow executed
-    //     // `CompleetStop!` without exiting insert mode (for example via an
-    //     // autocmd. Unlikely but possible).
-    //     state.ui.cleanup(api)?;
+        // Cleanup the UI in case the user has somehow executed
+        // `CompleetStop!` without exiting insert mode (for example via an
+        // autocmd. Unlikely but possible).
+        ui::cleanup(lua, &mut state.ui.as_mut().unwrap())?;
 
-    //     api::notify(
-    //         lua,
-    //         "[nvim-compleet] Stopped completion in all buffers",
-    //         LogLevel::Info,
-    //     )?;
-    // } else {
-    //     api::notify(
-    //         lua,
-    //         "[nvim-compleet] Completion is already off",
-    //         LogLevel::Error,
-    //     )?;
-    // }
+        // api::notify(
+        //     lua,
+        //     "[nvim-compleet] Stopped completion in all buffers",
+        //     LogLevel::Info,
+        // )?;
+    } else {
+        // api::notify(
+        //     lua,
+        //     "[nvim-compleet] Completion is already off",
+        //     LogLevel::Error,
+        // )?;
+    }
 
     Ok(())
 }
@@ -56,28 +57,28 @@ fn detach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
 fn detach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let bufnr = api::get_current_buf(lua)?;
 
-    // if !state.attached_buffers.contains(&bufnr) {
-    //     api::notify(
-    //         lua,
-    //         "[nvim-compleet] Completion is already off in this buffer",
-    //         LogLevel::Error,
-    //     )?;
-    //     return Ok(());
-    // }
+    if !state.attached_buffers.contains(&bufnr) {
+        // api::notify(
+        //     lua,
+        //     "[nvim-compleet] Completion is already off in this buffer",
+        //     LogLevel::Error,
+        // )?;
+        return Ok(());
+    }
 
-    // state.attached_buffers.retain(|&b| b != bufnr);
-    // state.buffers_to_be_detached.push(bufnr);
+    state.attached_buffers.retain(|&b| b != bufnr);
+    state.buffers_to_be_detached.push(bufnr);
 
-    // state.ui.cleanup(api)?;
+    ui::cleanup(lua, &mut state.ui.as_mut().unwrap())?;
 
-    // // Delete all the buffer-local autocmds we had set for this buffer.
-    // for autocmd_id in state
-    //     .buffer_local_autocmds
-    //     .get(&bufnr)
-    //     .expect("If the buffer was attached it had some buffer-local
-    // autocmds") {
-    //     api::del_autocmd(lua, *autocmd_id)?;
-    // }
+    // Delete all the buffer-local autocmds we had set for this buffer.
+    for autocmd_id in state
+        .buffer_local_autocmds
+        .get(&bufnr)
+        .expect("If the buffer was attached it had some buffer-local autocmds")
+    {
+        api::del_autocmd(lua, *autocmd_id)?;
+    }
 
     // api::notify(
     //     lua,

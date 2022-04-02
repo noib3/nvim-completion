@@ -10,17 +10,17 @@ pub fn insert_completion(
     state: &mut State,
     index: usize,
 ) -> LuaResult<()> {
-    //let completion = &state.completions[index];
-    //let cursor = &state.cursor;
+    let completion = &state.completions[index];
+    let cursor = &state.cursor;
 
-    //let text_to_insert = get_text_to_insert(
-    //    completion.matched_bytes as usize,
-    //    &cursor.line[cursor.bytes as usize..],
-    //    &completion.text,
-    //);
+    let text_to_insert = get_text_to_insert(
+        completion.matched_bytes as usize,
+        &cursor.line[cursor.bytes as usize..],
+        &completion.text,
+    );
 
-    //let end_column = (cursor.bytes - completion.matched_bytes) as usize
-    //    + completion.text.len();
+    let end_column = (cursor.bytes - completion.matched_bytes) as usize
+        + completion.text.len();
 
     //// NOTE: Inserting the completion in the buffer right at this point
     //// triggers `completion::bytes_changed`, which causes the Mutex wrapping
@@ -30,13 +30,13 @@ pub fn insert_completion(
     //// pass it to `nvim.schedule` to be executed at a later time in Neovim's
     //// event loop.
 
-    //let insert_completion = lua.create_function(
-    //    move |lua, (row, col, text): (u32, u32, String)| {
-    //        api::buf_set_text(lua, 0, row, col, row, col, &[text])?;
-    //        api::win_set_cursor(lua, 0, row + 1, end_column as u32)?;
-    //        Ok(())
-    //    },
-    //)?;
+    let insert_completion = lua.create_function(
+        move |lua, (row, col, text): (u32, u32, String)| {
+            api::buf_set_text(lua, 0, row, col, row, col, &[text])?;
+            api::win_set_cursor(lua, 0, row + 1, end_column as u32)?;
+            Ok(())
+        },
+    )?;
 
     //nvim::schedule(
     //    lua,
@@ -48,7 +48,7 @@ pub fn insert_completion(
     //)?;
 
     //// Reset the selected completion.
-    //state.ui.completion_menu.selected_index = None;
+    // state.ui.map(|mut ui| ui.menu.selected_index = None);
 
     Ok(())
 }

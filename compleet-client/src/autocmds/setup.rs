@@ -1,87 +1,84 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
-use parking_lot::Mutex;
 
 use crate::bindings::api;
+use crate::channel;
 use crate::state::State;
-// use crate::ui;
+use crate::ui;
 
 pub fn setup(
     lua: &Lua,
-    state: &Rc<Mutex<State>>,
+    state: &Rc<RefCell<State>>,
 ) -> LuaResult<(u32, LuaRegistryKey)> {
     // Called on every `InsertLeave` event of attached buffers.
-    let clone = state.clone();
+    let cloned = state.clone();
     let insert_leave = move |lua, ()| {
-        let locked = &mut clone.lock();
-        // // Abort all pending tasks.
-        // locked.handles.iter().for_each(|handle| handle.abort());
-        // locked.handles.clear();
-        // // Cleanup the UI.
-        // ui::cleanup(lua, &locked.ui)?;
+        // Send a notification to the server to stop any running tasks and
+        // cleanup the UI.
+        // TODO
+        ui::cleanup(lua, &mut cloned.borrow_mut().ui.as_mut().unwrap())?;
         Ok(())
     };
 
     // Called on every `CursorMovedI` event of attached buffers.
-    let _state = state.clone();
+    let cloned = state.clone();
     let cursor_moved_i = move |lua, ()| {
-        let locked = &mut _state.lock();
-        // // If the cursor was moved right after a call to `on_bytes` we
-        // // reset `did_on_bytes` to `false` and ignore the event.
-        // if state.did_on_bytes {
-        //     state.did_on_bytes = false;
-        // }
-        // // If not we abort all pending tasks and cleanup the UI.
-        // else {
-        //     state.handles.iter().for_each(|handle| handle.abort());
-        //     state.handles.clear();
-        //     let api = Neovim::new(lua)?.api;
-        //     state.ui.cleanup(&api)?;
-        // }
+        let mut borrowed = cloned.borrow_mut();
+        // If the cursor was moved right after a call to `on_bytes` we
+        // reset `did_on_bytes` to `false` and ignore the event.
+        if borrowed.did_on_bytes {
+            borrowed.did_on_bytes = false;
+        }
+        // If not we send a notification to the server to stop any running
+        // tasks and cleanup the UI.
+        else {
+            // TODO
+            ui::cleanup(lua, &mut borrowed.ui.as_mut().unwrap())?;
+        }
         Ok(())
     };
 
-    // // Called every time a byte in an attached buffer is changed.
-    // let _state = state.clone();
-    // let on_bytes =
-    //     move |lua,
-    //           (
-    //         _,
-    //         bufnr,
-    //         _,
-    //         start_row,
-    //         start_col,
-    //         _,
-    //         rows_deleted,
-    //         _,
-    //         bytes_deleted,
-    //         rows_added,
-    //         _,
-    //         bytes_added,
-    //     ): (String, _, u32, _, _, u32, _, u32, _, _, u32, _)| {
-    //         completion::on_bytes(
-    //             lua,
-    //             &mut _state.lock(),
-    //             bufnr,
-    //             start_row,
-    //             start_col,
-    //             rows_deleted,
-    //             bytes_deleted,
-    //             rows_added,
-    //             bytes_added,
-    //         )
-    //     };
+    // Called every time a byte in an attached buffer is changed.
+    let cloned = state.clone();
+    let on_bytes =
+        move |lua,
+              (
+            _,
+            bufnr,
+            _,
+            start_row,
+            start_col,
+            _,
+            rows_deleted,
+            _,
+            bytes_deleted,
+            rows_added,
+            _,
+            bytes_added,
+        ): (String, _, u32, _, _, u32, _, u32, _, _, u32, _)| {
+            channel::on_bytes(
+                lua,
+                &mut cloned.borrow_mut(),
+                bufnr,
+                start_row,
+                start_col,
+                rows_deleted,
+                bytes_deleted,
+                rows_added,
+                bytes_added,
+            )
+        };
 
     // Called on every `BufEnter` event.
-    let _state = state.clone();
+    let clone = state.clone();
     let try_buf_attach = lua.create_function(move |lua, ()| {
         super::try_buf_attach(
             lua,
-            &mut _state.lock(),
+            &mut clone.borrow_mut(),
             lua.create_function(insert_leave.clone())?,
             lua.create_function(cursor_moved_i.clone())?,
-            // lua.create_function(on_bytes.clone())?,
+            lua.create_function(on_bytes.clone())?,
         )?;
         Ok(())
     })?;

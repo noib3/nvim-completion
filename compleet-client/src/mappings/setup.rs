@@ -1,29 +1,29 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use mlua::prelude::{Lua, LuaResult};
-use parking_lot::Mutex;
 
 use crate::bindings::api;
 use crate::state::State;
 
-pub fn setup(lua: &Lua, state: &Rc<Mutex<State>>) -> LuaResult<()> {
+pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
     // Insert the currently hinted completion.
     let cloned = state.clone();
     let insert_hinted_completion = lua.create_function(move |lua, ()| {
-        let locked = &mut cloned.lock();
-        // if let Some(index) = locked.ui.completion_hint.hinted_index {
-        //     super::insert_completion(lua, locked, index)?;
-        // }
+        let borrowed = &mut cloned.borrow_mut();
+        if let Some(index) = borrowed.ui.as_ref().unwrap().hint.hinted_index {
+            super::insert_completion(lua, borrowed, index)?;
+        }
         Ok(())
     })?;
 
     // Insert the currently selected completion.
     let cloned = state.clone();
     let insert_selected_completion = lua.create_function(move |lua, ()| {
-        let locked = &mut cloned.lock();
-        // if let Some(index) = cloned.ui.completion_menu.selected_index {
-        //     super::insert_completion(lua, cloned, index)?;
-        // }
+        let borrowed = &mut cloned.borrow_mut();
+        if let Some(index) = borrowed.ui.as_ref().unwrap().menu.selected_index
+        {
+            super::insert_completion(lua, borrowed, index)?;
+        }
         Ok(())
     })?;
 
@@ -31,14 +31,14 @@ pub fn setup(lua: &Lua, state: &Rc<Mutex<State>>) -> LuaResult<()> {
     // based on the value of `step`.
     let cloned = state.clone();
     let select_completion = lua.create_function(move |lua, step| {
-        super::select_completion(lua, &mut cloned.lock(), step)
+        super::select_completion(lua, &mut cloned.borrow_mut(), step)
     })?;
 
     // Show the completion menu with all the currently available completion
     // candidates.
     let cloned = state.clone();
     let show_completions = lua.create_function(move |lua, ()| {
-        super::show_completions(lua, &mut cloned.lock())
+        super::show_completions(lua, &mut cloned.borrow_mut())
     })?;
 
     let opts = lua.create_table_from([("silent", true)])?;

@@ -83,7 +83,6 @@ version = "0.1.0"
 dependencies = [
  "compleet",
  "mlua",
- "parking_lot 0.10.2",
  "serde",
  "serde_path_to_error",
 ]

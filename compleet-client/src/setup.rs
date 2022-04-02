@@ -1,8 +1,7 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
 use mlua::serde::Deserializer;
-use parking_lot::Mutex;
 use serde_path_to_error::deserialize;
 
 use crate::bindings::r#fn;
@@ -14,7 +13,7 @@ use crate::{autocmds, commands, hlgroups, mappings, utils};
 /// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
-    state: &Rc<Mutex<State>>,
+    state: &Rc<RefCell<State>>,
     preferences: LuaValue,
 ) -> LuaResult<()> {
     // Setup the highlight groups used in the error messages.
@@ -76,32 +75,32 @@ pub fn setup(
     // early.
     if settings.sources.is_empty() {
         let chunks = vec![(
-            "No sources have been enabled. I'm feeling more useless than \
-             nipples on a man :(",
+            "No sources have been enabled, I'm more useless than nipples on \
+             a man :(",
             None,
         )];
         utils::echoerr(lua, chunks)?;
         return Ok(());
     }
 
-    // Lock the Mutex and update the state.
-    let locked = &mut state.lock();
-    locked.settings = settings;
+    // Update the state.
+    let mut borrowed = state.borrow_mut();
+    borrowed.settings = settings;
 
-    if !locked.did_setup {
+    if !borrowed.did_setup {
         let (id, registry_key) = autocmds::setup(lua, state)?;
 
-        locked.augroup_id = Some(id);
-        locked.try_buf_attach = Some(registry_key);
+        borrowed.augroup_id = Some(id);
+        borrowed.try_buf_attach = Some(registry_key);
 
         commands::setup(lua, state)?;
         hlgroups::setup(lua)?;
         mappings::setup(lua, state)?;
 
         // Spawn the RPC channel to commicate with the compleet server.
-        locked.channel = Some(Channel::new(lua)?);
+        borrowed.channel = Some(Channel::new(lua)?);
 
-        locked.did_setup = true;
+        borrowed.did_setup = true;
     }
 
     Ok(())

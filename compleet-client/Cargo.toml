@@ -14,10 +14,6 @@ path = "../compleet-server"
 version = "0.7"
 features = ["luajit", "vendored", "module", "serialize"]
 
-# Better `Mutex`es.
-[dependencies.parking_lot]
-version = "0.10"
-
 # Used to deserialize the Lua table passed to `require('compleet').setup`.
 [dependencies.serde]
 version = "1.0"

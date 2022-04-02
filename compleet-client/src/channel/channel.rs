@@ -1,7 +1,11 @@
-use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
+use mlua::{
+    prelude::{LuaError, LuaResult, LuaValue},
+    Lua,
+};
 
 use crate::bindings::{api, r#fn};
 
+#[derive(Debug)]
 pub struct Channel {
     _id: u32,
 }
