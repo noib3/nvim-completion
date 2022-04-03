@@ -84,7 +84,7 @@ fn get_cols_before_after_menu(
         - menu_width
         - if menu_border.has_right_edge() { 1 } else { 0 };
 
-    if menu_border.has_left_edge() {
+    if cols_before > 0 && menu_border.has_left_edge() {
         cols_before -= 1;
     }
 
