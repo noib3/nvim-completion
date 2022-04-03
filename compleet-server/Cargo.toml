@@ -11,6 +11,14 @@ version = "0.1"
 [dependencies.parking_lot]
 version = "0.10"
 
+# (De)serialize MessagePack values.
+[dependencies.rmp-serde]
+version = "1.0.0"
+
+# A MessagePack value.
+[dependencies.rmpv]
+version = "1.0.0"
+
 [dependencies.serde]
 version = "1.0"
 features = ["derive"]

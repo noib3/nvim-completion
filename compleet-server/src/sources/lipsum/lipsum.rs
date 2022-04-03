@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 
+use super::lorems::{LOREMS, LOREM_IPSUM};
 use crate::completion::{Completion, Completions};
 use crate::cursor::Cursor;
 use crate::source::Source;
-
-use super::constants::{LOREMS, LOREM_IPSUM};
 
 #[derive(Debug, Deserialize)]
 pub struct Lipsum {
@@ -37,7 +36,7 @@ impl Source for Lipsum {
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
             .map(|&word| Completion {
                 details: Some(
-                    LOREM_IPSUM.map(|word| word.to_string()).to_vec(),
+                    LOREM_IPSUM.iter().map(|word| word.to_string()).collect(),
                 ),
                 format: format!(" {}", word),
                 hl_ranges: vec![(
