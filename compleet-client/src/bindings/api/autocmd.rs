@@ -28,6 +28,7 @@ pub fn del_augroup_by_id(lua: &Lua, id: u32) -> LuaResult<()> {
         .call(id)
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_del_augroup_by_name`.
 pub fn del_augroup_by_name(lua: &Lua, name: &str) -> LuaResult<()> {
     super::api(lua)?

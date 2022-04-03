@@ -97,7 +97,7 @@ pub fn setup(
         borrowed.augroup_id = Some(id);
         borrowed.try_buf_attach = Some(registry_key);
 
-        borrowed.channel = Some(Channel::new(lua)?);
+        borrowed.channel = Some(Channel::new(lua, state)?);
         borrowed.did_setup = true;
         borrowed.ui = Some(Ui::new(lua, &borrowed.settings.ui)?);
     }
@@ -108,7 +108,7 @@ pub fn setup(
 fn to_chunks(msg: &str) -> Vec<(&'_ str, Option<&'static str>)> {
     msg.split('`')
         .enumerate()
-        .map(|(i, str)| match i % 2 == 1 {
+        .flat_map(|(i, str)| match i % 2 == 1 {
             true => vec![
                 ("`", None),
                 (str, Some("CompleetErrorMsgField")),
@@ -116,6 +116,5 @@ fn to_chunks(msg: &str) -> Vec<(&'_ str, Option<&'static str>)> {
             ],
             false => vec![(str, None)],
         })
-        .flatten()
         .collect()
 }

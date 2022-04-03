@@ -14,18 +14,7 @@ async fn main() -> io::Result<()> {
     // to stderr.
     tokio::spawn(async move {
         while let Some(message) = receiver.recv().await {
-            let msg = match message {
-                RpcMessage::Notification(rpc::message::RpcNotification {
-                    method,
-                    params: _,
-                }) => format!(
-                    "server received a notification w/ message \"{method}\""
-                ),
-
-                _ => todo!(),
-            };
-
-            match stderr.write_all(msg.as_bytes()).await {
+            match stderr.write_all(&Vec::<u8>::from(message)).await {
                 Ok(()) => {},
                 Err(_) => todo!(),
             };
