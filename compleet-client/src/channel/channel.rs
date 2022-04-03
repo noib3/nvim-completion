@@ -30,12 +30,12 @@ impl Channel {
             move |lua, (_id, data): (u32, Vec<mlua::String>)| {
                 // Convert the received data from a vector of Lua strings to a
                 // vector of raw bytes.
-                let data = data
+                let bytes = data
                     .into_iter()
                     .flat_map(|s| s.as_bytes().to_vec())
                     .collect::<Vec<u8>>();
 
-                super::on_stderr(lua, &mut cloned.borrow_mut(), data)
+                super::on_stderr(lua, &mut cloned.borrow_mut(), bytes)
             },
         )?;
 

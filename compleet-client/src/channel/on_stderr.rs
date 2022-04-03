@@ -1,13 +1,34 @@
+use compleet::rpc::message::*;
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::state::State;
+use crate::utils;
 
-/// Called when .
+/// Called when ...
 pub fn on_stderr(
     lua: &Lua,
     _state: &mut State,
-    data: Vec<u8>,
+    bytes: Vec<u8>,
 ) -> LuaResult<()> {
-    let print = lua.globals().get::<_, mlua::Function>("print")?;
-    print.call::<_, ()>(format!("got something!: {:?}", data))
+    let _ciao = bytes.clone();
+
+    match RpcMessage::try_from(bytes) {
+        Ok(message) => match message {
+            RpcMessage::Request(_req) => todo!(),
+            RpcMessage::Response(_rsp) => todo!(),
+            RpcMessage::Notification(_ntf) => todo!(),
+        },
+
+        Err(e) => utils::echoerr(
+            lua,
+            vec![(
+                // &format!("Couldn't decode message from server: {:?}",
+                // ciao),
+                &format!("Couldn't decode message from server: {e}"),
+                None,
+            )],
+        )?,
+    };
+
+    Ok(())
 }

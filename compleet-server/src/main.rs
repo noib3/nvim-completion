@@ -22,9 +22,8 @@ async fn main() -> io::Result<()> {
     });
 
     // Listen for new messages on stdin.
-    let mut queue = Vec::<u8>::new();
     loop {
-        match rpc::decode(&mut stdin, &mut queue).await {
+        match rpc::decode(&mut stdin).await {
             Ok(msg) => match msg {
                 RpcMessage::Request(req) => {
                     let sendr = sender.clone();
