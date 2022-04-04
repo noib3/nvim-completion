@@ -8,7 +8,7 @@ pub fn buf_add_highlight(
     lua: &Lua,
     bufnr: u32,
     ns_id: i32,
-    hl_group: &str,
+    hl_group: String,
     line: u32,
     col_start: u32,
     col_end: i32,
@@ -46,7 +46,7 @@ pub fn buf_set_extmark(
 }
 
 /// Binding to `vim.api.nvim_create_namespace`.
-pub fn create_namespace(lua: &Lua, name: &str) -> LuaResult<u32> {
+pub fn create_namespace(lua: &Lua, name: String) -> LuaResult<u32> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_create_namespace")?
         .call(name)

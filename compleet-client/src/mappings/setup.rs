@@ -6,29 +6,29 @@ use crate::bindings::api;
 use crate::state::State;
 
 pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
-    // Insert the currently hinted completion.
+    // Insert either the first or the selected completion into the buffer,
+    // depending on the value of `first`.
     let cloned = state.clone();
-    let insert_hinted_completion = lua.create_function(move |lua, ()| {
-        let borrowed = &mut cloned.borrow_mut();
-        if let Some(index) = borrowed.ui.as_ref().unwrap().hint.hinted_index {
-            super::insert_completion(lua, borrowed, index)?;
-        }
-        Ok(())
-    })?;
-
-    // Insert the currently selected completion.
-    let cloned = state.clone();
-    let insert_selected_completion = lua.create_function(move |lua, ()| {
-        let borrowed = &mut cloned.borrow_mut();
-        if let Some(index) = borrowed.ui.as_ref().unwrap().menu.selected_index
-        {
-            super::insert_completion(lua, borrowed, index)?;
+    let insert_completion = lua.create_function(move |lua, first| {
+        let state = cloned.borrow();
+        let maybe = match first {
+            true => state.completions.get(0),
+            false => state
+                .ui
+                .as_ref()
+                .unwrap()
+                .menu
+                .selected_index
+                .map(|i| &state.completions[i]),
+        };
+        if let Some(completion) = maybe {
+            super::insert_completion(lua, &state.cursor, &completion)?;
         }
         Ok(())
     })?;
 
     // Select either the previous or next completion in the completion menu
-    // based on the value of `step`.
+    // depending on the value of `step`.
     let cloned = state.clone();
     let select_completion = lua.create_function(move |lua, step| {
         super::select_completion(lua, &mut cloned.borrow_mut(), step)
@@ -43,16 +43,16 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
 
     let opts = lua.create_table_from([("silent", true)])?;
 
-    opts.set("callback", insert_hinted_completion)?;
+    opts.set("callback", insert_completion.bind(true)?)?;
     api::set_keymap(
         lua,
         "i",
-        "<Plug>(compleet-insert-hinted-completion)",
+        "<Plug>(compleet-insert-first-completion)",
         "",
         opts.clone(),
     )?;
 
-    opts.set("callback", insert_selected_completion)?;
+    opts.set("callback", insert_completion.bind(false)?)?;
     api::set_keymap(
         lua,
         "i",

@@ -34,7 +34,7 @@ pub fn win_get_option<'lua, V: FromLua<'lua>>(
 }
 
 /// Binding to `vim.api.nvim_win_get_position`
-pub fn win_get_position(lua: &Lua, winid: u32) -> LuaResult<(u32, u32)> {
+pub fn win_get_position(lua: &Lua, winid: u32) -> LuaResult<(u16, u16)> {
     let position = super::api(lua)?
         .get::<&str, LuaFunction>("nvim_win_get_position")?
         .call::<_, Table>(winid)?;

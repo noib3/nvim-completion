@@ -1,18 +1,15 @@
+use compleet::{completion::Completion, cursor::Cursor};
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::bindings::{api, nvim};
-use crate::state::State;
 
-/// Executed on both `<Plug>(compleet-insert-hinted-completion)` and
+/// Executed on both `<Plug>(compleet-insert-first-completion)` and
 /// `<Plug>(compleet-insert-selected-completion)`.
 pub fn insert_completion(
     lua: &Lua,
-    state: &mut State,
-    index: usize,
+    cursor: &Cursor,
+    completion: &Completion,
 ) -> LuaResult<()> {
-    let completion = &state.completions[index];
-    let cursor = &state.cursor;
-
     let text_to_insert = get_text_to_insert(
         completion.matched_bytes as usize,
         &cursor.line[cursor.bytes as usize..],
@@ -32,7 +29,7 @@ pub fn insert_completion(
 
     let insert_completion = lua
         .create_function(move |lua, (row, col, text): (u32, u32, String)| {
-            api::buf_set_text(lua, 0, row, col, row, col, &[text])?;
+            api::buf_set_text(lua, 0, row, col, row, col, vec![text])?;
             api::win_set_cursor(lua, 0, row + 1, end_column as u32)?;
             Ok(())
         })?

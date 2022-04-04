@@ -15,6 +15,7 @@ pub fn open_win(
         .call((bufnr, enter, config))
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_win_get_config`.
 pub fn win_get_config(lua: &Lua, winid: u32) -> LuaResult<Table> {
     super::api(lua)?

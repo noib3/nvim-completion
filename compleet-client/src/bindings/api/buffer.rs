@@ -17,6 +17,7 @@ pub fn buf_attach(
         .call((bufnr, send_buffer, opts))
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_buf_call`.
 pub fn buf_call(lua: &Lua, bufnr: u32, fun: LuaFunction) -> LuaResult<()> {
     super::api(lua)?
@@ -49,49 +50,30 @@ pub fn buf_get_option<'lua, V: FromLua<'lua>>(
 }
 
 /// Binding to `vim.api.nvim_buf_set_lines`.
-pub fn buf_set_lines<L: AsRef<str>>(
+pub fn buf_set_lines(
     lua: &Lua,
     bufnr: u32,
     start: u32,
     end: i32,
     strict_indexing: bool,
-    replacement: &[L],
+    replacement: Vec<String>,
 ) -> LuaResult<()> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_buf_set_lines")?
-        .call((
-            bufnr,
-            start,
-            end,
-            strict_indexing,
-            replacement
-                .iter()
-                .map(|l| l.as_ref())
-                .collect::<Vec<&str>>(),
-        ))
+        .call((bufnr, start, end, strict_indexing, replacement))
 }
 
 /// Binding to `vim.api.nvim_buf_set_text`.
-pub fn buf_set_text<L: AsRef<str>>(
+pub fn buf_set_text(
     lua: &Lua,
     bufnr: u32,
     start_row: u32,
     start_col: u32,
     end_row: u32,
     end_col: u32,
-    replacement: &[L],
+    replacement: Vec<String>,
 ) -> LuaResult<()> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_buf_set_text")?
-        .call((
-            bufnr,
-            start_row,
-            start_col,
-            end_row,
-            end_col,
-            replacement
-                .iter()
-                .map(|l| l.as_ref())
-                .collect::<Vec<&str>>(),
-        ))
+        .call((bufnr, start_row, start_col, end_row, end_col, replacement))
 }

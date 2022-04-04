@@ -15,7 +15,7 @@ async fn main() -> io::Result<()> {
     tokio::spawn(async move {
         while let Some(message) = receiver.recv().await {
             // let bytes: Vec<u8> = message.into();
-            // std::fs::write("/home/noib3/diocan2", format!("{:?}", bytes))
+            // std::fs::write("/home/noib3/log2", format!("{:?}", bytes))
             //     .unwrap();
             match stderr.write_all(&Vec::<u8>::from(message)).await {
                 Ok(()) => {},

@@ -14,13 +14,19 @@ pub fn on_exit(lua: &Lua, state: &mut State, exit_code: u32) -> LuaResult<()> {
 
         // Every other exit code should be considered an error.
         num => {
-            // Cleanup the UI.
-            ui::cleanup(lua, &mut state.ui.as_mut().unwrap())?;
-
             // Remove all the autocmds.
             if let Some(id) = state.augroup_id {
                 api::del_augroup_by_id(lua, id)?;
+                state.augroup_id = None;
             }
+
+            // Detach all the attached buffers.
+            state
+                .buffers_to_be_detached
+                .append(&mut state.attached_buffers);
+
+            // Cleanup the UI.
+            ui::cleanup(lua, state.ui.as_mut().unwrap())?;
 
             // Echo an error message to the user.
             utils::echoerr(

@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::NonZeroUsize;
 
 use serde::{Deserialize, Deserializer};
 
@@ -14,7 +14,7 @@ pub struct MenuSettings {
     pub autoshow: bool,
 
     #[serde(default)]
-    pub max_height: Option<NonZeroU32>,
+    pub max_height: Option<NonZeroUsize>,
 
     #[serde(deserialize_with = "deserialize_menu_border")]
     #[serde(default = "default_menu_border")]

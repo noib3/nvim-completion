@@ -42,7 +42,7 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
 
     let cloned = state.clone();
     let is_hint_visible = lua.create_function(move |_lua, ()| {
-        Ok(cloned.borrow().ui.as_ref().unwrap().hint.is_visible())
+        Ok(cloned.borrow().ui.as_ref().unwrap().hint.is_visible)
     })?;
 
     let cloned = state.clone();

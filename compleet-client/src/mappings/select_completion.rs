@@ -1,34 +1,30 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
 use crate::state::State;
 
-/// Executed on `<Plug>(compleet-next-completion)` and
-/// `<Plug>(compleet-prev-completion)`.
+/// Executed on `<Plug>(compleet-{prev,next}-completion)`.
 pub fn select_completion(
     lua: &Lua,
     state: &mut State,
     step: i8, // either 1 or -1
 ) -> LuaResult<()> {
-    let ui = &mut state.ui.as_mut().unwrap();
+    let ui = state.ui.as_mut().unwrap();
 
+    // If the completion menu isn't open this is a no-op.
     if !ui.menu.floater.is_open() {
         return Ok(());
     }
 
-    // let menu = &mut state.ui.completion_menu;
-    // let completions = &state.completions;
-
     let last_index = state.completions.len() - 1;
     let new_index = match step {
-        // Selecting the next completion
+        // +1 => selecting the next completion.
         1 => match ui.menu.selected_index {
             Some(index) if index == last_index => None,
             Some(index) => Some(index + 1),
             None => Some(0),
         },
 
-        // Selecting the previous completion
+        // -1 => selecting the previous completion.
         -1 => match ui.menu.selected_index {
             Some(index) if index == 0 => None,
             Some(index) => Some(index - 1),
@@ -38,44 +34,20 @@ pub fn select_completion(
         _ => unreachable!(),
     };
 
-    // let hint = &mut state.ui.completion_hint;
-    // let details = &mut state.ui.completion_details;
-    // let cursor = &state.cursor;
+    // Select the new completion.
+    ui.menu.select(lua, new_index)?;
 
-    // // Select the new completion.
-    // menu.select(&api, new_index)?;
+    // Update the details window.
+    let maybe = new_index.and_then(|i| state.completions.get(i));
+    ui.details.update(lua, maybe, &ui.menu.floater, false)?;
 
-    // // Update the completion details.
-    // let menu_winid = menu
-    //     .winid
-    //     .expect("The menu is visible so it has a window id");
-
-    // let menu_width =
-    //     menu.width.expect("The menu is visible so it has a width");
-
-    // let lines = new_index.and_then(|i| completions[i].details.as_ref());
-
-    // details.update(
-    //     lua,
-    //     &api,
-    //     lines,
-    //     &state.settings.ui.details.border,
-    //     menu_width,
-    //     menu_winid,
-    //     &state.settings.ui.menu.border,
-    //     false,
-    // )?;
-
-    // // Update the completion hint.
-    // if state.settings.ui.hint.enable && cursor.is_at_eol() {
-    //     if let Some(index) = new_index {
-    //         let completion = &completions[index];
-    //         let text = &completion.text[(completion.matched_bytes as
-    // usize)..];         hint.set(lua, &api, text, cursor, index)?;
-    //     } else {
-    //         hint.erase(&api)?;
-    //     }
-    // }
+    // Update the completion hint.
+    if state.settings.ui.hint.enable && state.cursor.is_at_eol() {
+        match maybe {
+            Some(completion) => ui.hint.set(lua, completion, &state.cursor)?,
+            None => ui.hint.erase(lua)?,
+        }
+    }
 
     Ok(())
 }

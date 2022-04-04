@@ -17,8 +17,6 @@ pub struct Channel(u32);
 impl Channel {
     /// Spawns a new RPC channel via `vim.fn.jobstart`.
     pub fn new(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<Channel> {
-        let path = get_compleet_server_path(lua)?;
-
         let cloned = state.clone();
         let on_exit =
             lua.create_function(move |lua, (_id, code): (u32, _)| {
@@ -46,6 +44,8 @@ impl Channel {
             ("on_stderr", LuaValue::Function(on_stderr)),
             ("rpc", LuaValue::Boolean(true)),
         ])?;
+
+        let path = self::compleet_server_path(lua)?;
 
         let id = match r#fn::jobstart(lua, &[path], opts)? {
             -1 => {
@@ -75,14 +75,18 @@ impl Channel {
     }
 }
 
-/// Returns the full path of the `compleet-server` binary.
-fn get_compleet_server_path(lua: &Lua) -> LuaResult<String> {
-    match api::get_runtime_file(lua, "lua/compleet", false)? {
+/// Returns the full path of the compleet server binary.
+fn compleet_server_path(lua: &Lua) -> LuaResult<String> {
+    match api::get_runtime_file(
+        lua,
+        &format!("lua/{COMPLEET_SERVER_BINARY_NAME}"),
+        false,
+    )? {
         // TODO: custom error
-        v if v.is_empty() => Err(LuaError::RuntimeError(format!(
+        vec if vec.is_empty() => Err(LuaError::RuntimeError(format!(
             "Couldn't find the `{COMPLEET_SERVER_BINARY_NAME}` binary :("
         ))),
 
-        v => Ok(v.into_iter().nth(0).expect("Already checked empty variant")),
+        vec => Ok(vec.into_iter().nth(0).expect("Already checked empty")),
     }
 }
