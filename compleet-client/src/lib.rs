@@ -1,3 +1,5 @@
+#![feature(iter_intersperse)]
+
 use std::{cell::RefCell, rc::Rc};
 
 use mlua::{prelude::LuaResult, Lua, Table};

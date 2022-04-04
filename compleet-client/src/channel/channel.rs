@@ -32,7 +32,9 @@ impl Channel {
                 // vector of raw bytes.
                 let bytes = data
                     .into_iter()
-                    .flat_map(|s| s.as_bytes().to_vec())
+                    .map(|s| s.as_bytes().to_vec())
+                    .intersperse(vec![b'\n'])
+                    .flatten()
                     .collect::<Vec<u8>>();
 
                 super::on_stderr(lua, &mut cloned.borrow_mut(), bytes)

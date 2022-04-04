@@ -12,7 +12,7 @@ pub fn on_exit(lua: &Lua, state: &mut State, exit_code: u32) -> LuaResult<()> {
         // the user quits Neovim, which is not an error.
         143 => {},
 
-        // All others exit codes should be considered errors.
+        // Every other exit code should be considered an error.
         num => {
             // Cleanup the UI.
             ui::cleanup(lua, &mut state.ui.as_mut().unwrap())?;

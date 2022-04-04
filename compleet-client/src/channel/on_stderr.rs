@@ -7,26 +7,28 @@ use crate::utils;
 /// Called when ...
 pub fn on_stderr(
     lua: &Lua,
-    _state: &mut State,
+    state: &mut State,
     bytes: Vec<u8>,
 ) -> LuaResult<()> {
     let _ciao = bytes.clone();
 
+    // TODO: spawn a new oneshot channel to do the conversion.
+    // std::thread::sleep(std::time::Duration::from_secs(3));
+
     match RpcMessage::try_from(bytes) {
         Ok(message) => match message {
-            RpcMessage::Request(_req) => todo!(),
-            RpcMessage::Response(_rsp) => todo!(),
-            RpcMessage::Notification(_ntf) => todo!(),
+            RpcMessage::Request(_req) => {},
+
+            RpcMessage::Response(_rsp) => {},
+
+            RpcMessage::Notification(ntf) => {
+                super::handle_notify(lua, state, ntf)?
+            },
         },
 
         Err(e) => utils::echoerr(
             lua,
-            vec![(
-                // &format!("Couldn't decode message from server: {:?}",
-                // ciao),
-                &format!("Couldn't decode message from server: {e}"),
-                None,
-            )],
+            vec![(&format!("Couldn't decode message from server: {e}"), None)],
         )?,
     };
 
