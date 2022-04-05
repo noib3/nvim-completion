@@ -20,7 +20,7 @@ mod utils;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    let state = Rc::new(RefCell::new(State::new()));
+    let state = Rc::new(RefCell::new(State::default()));
 
     let cloned = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {
@@ -30,24 +30,17 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
 
     let cloned = state.clone();
     let is_completion_selected = lua.create_function(move |_lua, ()| {
-        Ok(cloned
-            .borrow()
-            .ui
-            .as_ref()
-            .unwrap()
-            .menu
-            .selected_index
-            .is_some())
+        Ok(cloned.borrow().ui.menu.selected_index.is_some())
     })?;
 
     let cloned = state.clone();
     let is_hint_visible = lua.create_function(move |_lua, ()| {
-        Ok(cloned.borrow().ui.as_ref().unwrap().hint.is_visible)
+        Ok(cloned.borrow().ui.hint.is_visible)
     })?;
 
     let cloned = state.clone();
     let is_menu_open = lua.create_function(move |_lua, ()| {
-        Ok(cloned.borrow().ui.as_ref().unwrap().menu.floater.is_open())
+        Ok(cloned.borrow().ui.menu.floater.is_open())
     })?;
 
     let setup = lua.create_function(move |lua, preferences| {

@@ -8,7 +8,7 @@ use crate::channel::Channel;
 use crate::settings::Settings;
 use crate::ui::Ui;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct State {
     /// The buffer numbers of the currently attached buffers.
     pub attached_buffers: Vec<u32>,
@@ -26,7 +26,7 @@ pub struct State {
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The channel used to communicate with the server.
-    pub channel: Option<Channel>,
+    pub channel: Channel,
 
     /// The currently available completion items.
     pub completions: Completions,
@@ -48,24 +48,5 @@ pub struct State {
     pub try_buf_attach: Option<LuaRegistryKey>,
 
     /// The current state of the UI.
-    pub ui: Option<Ui>,
-}
-
-impl State {
-    pub fn new() -> Self {
-        State {
-            attached_buffers: Vec::new(),
-            augroup_id: None,
-            channel: None,
-            buffer_local_autocmds: HashMap::new(),
-            buffers_to_be_detached: Vec::new(),
-            completions: Vec::new(),
-            cursor: Cursor::default(),
-            did_on_bytes: false,
-            did_setup: false,
-            settings: Settings::default(),
-            try_buf_attach: None,
-            ui: None,
-        }
-    }
+    pub ui: Ui,
 }

@@ -29,14 +29,16 @@ async fn handle_notification(ntf: incoming::Notification, sender: Sender) {
         StopTasks => {},
 
         SendCompletions(_bufnr, _cursor) => {
-            let cmp = vec![crate::completion::Completion {
+            let cmp = crate::completion::Completion {
                 details: None,
                 format: "Okdoc!!".into(),
                 text: "Hi".into(),
                 hl_ranges: Vec::new(),
                 source: "lsp".into(),
                 matched_bytes: 1,
-            }];
+            };
+
+            let cmp = vec![cmp; 15];
 
             let not = outgoing::Notification::ServeCompletions(cmp).into();
 

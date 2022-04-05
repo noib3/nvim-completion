@@ -26,7 +26,7 @@ pub fn on_exit(lua: &Lua, state: &mut State, exit_code: u32) -> LuaResult<()> {
                 .append(&mut state.attached_buffers);
 
             // Cleanup the UI.
-            ui::cleanup(lua, state.ui.as_mut().unwrap())?;
+            ui::cleanup(lua, &mut state.ui)?;
 
             // Echo an error message to the user.
             utils::echoerr(

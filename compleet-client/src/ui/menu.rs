@@ -8,7 +8,7 @@ use super::floater::Floater;
 use crate::bindings::{api, r#fn};
 use crate::settings::ui::menu::MenuSettings;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CompletionMenu {
     /// Number of the buffer used to show the completions. It's created on
     /// once in `CompletionMenu::new` and never changes.
@@ -50,7 +50,9 @@ impl CompletionMenu {
     }
 
     /// Whether a completion is currently selected.
-    pub fn is_item_selected(&self) -> bool { self.selected_index.is_some() }
+    pub fn is_item_selected(&self) -> bool {
+        self.selected_index.is_some()
+    }
 
     /// Selects a new completion. Should only be called if the completion menu
     /// is already open.

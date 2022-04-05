@@ -36,7 +36,7 @@ fn detach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
         // Cleanup the UI in case the user has somehow executed
         // `CompleetStop!` without exiting insert mode (for example via an
         // autocmd. Unlikely but possible).
-        ui::cleanup(lua, state.ui.as_mut().unwrap())?;
+        ui::cleanup(lua, &mut state.ui)?;
 
         api::notify(
             lua,
@@ -69,7 +69,7 @@ fn detach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
     state.attached_buffers.retain(|&b| b != bufnr);
     state.buffers_to_be_detached.push(bufnr);
 
-    ui::cleanup(lua, state.ui.as_mut().unwrap())?;
+    ui::cleanup(lua, &mut state.ui)?;
 
     // Delete all the buffer-local autocmds we had set for this buffer.
     for autocmd_id in state

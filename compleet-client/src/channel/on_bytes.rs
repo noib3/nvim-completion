@@ -68,8 +68,6 @@ pub fn on_bytes(
     // buffer.
     state
         .channel
-        .as_ref()
-        .unwrap()
         .notify(lua, Notification::SendCompletions(bufnr, cursor.clone()))?;
 
     state.did_on_bytes = true;

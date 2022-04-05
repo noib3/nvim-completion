@@ -7,7 +7,7 @@ use super::floater::{Floater, RelativeTo};
 use crate::bindings::api;
 use crate::settings::ui::details::DetailsSettings;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CompletionDetails {
     /// Number of the buffer used to show the completion details. It's created
     /// once in `CompletionDetails::new` and never changes.

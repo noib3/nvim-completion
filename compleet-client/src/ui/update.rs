@@ -20,7 +20,7 @@ pub fn update(
     state: &mut State,
     new: Completions,
 ) -> LuaResult<()> {
-    let ui = state.ui.as_mut().unwrap();
+    let ui = &mut state.ui;
     let settings = &state.settings;
 
     // TODO

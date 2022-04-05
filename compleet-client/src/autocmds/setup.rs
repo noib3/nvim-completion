@@ -12,22 +12,18 @@ pub fn setup(
     lua: &Lua,
     state: &Rc<RefCell<State>>,
 ) -> LuaResult<(u32, LuaRegistryKey)> {
-    // Called on every `InsertLeave` event of attached buffers.
+    // Called on every `InsertLeave` event in attached buffers.
     let cloned = state.clone();
     let insert_leave = move |lua, ()| {
-        let mut borrowed = cloned.borrow_mut();
+        let mut state = cloned.borrow_mut();
         // Send a notification to the server to stop all running tasks, then
         // cleanup the UI.
-        borrowed
-            .channel
-            .as_ref()
-            .unwrap()
-            .notify(lua, Notification::StopTasks)?;
-        ui::cleanup(lua, &mut borrowed.ui.as_mut().unwrap())?;
+        state.channel.notify(lua, Notification::StopTasks)?;
+        ui::cleanup(lua, &mut state.ui)?;
         Ok(())
     };
 
-    // Called on every `CursorMovedI` event of attached buffers.
+    // Called on every `CursorMovedI` event in attached buffers.
     let cloned = state.clone();
     let cursor_moved_i = move |lua, ()| {
         let mut borrowed = cloned.borrow_mut();
@@ -39,12 +35,8 @@ pub fn setup(
         // If not we send a notification to the server to stop any running
         // tasks and cleanup the UI.
         else {
-            borrowed
-                .channel
-                .as_ref()
-                .unwrap()
-                .notify(lua, Notification::StopTasks)?;
-            ui::cleanup(lua, &mut borrowed.ui.as_mut().unwrap())?;
+            borrowed.channel.notify(lua, Notification::StopTasks)?;
+            ui::cleanup(lua, &mut borrowed.ui)?;
         }
         Ok(())
     };

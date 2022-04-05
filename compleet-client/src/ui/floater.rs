@@ -8,7 +8,7 @@ use crate::bindings::api;
 use crate::settings::ui::border::Border;
 
 /// Abstracts Neovim's floating windows (see `:h api-floatwin` for details).
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Floater {
     /// An array of the form `[top_edge, bottom_edge, left_edge, right_edge]`
     /// where each element is `true` if that edge of the border is present.

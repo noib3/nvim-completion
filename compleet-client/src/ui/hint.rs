@@ -3,7 +3,7 @@ use mlua::{prelude::LuaResult, Lua, ToLua};
 
 use crate::bindings::api;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CompletionHint {
     /// Whether the completion hint is currenty visible.
     pub is_visible: bool,

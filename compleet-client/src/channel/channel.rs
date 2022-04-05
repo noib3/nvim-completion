@@ -13,7 +13,7 @@ use crate::bindings::{api, nvim, r#fn};
 use crate::constants::*;
 use crate::state::State;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Channel(u32);
 
 impl Channel {
@@ -66,6 +66,7 @@ impl Channel {
 
     /// Sends a notification to the server.
     pub fn notify(&self, lua: &Lua, ntf: Notification) -> LuaResult<()> {
+        // TODO: this is ugly
         let (method, params) = match RpcMessage::from(ntf) {
             RpcMessage::Notification { method, params } => {
                 let params = params
@@ -121,11 +122,3 @@ fn compleet_server_path(lua: &Lua) -> LuaResult<String> {
         vec => Ok(vec.into_iter().nth(0).expect("Already checked empty")),
     }
 }
-
-// impl<'lua> TryFrom<Notification> for (String, Vec<LuaValue<'lua>>) {
-//     type Error = LuaError;
-
-//     fn try_from(ntf: Notification) -> LuaResult<Self> {
-//         todo!()
-//     }
-// }

@@ -8,7 +8,7 @@ pub fn select_completion(
     state: &mut State,
     step: i8, // either 1 or -1
 ) -> LuaResult<()> {
-    let ui = state.ui.as_mut().unwrap();
+    let ui = &mut state.ui;
 
     // If the completion menu isn't open this is a no-op.
     if !ui.menu.floater.is_open() {

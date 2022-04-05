@@ -6,7 +6,7 @@ use super::menu::CompletionMenu;
 use crate::settings::ui::UiSettings;
 
 /// The client UI is composed of the following 3 independent pieces.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Ui {
     /// A hint used to show the text that would be inserted in the buffer if
     /// a completion was accepted.

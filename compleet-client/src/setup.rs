@@ -28,7 +28,7 @@ pub fn setup(
     }
 
     // Try to merge the `preferences` table with the default settings, echoing
-    // an error message and returning early if something is wront.
+    // an error message and returning early if something goes wrong.
     let settings = match preferences {
         LuaValue::Nil => Settings::default(),
 
@@ -97,9 +97,9 @@ pub fn setup(
         borrowed.augroup_id = Some(id);
         borrowed.try_buf_attach = Some(registry_key);
 
-        borrowed.channel = Some(Channel::new(lua, state)?);
+        borrowed.channel = Channel::new(lua, state)?;
         borrowed.did_setup = true;
-        borrowed.ui = Some(Ui::new(lua, &borrowed.settings.ui)?);
+        borrowed.ui = Ui::new(lua, &borrowed.settings.ui)?;
     }
 
     Ok(())

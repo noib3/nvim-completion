@@ -17,13 +17,12 @@ pub enum Notification {
 impl From<Notification> for RpcMessage {
     fn from(ntf: Notification) -> RpcMessage {
         let (method, params) = match ntf {
-            Notification::ServeCompletions(_completions) => (
+            Notification::ServeCompletions(completions) => (
                 SERVE_COMPLETIONS_METHOD_NAME.into(),
-                Vec::new()
-                // completions
-                //     .into_iter()
-                //     .map(|c| Value::from(c))
-                //     .collect::<Vec<Value>>(),
+                completions
+                    .into_iter()
+                    .map(|c| Value::from(c))
+                    .collect::<Vec<Value>>(),
             ),
         };
 
@@ -39,12 +38,12 @@ impl TryFrom<(String, Vec<Value>)> for Notification {
         (method, params): (String, Vec<Value>),
     ) -> Result<Notification, Self::Error> {
         match (method.as_ref(), params) {
-            (SERVE_COMPLETIONS_METHOD_NAME, _vec) => {
-                let completions = Vec::new();
-                // vec
-                // .into_iter()
-                // .flat_map(|v| Completion::try_from(v))
-                // .collect::<Completions>()),
+            (SERVE_COMPLETIONS_METHOD_NAME, vec) => {
+                let completions = vec
+                    .into_iter()
+                    .flat_map(|v| Completion::try_from(v))
+                    .collect::<Completions>();
+
                 Ok(Notification::ServeCompletions(completions))
             },
 
