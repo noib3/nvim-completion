@@ -4,7 +4,7 @@ use std::iter::IntoIterator;
 use rmpv::Value;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-use super::message::{RpcMessage, RpcNotification, RpcRequest, RpcResponse};
+use super::message::RpcMessage;
 use super::DecodingError;
 
 // A first implementation of an RPC message decoder.
@@ -76,7 +76,11 @@ impl TryFrom<Vec<u8>> for RpcMessage {
                         "expected a vector of values as the request params"
                     })?;
 
-                Ok(RpcMessage::Request(RpcRequest { id, method, params }))
+                Ok(RpcMessage::Request {
+                    msgid: id,
+                    method,
+                    params,
+                })
             },
 
             1 => {
@@ -96,7 +100,11 @@ impl TryFrom<Vec<u8>> for RpcMessage {
                     .next()
                     .ok_or("responses should have 3 elements, only got 2")?;
 
-                Ok(RpcMessage::Response(RpcResponse { id, error, result }))
+                Ok(RpcMessage::Response {
+                    msgid: id,
+                    error,
+                    result,
+                })
             },
 
             2 => {
@@ -125,10 +133,7 @@ impl TryFrom<Vec<u8>> for RpcMessage {
                          params"
                     })?;
 
-                Ok(RpcMessage::Notification(RpcNotification {
-                    method,
-                    params,
-                }))
+                Ok(RpcMessage::Notification { method, params })
             },
 
             _ => Err(DecodingError::Custom("a message type can be 0, 1 or 2")),

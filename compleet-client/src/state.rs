@@ -60,7 +60,7 @@ impl State {
             buffer_local_autocmds: HashMap::new(),
             buffers_to_be_detached: Vec::new(),
             completions: Vec::new(),
-            cursor: Cursor::new(),
+            cursor: Cursor::default(),
             did_on_bytes: false,
             did_setup: false,
             settings: Settings::default(),

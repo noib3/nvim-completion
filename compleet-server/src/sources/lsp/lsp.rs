@@ -11,7 +11,9 @@ pub struct Lsp {
 }
 
 impl Default for Lsp {
-    fn default() -> Self { Lsp { enable: false } }
+    fn default() -> Self {
+        Lsp { enable: false }
+    }
 }
 
 /*
@@ -48,7 +50,7 @@ impl Source for Lsp {
             format: " Lsp".into(),
             hl_ranges: vec![],
             matched_bytes: 1,
-            source: "Lsp",
+            source: "Lsp".into(),
             text: "Lsp".into(),
         };
 

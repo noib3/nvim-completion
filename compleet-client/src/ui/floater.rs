@@ -125,7 +125,9 @@ impl Floater {
     }
 
     /// Whether the floater is currently open.
-    pub fn is_open(&self) -> bool { self.id.is_some() }
+    pub fn is_open(&self) -> bool {
+        self.id.is_some()
+    }
 
     /// Opens a new floater
     pub fn open(

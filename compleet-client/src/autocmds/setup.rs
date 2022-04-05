@@ -1,9 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
+use compleet::api::incoming::Notification;
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
 
 use crate::bindings::api;
-use crate::channel::{self, message::Notification};
+use crate::channel;
 use crate::state::State;
 use crate::ui;
 

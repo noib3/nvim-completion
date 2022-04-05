@@ -18,6 +18,7 @@ version = "1.0.0"
 # A MessagePack value.
 [dependencies.rmpv]
 version = "1.0.0"
+features = ["with-serde"]
 
 [dependencies.serde]
 version = "1.0"

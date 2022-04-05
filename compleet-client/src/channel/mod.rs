@@ -1,6 +1,5 @@
 mod channel;
 mod handle_notify;
-pub mod message;
 mod on_bytes;
 mod on_exit;
 mod on_stderr;

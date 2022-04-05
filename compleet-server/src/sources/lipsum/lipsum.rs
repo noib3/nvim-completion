@@ -12,13 +12,17 @@ pub struct Lipsum {
 }
 
 impl Default for Lipsum {
-    fn default() -> Self { Lipsum { enable: false } }
+    fn default() -> Self {
+        Lipsum { enable: false }
+    }
 }
 
 #[async_trait]
 impl Source for Lipsum {
     // Attach to all buffers.
-    fn attach(&self, _bufnr: u32) -> bool { true }
+    fn attach(&self, _bufnr: u32) -> bool {
+        true
+    }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {
         let word_pre = cursor.word_pre();
@@ -41,10 +45,10 @@ impl Source for Lipsum {
                 format: format!(" {}", word),
                 hl_ranges: vec![(
                     1..word_pre.len() + 1,
-                    "CompleetMenuMatchingChars",
+                    "CompleetMenuMatchingChars".into(),
                 )],
                 matched_bytes: word_pre.len() as u32,
-                source: "Lipsum",
+                source: "Lipsum".into(),
                 text: word.to_string(),
             })
             .collect()

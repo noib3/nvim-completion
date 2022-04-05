@@ -1,4 +1,7 @@
-#[derive(Debug)]
+use rmpv::Value;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.
     pub bytes: u32,
@@ -10,22 +13,73 @@ pub struct Cursor {
     pub row: u32,
 }
 
-impl Cursor {
-    pub fn new() -> Self {
+impl Default for Cursor {
+    fn default() -> Self {
         Cursor {
             bytes: 0,
-            line: "".to_string(),
+            line: "".into(),
             row: 0,
         }
     }
 }
 
+/// Encode a `Cursor` into a vector of msgpack values.
+impl From<Cursor> for Vec<Value> {
+    fn from(cursor: Cursor) -> Vec<Value> {
+        vec![
+            Value::from(cursor.bytes),
+            Value::from(cursor.line),
+            Value::from(cursor.row),
+        ]
+    }
+}
+
+/// Try to decode a `Cursor` from a vector of msgpack values.
+impl TryFrom<Vec<Value>> for Cursor {
+    type Error = &'static str;
+
+    fn try_from(vec: Vec<Value>) -> Result<Cursor, Self::Error> {
+        if vec.len() != 3 {
+            return Err("cursor array should have 3 values");
+        }
+
+        let mut iter = vec.into_iter();
+
+        let bytes = match iter.next() {
+            Some(Value::Integer(n)) if n.is_u64() => {
+                n.as_u64().expect("already checked that it's a u64") as u32
+            },
+            _ => return Err("bytes arent't valid"),
+        };
+
+        let line = match iter.next() {
+            Some(Value::String(s)) if s.is_str() => {
+                s.into_str().expect("already checked that it's valid utf8")
+            },
+            _ => return Err("line isn't valid"),
+        };
+
+        let row = match iter.next() {
+            Some(Value::Integer(n)) if n.is_u64() => {
+                n.as_u64().expect("already checked that it's a u64") as u32
+            },
+            _ => return Err("row isn't valid"),
+        };
+
+        Ok(Cursor { bytes, line, row })
+    }
+}
+
 impl Cursor {
     /// Whether the cursor is at the end of the line.
-    pub fn is_at_eol(&self) -> bool { self.bytes as usize == self.line.len() }
+    pub fn is_at_eol(&self) -> bool {
+        self.bytes as usize == self.line.len()
+    }
 
     /// Whether the cursor is at the start of the line.
-    pub fn _is_at_sol(&self) -> bool { self.bytes == 0 }
+    pub fn _is_at_sol(&self) -> bool {
+        self.bytes == 0
+    }
 
     /// The number of bytes between the cursor and the first whitespace
     /// character before it.
@@ -82,7 +136,9 @@ mod tests {
 
     #[test]
     // `|`
-    fn empty_line() { assert_eq!("".len(), _get_matched_bytes("", 0)) }
+    fn empty_line() {
+        assert_eq!("".len(), _get_matched_bytes("", 0))
+    }
 
     #[test]
     // `|foo`

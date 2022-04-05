@@ -1,7 +1,7 @@
+use compleet::api::incoming::Notification;
 use mlua::{prelude::LuaResult, Lua};
 
 use crate::bindings::api;
-use crate::channel::message::Notification;
 use crate::state::State;
 
 /// Executed every time a byte or a group of bytes in an attached buffer is
@@ -64,12 +64,13 @@ pub fn on_bytes(
         )?;
     }
 
-    // TODO: send a notification to the server
+    // Send a notification to the server to send completion results for this
+    // buffer.
     state
         .channel
         .as_ref()
         .unwrap()
-        .notify(lua, Notification::Completions)?;
+        .notify(lua, Notification::SendCompletions(bufnr, cursor.clone()))?;
 
     state.did_on_bytes = true;
 

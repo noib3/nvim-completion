@@ -1,29 +1,23 @@
-use compleet::completion::Completion;
-use compleet::rpc::message::RpcNotification;
+use compleet::api::outgoing::Notification;
 use mlua::{prelude::LuaResult, Lua};
 
-use crate::bindings::nvim;
 use crate::state::State;
 use crate::ui;
 
 pub fn handle_notify(
     lua: &Lua,
     state: &mut State,
-    notification: RpcNotification,
+    ntf: Notification,
 ) -> LuaResult<()> {
-    nvim::print(
-        lua,
-        format!("Got a notification with method: {}", notification.method),
-    )?;
+    match ntf {
+        Notification::ServeCompletions(completions) => {
+            if completions.is_empty() {
+                crate::bindings::nvim::print(lua, "Got empty completions!")?;
+                return Ok(());
+            }
 
-    let cmp = Completion {
-        details: None,
-        format: notification.method,
-        text: "Hi".into(),
-        hl_ranges: Vec::new(),
-        source: "lsp",
-        matched_bytes: 1,
-    };
-
-    ui::update(lua, state, vec![cmp])
+            ui::update(lua, state, completions)
+        },
+        // _ => Ok(()),
+    }
 }

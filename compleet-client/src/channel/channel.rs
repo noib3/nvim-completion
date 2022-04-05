@@ -1,12 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use compleet::api::incoming::{Notification, Request};
+use compleet::rpc::RpcMessage;
 use mlua::{
-    prelude::{LuaError, LuaResult, LuaValue},
+    prelude::{LuaError, LuaResult, LuaString, LuaValue},
     Lua,
+    LuaSerdeExt,
 };
 
-use super::message::{Notification, Request};
 use crate::bindings::{api, nvim, r#fn};
 use crate::constants::*;
 use crate::state::State;
@@ -15,7 +17,7 @@ use crate::state::State;
 pub struct Channel(u32);
 
 impl Channel {
-    /// Spawns a new RPC channel via `vim.fn.jobstart`.
+    /// Opens a new RPC channel via `vim.fn.jobstart`.
     pub fn new(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<Channel> {
         let cloned = state.clone();
         let on_exit =
@@ -25,12 +27,12 @@ impl Channel {
 
         let cloned = state.clone();
         let on_stderr = lua.create_function(
-            move |lua, (_id, data): (u32, Vec<mlua::String>)| {
-                // Convert the received data from a vector of Lua strings to a
-                // vector of raw bytes.
+            move |lua, (_id, data): (u32, Vec<LuaString>)| {
+                // Convert the received data from Lua strings to raw bytes.
                 let bytes = data
                     .into_iter()
                     .map(|s| s.as_bytes().to_vec())
+                    // Re-add a newline byte between every string byte chunk.
                     .intersperse(vec![b'\n'])
                     .flatten()
                     .collect::<Vec<u8>>();
@@ -64,14 +66,43 @@ impl Channel {
 
     /// Sends a notification to the server.
     pub fn notify(&self, lua: &Lua, ntf: Notification) -> LuaResult<()> {
-        let (event, args) = ntf.into();
-        nvim::rpcnotify(lua, self.0, event, args)
+        let (method, params) = match RpcMessage::from(ntf) {
+            RpcMessage::Notification { method, params } => {
+                let params = params
+                    .into_iter()
+                    .flat_map(|v| lua.to_value(&v))
+                    .collect::<Vec<LuaValue>>();
+
+                (method, params)
+            },
+            _ => unreachable!(),
+        };
+
+        nvim::rpcnotify(lua, self.0, method, params)
     }
 
-    /// Sends a request to the server and waits for the response.
-    pub fn _request(&self, lua: &Lua, req: Request) -> LuaResult<()> {
-        let (method, args) = req.into();
-        nvim::rpcrequest(lua, self.0, method, args)
+    /// Sends a request to the server and blocks until the response is
+    /// received.
+    pub fn _request(&self, _lua: &Lua, _req: Request) -> LuaResult<()> {
+        // let (method, params) = match RpcMessage::from(req) {
+        //     RpcMessage::Request {
+        //         msgid: _,
+        //         method,
+        //         params,
+        //     } => {
+        //         let params = params
+        //             .into_iter()
+        //             .flat_map(|v| lua.to_value(&v))
+        //             .collect::<Vec<LuaValue>>();
+
+        //         (method, params)
+        //     },
+        //     _ => unreachable!(),
+        // };
+
+        // nvim::rpcrequest(lua, self.0, method, params)
+
+        Ok(())
     }
 }
 
@@ -90,3 +121,11 @@ fn compleet_server_path(lua: &Lua) -> LuaResult<String> {
         vec => Ok(vec.into_iter().nth(0).expect("Already checked empty")),
     }
 }
+
+// impl<'lua> TryFrom<Notification> for (String, Vec<LuaValue<'lua>>) {
+//     type Error = LuaError;
+
+//     fn try_from(ntf: Notification) -> LuaResult<Self> {
+//         todo!()
+//     }
+// }

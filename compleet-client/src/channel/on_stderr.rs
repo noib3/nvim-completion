@@ -1,4 +1,4 @@
-use compleet::rpc::message::*;
+use compleet::{api::outgoing::Notification, rpc::RpcMessage};
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::state::State;
@@ -17,12 +17,15 @@ pub fn on_stderr(
 
     match RpcMessage::try_from(bytes) {
         Ok(message) => match message {
-            RpcMessage::Request(_req) => {},
+            RpcMessage::Request { .. } => {},
 
-            RpcMessage::Response(_rsp) => {},
+            RpcMessage::Response { .. } => {},
 
-            RpcMessage::Notification(ntf) => {
-                super::handle_notify(lua, state, ntf)?
+            RpcMessage::Notification { method, params } => {
+                match Notification::try_from((method, params)) {
+                    Ok(ntf) => super::handle_notify(lua, state, ntf)?,
+                    Err(_) => {},
+                }
             },
         },
 

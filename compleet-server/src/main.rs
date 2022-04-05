@@ -1,5 +1,6 @@
-use compleet::handlers;
-use compleet::rpc::{self, message::RpcMessage};
+use compleet::api;
+use compleet::rpc::{self, RpcMessage};
+use rmp_serde::encode::to_vec;
 use tokio::io::{self, AsyncWriteExt};
 use tokio::sync::mpsc;
 
@@ -10,42 +11,32 @@ async fn main() -> io::Result<()> {
 
     let (sender, mut receiver) = mpsc::unbounded_channel::<RpcMessage>();
 
-    // Wait for new messages on the receiving end of the channel and write them
-    // to stderr.
+    // Wait for new Rpc messages on the receiving end of the channel and write
+    // them to stderr.
     tokio::spawn(async move {
         while let Some(message) = receiver.recv().await {
-            // let bytes: Vec<u8> = message.into();
-            // std::fs::write("/home/noib3/log2", format!("{:?}", bytes))
-            //     .unwrap();
-            match stderr.write_all(&Vec::<u8>::from(message)).await {
+            // TODO: benchmark `From<RpcMessage>` vs `serde::Serialize`.
+            //
+            // match stderr.write_all(&Vec::<u8>::from(message)).await {
+            match stderr.write_all(&to_vec(&message).unwrap()).await {
                 Ok(()) => {},
                 Err(_) => todo!(),
             };
         }
     });
 
-    // Listen for new messages on stdin.
+    // Listen for new messages on stdin, spawning a new task to handle a
+    // successfully decoded msgpack-rpc message.
     loop {
         match rpc::decode(&mut stdin).await {
-            Ok(msg) => match msg {
-                RpcMessage::Request(req) => {
-                    let sendr = sender.clone();
-                    let _ = tokio::spawn(async move {
-                        handlers::handle_request(req, sendr).await;
-                    });
-                },
-
-                RpcMessage::Response(_rsp) => todo!(),
-
-                RpcMessage::Notification(ntf) => {
-                    let sender = sender.clone();
-                    let _ = tokio::spawn(async move {
-                        handlers::handle_notification(ntf, sender).await;
-                    });
-                },
+            Ok(message) => {
+                let sendr = sender.clone();
+                let _ = tokio::spawn(async move {
+                    api::handle_message(message, sendr).await
+                });
             },
 
-            Err(_) => todo!(),
+            Err(_) => {},
         }
     }
 }

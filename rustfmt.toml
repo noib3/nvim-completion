@@ -1,4 +1,3 @@
-fn_single_line = true
 format_code_in_doc_comments = true
 format_strings = true
 group_imports = "StdExternalCrate"
