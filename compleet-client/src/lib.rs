@@ -3,7 +3,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use mlua::{prelude::LuaResult, Lua, Table};
-use state::State;
+
+use crate::state::State;
 
 mod autocmds;
 mod bindings;
@@ -24,6 +25,7 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
 
     let cloned = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {
+        // TODO
         let _ = cloned.borrow_mut();
         Ok(false)
     })?;

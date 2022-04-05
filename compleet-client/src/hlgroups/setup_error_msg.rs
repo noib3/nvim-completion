@@ -1,30 +1,31 @@
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::bindings::api;
+use crate::constants::*;
 
-/// Sets up the highlight groups used in the error message displayed if any
-/// option passed to the `setup` function is invalid.
+/// Sets the highlight groups used in the warning and error messages.
 pub fn setup_error_msg(lua: &Lua) -> LuaResult<()> {
     let opts = lua.create_table_with_capacity(0, 2)?;
 
     // Don't override existing definitions.
     opts.set("default", true)?;
 
-    // `CompleetErrorMsgTag`
-    //Used to highlight the `[nvim-compleet]` part of any error message.
+    // Used to highlight the `[nvim-compleet]` tag of all error messages.
     opts.set("link", "ErrorMsg")?;
-    api::set_hl(lua, 0, "CompleetErrorMsgTag", opts.clone())?;
+    api::set_hl(lua, 0, HLGROUP_ERROR_MSG_TAG, opts.clone())?;
 
-    // `CompleetErrorMsgOptionPath`
-    // Used to highlight the path of the option that caused the error message.
+    // Used to highlight the `[nvim-compleet]` tag of all warning messages.
+    opts.set("link", "WarningMsg")?;
+    api::set_hl(lua, 0, HLGROUP_WARNING_MSG_TAG, opts.clone())?;
+
+    // Used to highlight the path of the config option that caused a
+    // deserialization error.
     opts.set("link", "Statement")?;
-    api::set_hl(lua, 0, "CompleetErrorMsgOptionPath", opts.clone())?;
+    api::set_hl(lua, 0, HLGROUP_OPTION_PATH, opts.clone())?;
 
-    // `CompleetErrorMsgField`
-    // Used to highlight any field of the error message enclosed by backticks
-    // ('``), except for the option path.
+    // Used to highlight any field of the error message enclosed by backticks.
     opts.set("link", "Special")?;
-    api::set_hl(lua, 0, "CompleetErrorMsgField", opts)?;
+    api::set_hl(lua, 0, HLGROUP_MSG_FIELD, opts)?;
 
     Ok(())
 }

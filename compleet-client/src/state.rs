@@ -1,28 +1,22 @@
-use std::collections::HashMap;
-
 use compleet::completion::Completions;
 use compleet::cursor::Cursor;
 use mlua::prelude::LuaRegistryKey;
 
+use crate::autocmds::Augroup;
 use crate::channel::Channel;
 use crate::settings::Settings;
-use crate::ui::Ui;
+use crate::ui::{Buffer, Ui};
 
 #[derive(Debug, Default)]
 pub struct State {
-    /// The buffer numbers of the currently attached buffers.
-    pub attached_buffers: Vec<u32>,
+    /// The currently attached buffers.
+    pub attached_buffers: Vec<Buffer>,
 
-    /// The id of the `Compleet` augroup.
-    pub augroup_id: Option<u32>,
-
-    /// A hashmap where the keys are the numbers of the currently attached
-    /// buffers and the values are the ids of the autocommands registered on
-    /// that buffer.
-    pub buffer_local_autocmds: HashMap<u32, Vec<u32>>,
+    /// The augroup namespacing all the autocmds.
+    pub augroup: Augroup,
 
     /// A vector of buffers numbers to be detached on the next call to
-    /// `completion::on_bytes`.
+    /// `on_bytes`.
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The channel used to communicate with the server.
@@ -45,7 +39,7 @@ pub struct State {
 
     /// The registry key of the Lua function called on `BufEnter` to try to
     /// attach to the buffer.
-    pub try_buf_attach: Option<LuaRegistryKey>,
+    pub on_buf_enter_key: Option<LuaRegistryKey>,
 
     /// The current state of the UI.
     pub ui: Ui,

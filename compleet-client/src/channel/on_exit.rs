@@ -1,6 +1,5 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
 use crate::state::State;
 use crate::ui;
 use crate::utils;
@@ -14,27 +13,22 @@ pub fn on_exit(lua: &Lua, state: &mut State, exit_code: u32) -> LuaResult<()> {
 
         // Every other exit code should be considered an error.
         num => {
-            // Remove all the autocmds.
-            if let Some(id) = state.augroup_id {
-                api::del_augroup_by_id(lua, id)?;
-                state.augroup_id = None;
-            }
+            // Delete the augroup and all its autocmds.
+            state.augroup.delete_all(lua)?;
 
-            // Detach all the attached buffers.
-            state
-                .buffers_to_be_detached
-                .append(&mut state.attached_buffers);
+            // Register all the attached buffers to be detached on the next
+            // call to `on_bytes`.
+            state.buffers_to_be_detached.extend::<Vec<u32>>(
+                state.attached_buffers.iter().map(|b| b.number).collect(),
+            );
 
             // Cleanup the UI.
             ui::cleanup(lua, &mut state.ui)?;
 
-            // Echo an error message to the user.
-            utils::echoerr(
+            // Echo a warning message to the user.
+            utils::echowar(
                 lua,
-                vec![
-                    ("The server just quit with exit code ", None),
-                    (&num.to_string(), Some("Visual")),
-                ],
+                format!("The server just quit with exit code \"{num}\""),
             )?;
         },
     };

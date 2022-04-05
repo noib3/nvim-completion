@@ -39,15 +39,6 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
 
     let opts = lua.create_table_from([("silent", true)])?;
 
-    opts.set("callback", insert_completion.bind(true)?)?;
-    api::set_keymap(
-        lua,
-        "i",
-        "<Plug>(compleet-insert-first-completion)",
-        "",
-        opts.clone(),
-    )?;
-
     opts.set("callback", insert_completion.bind(false)?)?;
     api::set_keymap(
         lua,
@@ -57,11 +48,11 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
         opts.clone(),
     )?;
 
-    opts.set("callback", select_completion.bind(1)?)?;
+    opts.set("callback", insert_completion.bind(true)?)?;
     api::set_keymap(
         lua,
         "i",
-        "<Plug>(compleet-next-completion)",
+        "<Plug>(compleet-insert-first-completion)",
         "",
         opts.clone(),
     )?;
@@ -71,6 +62,15 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
         lua,
         "i",
         "<Plug>(compleet-prev-completion)",
+        "",
+        opts.clone(),
+    )?;
+
+    opts.set("callback", select_completion.bind(1)?)?;
+    api::set_keymap(
+        lua,
+        "i",
+        "<Plug>(compleet-next-completion)",
         "",
         opts.clone(),
     )?;

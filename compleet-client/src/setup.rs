@@ -23,7 +23,7 @@ pub fn setup(
     // If the Neovim version isn't 0.7+ we echo an error message and return
     // early.
     if !r#fn::has(lua, "nvim-0.7")? {
-        utils::echoerr(lua, vec![("Neovim v0.7+ is required", None)])?;
+        utils::echoerr(lua, "Neovim v0.7+ is required")?;
         return Ok(());
     }
 
@@ -32,89 +32,71 @@ pub fn setup(
     let settings = match preferences {
         LuaValue::Nil => Settings::default(),
 
-        LuaValue::Table(t) => match deserialize::<_, Settings>(
-            Deserializer::new(LuaValue::Table(t)),
-        ) {
-            Ok(settings) => settings,
+        LuaValue::Table(t) => {
+            let deserializer = Deserializer::new(LuaValue::Table(t));
+            match deserialize::<_, Settings>(deserializer) {
+                Ok(settings) => settings,
 
-            Err(e) => match e.inner() {
-                LuaError::DeserializeError(msg) => {
-                    let path = e.path().to_string();
+                Err(e) => match e.inner() {
+                    // If the deserialization failed because of a
+                    // badly-configured option we print an informative error
+                    // message and return.
+                    LuaError::DeserializeError(msg) => {
+                        utils::echoerr(
+                            lua,
+                            format!(
+                                "Error for `{}`: {}",
+                                e.path(),
+                                msg.replace("`", "\"")
+                            ),
+                        )?;
+                        return Ok(());
+                    },
 
-                    let chunks = [
-                        ("Error for `", None),
-                        (&path, Some("CompleetErrorMsgOptionPath")),
-                        ("`: ", None),
-                    ]
-                    .into_iter()
-                    .chain(to_chunks(msg).into_iter())
-                    .collect::<Vec<(&str, Option<&str>)>>();
-
-                    utils::echoerr(lua, chunks)?;
-                    return Ok(());
+                    // All other errors are propagated up.
+                    _ => return Err(e.into_inner()),
                 },
-
-                _ => return Err(e.into_inner()),
-            },
+            }
         },
 
         _ => {
-            let preferences = format!("{:?}", preferences);
-            let chunks = vec![
-                ("Invalid value '", None),
-                (&preferences, Some("Statement")),
-                ("'. Please pass either a table or `", None),
-                ("nil", Some("Statement")),
-                ("` to the setup function", None),
-            ];
-            utils::echoerr(lua, chunks)?;
+            utils::echoerr(
+                lua,
+                format!(
+                    "Invalid value \"{:?}\". The setup function accepts \
+                     either a table or `nil`",
+                    preferences
+                ),
+            )?;
             return Ok(());
         },
     };
 
-    // If there aren't any sources enabled we echo an error message and return
-    // early.
+    // If there aren't any sources enabled we echo an error message and return.
     if settings.sources.is_empty() {
-        let chunks = vec![(
-            "No sources have been enabled, I'm more useless than nipples on \
-             a man :(",
-            None,
-        )];
-        utils::echoerr(lua, chunks)?;
+        utils::echoerr(
+            lua,
+            "All sources are disabled, I'm more useless than nipples on a man",
+        )?;
         return Ok(());
     }
 
-    // Update the state.
-    let mut borrowed = state.borrow_mut();
-    borrowed.settings = settings;
-
+    // Update the state if this is the first time this function is called.
+    let borrowed = &mut state.borrow_mut();
     if !borrowed.did_setup {
         commands::setup(lua, state)?;
         hlgroups::setup(lua)?;
         mappings::setup(lua, state)?;
 
-        let (id, registry_key) = autocmds::setup(lua, state)?;
-        borrowed.augroup_id = Some(id);
-        borrowed.try_buf_attach = Some(registry_key);
+        let (augroup, registry_key) = autocmds::setup(lua, state)?;
+        borrowed.augroup = augroup;
+        borrowed.on_buf_enter_key = Some(registry_key);
 
         borrowed.channel = Channel::new(lua, state)?;
+        borrowed.ui = Ui::new(lua, &settings.ui)?;
+        borrowed.settings = settings;
         borrowed.did_setup = true;
-        borrowed.ui = Ui::new(lua, &borrowed.settings.ui)?;
     }
 
     Ok(())
-}
-
-fn to_chunks(msg: &str) -> Vec<(&'_ str, Option<&'static str>)> {
-    msg.split('`')
-        .enumerate()
-        .flat_map(|(i, str)| match i % 2 == 1 {
-            true => vec![
-                ("`", None),
-                (str, Some("CompleetErrorMsgField")),
-                ("`", None),
-            ],
-            false => vec![(str, None)],
-        })
-        .collect()
 }

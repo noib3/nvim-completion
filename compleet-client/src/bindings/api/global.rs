@@ -27,16 +27,16 @@ pub fn create_buf(lua: &Lua, listed: bool, scratch: bool) -> LuaResult<u32> {
 /// Binding to `vim.api.nvim_echo`.
 pub fn echo(
     lua: &Lua,
-    chunks: Vec<(&str, Option<&str>)>,
+    chunks: Vec<(String, Option<&str>)>,
     history: bool,
 ) -> LuaResult<()> {
     let chunks = chunks
-        .iter()
+        .into_iter()
         .map(|(text, hlgroup)| match hlgroup {
-            Some(group) => vec![*text, *group],
-            None => vec![*text],
+            Some(group) => vec![text, group.to_string()],
+            None => vec![text],
         })
-        .collect::<Vec<Vec<&str>>>();
+        .collect::<Vec<Vec<String>>>();
 
     super::api(&lua)?
         .get::<&str, LuaFunction>("nvim_echo")?

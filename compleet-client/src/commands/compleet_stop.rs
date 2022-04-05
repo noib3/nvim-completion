@@ -1,7 +1,8 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api::{self, LogLevel};
 use crate::ui;
+use crate::ui::Buffer;
+use crate::utils;
 use crate::State;
 
 /// Executed by the `CompleetStop` user command.
@@ -12,78 +13,60 @@ pub fn compleet_stop(
 ) -> LuaResult<()> {
     // The `CompleetStop!` command detaches all the buffers, while
     // `CompleetStop` only detaches the current buffer. To detach a buffer we
-    // need to return `true` the next time the `on_bytes` function is
-    // called.
+    // need to return `true` the next time the `on_bytes` function is called.
     match bang {
-        true => detach_all_buffers(lua, state),
-        false => detach_current_buffer(lua, state),
+        true => self::detach_all(lua, state),
+        false => self::detach_current(lua, state),
     }
 }
 
-fn detach_all_buffers(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    if let Some(id) = state.augroup_id {
-        // Delete the `Compleet` augroup containing all the autocmds.
-        api::del_augroup_by_id(lua, id)?;
-
-        state.augroup_id = None;
-
-        // Move all the buffer numbers from the `attached_buffers` vector to
-        // `buffers_to_be_detached`.
-        state
-            .buffers_to_be_detached
-            .append(&mut state.attached_buffers);
-
-        // Cleanup the UI in case the user has somehow executed
-        // `CompleetStop!` without exiting insert mode (for example via an
-        // autocmd. Unlikely but possible).
-        ui::cleanup(lua, &mut state.ui)?;
-
-        api::notify(
-            lua,
-            "[nvim-compleet] Stopped completion in all buffers",
-            LogLevel::Info,
-        )?;
-    } else {
-        api::notify(
-            lua,
-            "[nvim-compleet] Completion is already off",
-            LogLevel::Error,
-        )?;
+/// Detaches `nvim-compleet` from all the buffers.
+fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
+    if !state.augroup.is_active() {
+        utils::echoerr(lua, "Completion is already off")?;
+        return Ok(());
     }
+
+    // Delete the  augroup containing all the autocmds.
+    state.augroup.delete_all(lua)?;
+
+    // Move all the buffer numbers from the `attached_buffers` vector to
+    // `buffers_to_be_detached`.
+    state.buffers_to_be_detached.extend::<Vec<u32>>(
+        state.attached_buffers.iter().map(|b| b.number).collect(),
+    );
+
+    // Cleanup the UI in case the user has somehow executed
+    // `CompleetStop!` without exiting insert mode (for example via an
+    // autocmd. Unlikely but possible).
+    ui::cleanup(lua, &mut state.ui)?;
+
+    utils::echoinfo(lua, "Stopped completion in all buffers")?;
 
     Ok(())
 }
 
-fn detach_current_buffer(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    let bufnr = api::get_current_buf(lua)?;
+/// Detaches `nvim-compleet` from the current buffer.
+fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
+    let current = Buffer::get_current(lua)?;
 
-    if !state.attached_buffers.contains(&bufnr) {
-        api::notify(
-            lua,
-            "[nvim-compleet] Completion is already off in this buffer",
-            LogLevel::Error,
-        )?;
+    if !state.attached_buffers.contains(&current) {
+        utils::echoerr(lua, "Completion is already off in this buffer")?;
         return Ok(());
     }
 
-    state.attached_buffers.retain(|&b| b != bufnr);
-    state.buffers_to_be_detached.push(bufnr);
+    // Remove the current buffer
+    state.attached_buffers.retain(|b| b != &current);
+    state.buffers_to_be_detached.push(current.number);
 
     ui::cleanup(lua, &mut state.ui)?;
 
     // Delete all the buffer-local autocmds we had set for this buffer.
-    for autocmd_id in state
-        .buffer_local_autocmds
-        .get(&bufnr)
-        .expect("If the buffer was attached it had some buffer-local autocmds")
-    {
-        api::del_autocmd(lua, *autocmd_id)?;
-    }
+    state.augroup.delete_local(lua, &current)?;
 
-    api::notify(
+    utils::echoinfo(
         lua,
-        &format!("[nvim-compleet] Stopped completion for buffer {bufnr}"),
-        LogLevel::Info,
+        format!("Stopped completion for buffer {}", current.number),
     )?;
 
     Ok(())

@@ -1,1 +1,3 @@
-pub enum Request {}
+pub enum Request {
+    ShouldAttach(u32),
+}

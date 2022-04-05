@@ -31,7 +31,7 @@ pub fn on_stderr(
 
         Err(e) => utils::echoerr(
             lua,
-            vec![(&format!("Couldn't decode message from server: {e}"), None)],
+            format!("Couldn't decode message from server: {e}"),
         )?,
     };
 

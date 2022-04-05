@@ -11,11 +11,16 @@ pub fn create_augroup(lua: &Lua, name: &str, opts: Table) -> LuaResult<u32> {
 }
 
 /// Binding to `vim.api.nvim_create_autocmd`.
-pub fn create_autocmd(
+pub fn create_autocmd<S: AsRef<str>, E: IntoIterator<Item = S>>(
     lua: &Lua,
-    events: &[&str],
+    events: E,
     opts: Table,
 ) -> LuaResult<u32> {
+    let events = events
+        .into_iter()
+        .map(|e| e.as_ref().into())
+        .collect::<Vec<String>>();
+
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_create_autocmd")?
         .call((events, opts))
@@ -43,6 +48,7 @@ pub fn del_autocmd(lua: &Lua, id: u32) -> LuaResult<()> {
         .call(id)
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_do_autocmd`.
 pub fn do_autocmd(lua: &Lua, events: &[&str], opts: Table) -> LuaResult<()> {
     super::api(lua)?

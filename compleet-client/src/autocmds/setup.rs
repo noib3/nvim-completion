@@ -1,49 +1,53 @@
 use std::{cell::RefCell, rc::Rc};
 
 use compleet::api::incoming::Notification;
-use mlua::prelude::{Lua, LuaRegistryKey, LuaResult};
+use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult};
 
-use crate::bindings::api;
+use super::Augroup;
 use crate::channel;
 use crate::state::State;
 use crate::ui;
 
+/// Creates a new augroup and registers a callback on the `BufEnter` event,
+/// returning the id of the augroup and the Lua registry key of the callback.
 pub fn setup(
     lua: &Lua,
     state: &Rc<RefCell<State>>,
-) -> LuaResult<(u32, LuaRegistryKey)> {
+) -> LuaResult<(Augroup, LuaRegistryKey)> {
     // Called on every `InsertLeave` event in attached buffers.
     let cloned = state.clone();
-    let insert_leave = move |lua, ()| {
-        let mut state = cloned.borrow_mut();
-        // Send a notification to the server to stop all running tasks, then
-        // cleanup the UI.
-        state.channel.notify(lua, Notification::StopTasks)?;
-        ui::cleanup(lua, &mut state.ui)?;
-        Ok(())
-    };
+    let on_insert_leave_key =
+        lua.create_registry_value(lua.create_function(move |lua, ()| {
+            let state = &mut cloned.borrow_mut();
+            // Send a notification to the server to stop all running tasks,
+            // then cleanup the UI.
+            state.channel.notify(lua, Notification::StopTasks)?;
+            ui::cleanup(lua, &mut state.ui)?;
+            Ok(())
+        })?)?;
 
     // Called on every `CursorMovedI` event in attached buffers.
     let cloned = state.clone();
-    let cursor_moved_i = move |lua, ()| {
-        let mut borrowed = cloned.borrow_mut();
-        // If the cursor was moved right after a call to `on_bytes` we
-        // reset `did_on_bytes` to `false` and ignore the event.
-        if borrowed.did_on_bytes {
-            borrowed.did_on_bytes = false;
-        }
-        // If not we send a notification to the server to stop any running
-        // tasks and cleanup the UI.
-        else {
-            borrowed.channel.notify(lua, Notification::StopTasks)?;
-            ui::cleanup(lua, &mut borrowed.ui)?;
-        }
-        Ok(())
-    };
+    let on_cursor_moved_i_key =
+        lua.create_registry_value(lua.create_function(move |lua, ()| {
+            let state = &mut cloned.borrow_mut();
+            // If the cursor was moved right after a call to `on_bytes` we
+            // reset `did_on_bytes` to `false` and ignore the event.
+            if state.did_on_bytes {
+                state.did_on_bytes = false;
+            }
+            // If not we send a notification to the server to stop all running
+            // tasks and cleanup the UI.
+            else {
+                state.channel.notify(lua, Notification::StopTasks)?;
+                ui::cleanup(lua, &mut state.ui)?;
+            }
+            Ok(())
+        })?)?;
 
-    // Called every time a byte in an attached buffer is changed.
+    // Called on every byte change in attached buffers.
     let cloned = state.clone();
-    let on_bytes =
+    let on_bytes_key = lua.create_registry_value(lua.create_function(
         move |lua,
               (
             _,
@@ -70,35 +74,32 @@ pub fn setup(
                 rows_added,
                 bytes_added,
             )
-        };
+        },
+    )?)?;
 
-    // Called on every `BufEnter` event.
+    // Called on every `BufEnter` event to check if we should attach to that
+    // buffer.
     let clone = state.clone();
-    let try_buf_attach = lua.create_function(move |lua, ()| {
-        super::try_buf_attach(
+    let on_buf_enter = lua.create_function(move |lua, ()| {
+        super::on_buf_enter(
             lua,
             &mut clone.borrow_mut(),
-            lua.create_function(insert_leave.clone())?,
-            lua.create_function(cursor_moved_i.clone())?,
-            lua.create_function(on_bytes.clone())?,
+            lua.registry_value::<LuaFunction>(&on_insert_leave_key)?,
+            lua.registry_value::<LuaFunction>(&on_cursor_moved_i_key)?,
+            lua.registry_value::<LuaFunction>(&on_bytes_key)?,
         )?;
         Ok(())
     })?;
 
-    // Create the `Compleet` augroup which will namespace all the other
-    // autocmds.
-    let augroup_id = api::create_augroup(
+    // Create the augroup which will namespace all the autocmds.
+    let mut augroup = Augroup::new(lua)?;
+
+    // Register a global autocmd on the `BufEnter` event.
+    augroup.add_autocmds(
         lua,
-        "Compleet",
-        lua.create_table_from([("clear", true)])?,
+        None,
+        vec![("BufEnter", on_buf_enter.clone())],
     )?;
 
-    // Register an autocmd for the `BufEnter` event to try to attach to the new
-    // buffer.
-    let opts = lua.create_table_with_capacity(0, 2)?;
-    opts.set("group", augroup_id)?;
-    opts.set("callback", try_buf_attach.clone())?;
-    api::create_autocmd(lua, &["BufEnter"], opts.clone())?;
-
-    Ok((augroup_id, lua.create_registry_value(try_buf_attach)?))
+    Ok((augroup, lua.create_registry_value(on_buf_enter)?))
 }

@@ -3,10 +3,14 @@ use std::rc::Rc;
 
 use compleet::api::incoming::{Notification, Request};
 use compleet::rpc::RpcMessage;
-use mlua::{
-    prelude::{LuaError, LuaResult, LuaString, LuaValue},
+use mlua::prelude::{
+    FromLua,
     Lua,
+    LuaError,
+    LuaResult,
     LuaSerdeExt,
+    LuaString,
+    LuaValue,
 };
 
 use crate::bindings::{api, nvim, r#fn};
@@ -53,8 +57,7 @@ impl Channel {
             -1 => {
                 // TODO: custom error
                 return Err(LuaError::RuntimeError(format!(
-                    "The `{COMPLEET_SERVER_BINARY_NAME}` binary is not \
-                     executable!"
+                    "The `{SERVER_BINARY_NAME}` binary is not executable!"
                 )));
             },
 
@@ -84,7 +87,11 @@ impl Channel {
 
     /// Sends a request to the server and blocks until the response is
     /// received.
-    pub fn _request(&self, _lua: &Lua, _req: Request) -> LuaResult<()> {
+    pub fn request<'lua, T: FromLua<'lua>>(
+        &self,
+        _lua: &'lua Lua,
+        _req: Request,
+    ) -> LuaResult<T> {
         // let (method, params) = match RpcMessage::from(req) {
         //     RpcMessage::Request {
         //         msgid: _,
@@ -103,7 +110,7 @@ impl Channel {
 
         // nvim::rpcrequest(lua, self.0, method, params)
 
-        Ok(())
+        todo!()
     }
 }
 
@@ -111,12 +118,12 @@ impl Channel {
 fn compleet_server_path(lua: &Lua) -> LuaResult<String> {
     match api::get_runtime_file(
         lua,
-        &format!("lua/{COMPLEET_SERVER_BINARY_NAME}"),
+        &format!("lua/{SERVER_BINARY_NAME}"),
         false,
     )? {
         // TODO: custom error
         vec if vec.is_empty() => Err(LuaError::RuntimeError(format!(
-            "Couldn't find the `{COMPLEET_SERVER_BINARY_NAME}` binary :("
+            "Couldn't find the `{SERVER_BINARY_NAME}` binary :("
         ))),
 
         vec => Ok(vec.into_iter().nth(0).expect("Already checked empty")),
