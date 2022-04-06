@@ -20,7 +20,7 @@ impl Default for Lipsum {
 #[async_trait]
 impl Source for Lipsum {
     // Attach to all buffers.
-    fn attach(&self, _bufnr: u32) -> bool {
+    async fn attach(&self, _bufnr: u32) -> bool {
         true
     }
 

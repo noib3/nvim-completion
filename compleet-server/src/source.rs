@@ -11,7 +11,7 @@ pub type Sources = Vec<Arc<dyn Source>>;
 #[async_trait]
 pub trait Source: Debug + Send + Sync {
     /// Decides whether to attach the source to a buffer.
-    fn attach(&self, bufnr: u32) -> bool;
+    async fn attach(&self, bufnr: u32) -> bool;
 
     /// The function used to get completion results. Takes in an `api` field
     /// (providing the functionality of `vim.api`) and the current cursor

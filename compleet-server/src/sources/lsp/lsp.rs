@@ -35,7 +35,7 @@ returns a `handle` and a `pid`
 
 #[async_trait]
 impl Source for Lsp {
-    fn attach(&self, _bufnr: u32) -> bool {
+    async fn attach(&self, _bufnr: u32) -> bool {
         // let clients = nvim.lsp.buf_get_clients(bufnr)?;
         true
     }
