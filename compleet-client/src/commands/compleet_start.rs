@@ -24,11 +24,7 @@ pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     state.augroup.set(lua)?;
 
     // Trigger a `BufEnter` event on this buffer to attach it.
-    api::exec_autocmds(
-        lua,
-        ["BufEnter"],
-        lua.create_table_from([("buffer", 0)])?,
-    )?;
+    api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)?;
 
     utils::echoinfo(lua, "Started completion in all buffers")?;
 
@@ -58,11 +54,7 @@ pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     }
 
     // Trigger a `BufEnter` event on this buffer to attach it.
-    api::exec_autocmds(
-        lua,
-        ["BufEnter"],
-        lua.create_table_from([("buffer", 0)])?,
-    )?;
+    api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)?;
 
     // TODO: only display this if we've successfully attached to the buffer.
     utils::echoinfo(lua, format!("Started completion in buffer {current}"))?;
