@@ -5,6 +5,7 @@ use mlua::{prelude::LuaResult, Lua};
 
 use super::floater::{Floater, RelativeTo};
 use crate::bindings::api;
+use crate::constants::hlgroups::ui;
 use crate::settings::ui::details::DetailsSettings;
 
 #[derive(Debug, Default)]
@@ -27,9 +28,8 @@ impl CompletionDetails {
                 bufnr,
                 &settings.border,
                 vec![
-                    // TODO: use hlgroup names from `constants.rs`
-                    ("FloatBorder", "CompleetDetailsBorder"),
-                    ("Normal", "CompleetDetails"),
+                    ("FloatBorder", ui::DETAILS_BORDER),
+                    ("Normal", ui::DETAILS),
                     ("Search", "None"),
                 ],
             )?,

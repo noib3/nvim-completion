@@ -10,7 +10,9 @@ pub struct DetailsSettings {
     pub border: Border,
 }
 
-fn default_border_enable() -> bool { true }
+fn default_border_enable() -> bool {
+    true
+}
 
 fn default_border_style() -> BorderStyle {
     BorderStyle::Array4([

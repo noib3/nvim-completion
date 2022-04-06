@@ -29,12 +29,18 @@ pub enum MenuAnchor {
 }
 
 impl Default for MenuAnchor {
-    fn default() -> Self { MenuAnchor::Cursor }
+    fn default() -> Self {
+        MenuAnchor::Cursor
+    }
 }
 
-fn default_autoshow() -> bool { true }
+fn default_autoshow() -> bool {
+    true
+}
 
-fn default_border_enable() -> bool { false }
+fn default_border_enable() -> bool {
+    false
+}
 
 fn default_border_style() -> BorderStyle {
     BorderStyle::String(BorderString::Single)

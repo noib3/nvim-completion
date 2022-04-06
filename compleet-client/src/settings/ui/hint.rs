@@ -7,5 +7,7 @@ pub struct HintSettings {
 }
 
 impl Default for HintSettings {
-    fn default() -> Self { HintSettings { enable: false } }
+    fn default() -> Self {
+        HintSettings { enable: false }
+    }
 }

@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Display};
 
 /// A vector of bytes couldn't be decoded into a valid msgpack-rpc message.
 pub enum DecodingError {
@@ -10,7 +10,7 @@ pub enum DecodingError {
 }
 
 impl Display for DecodingError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let message = match self {
             Self::Custom(str) => str.to_string(),
             Self::Rmpv(err) => err.to_string(),
@@ -21,7 +21,9 @@ impl Display for DecodingError {
 }
 
 impl From<&'static str> for DecodingError {
-    fn from(str: &'static str) -> DecodingError { DecodingError::Custom(str) }
+    fn from(str: &'static str) -> DecodingError {
+        DecodingError::Custom(str)
+    }
 }
 
 impl From<rmpv::decode::Error> for DecodingError {

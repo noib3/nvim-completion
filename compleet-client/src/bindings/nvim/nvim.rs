@@ -10,7 +10,7 @@ fn nvim(lua: &Lua) -> LuaResult<Table> {
 
 #[allow(dead_code)]
 /// Binding to `vim.inspect`.
-pub fn inspect(lua: &Lua, t: Table) -> LuaResult<String> {
+pub fn inspect(lua: &Lua, t: LuaValue) -> LuaResult<String> {
     self::nvim(lua)?
         .get::<_, Table>("inspect")?
         .get::<_, LuaFunction>("inspect")?

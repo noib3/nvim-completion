@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use mlua::prelude::{FromLua, Lua, LuaFunction, LuaResult, LuaValue};
 
 use crate::bindings::api;
@@ -7,10 +9,16 @@ pub struct Buffer {
     pub number: u32,
 }
 
+impl Display for Buffer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.number.to_string())
+    }
+}
+
 impl Buffer {
     /// Returns the current buffer.
     pub fn get_current(lua: &Lua) -> LuaResult<Self> {
-        Ok(Buffer {
+        Ok(Self {
             number: api::get_current_buf(lua)?,
         })
     }

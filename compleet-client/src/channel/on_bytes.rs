@@ -17,11 +17,10 @@ pub fn on_bytes(
     rows_added: u32,
     bytes_added: u32,
 ) -> LuaResult<Option<bool>> {
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // If this buffer is queued to be detached we return `true`, as explained
     // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
     // function but it seems to have been removed.
-    // NOTE: this is needed until https://github.com/neovim/neovim/issues/17874
-    // gets addressed.
     if state.buffers_to_be_detached.contains(&bufnr) {
         state.buffers_to_be_detached.retain(|&b| b != bufnr);
         return Ok(Some(true));

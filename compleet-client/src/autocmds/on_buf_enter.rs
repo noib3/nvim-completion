@@ -5,8 +5,7 @@ use crate::state::State;
 use crate::ui::Buffer;
 use crate::utils;
 
-/// Called on every `BufEnter` event and by the `:CompleetStart{!}` user
-/// commands.
+/// Called on every `BufEnter` event.
 pub fn on_buf_enter(
     lua: &Lua,
     state: &mut State,
@@ -26,10 +25,10 @@ pub fn on_buf_enter(
     //
     // 3. the server doesn't have any source for this buffer.
     if state.attached_buffers.contains(&buffer)
-        || !buffer.get_option::<bool>(lua, "modifiable")?
+        || !buffer.get_option(lua, "modifiable")?
         || !state
             .channel
-            .request::<bool>(lua, Request::ShouldAttach(buffer.number))?
+            .request(lua, Request::ShouldAttach(buffer.number))?
     {
         return Ok(());
     }
@@ -38,10 +37,10 @@ pub fn on_buf_enter(
         // Echo an error if for some reason we couldn't attach to the buffer.
         utils::echoerr(lua, "Couldn't attach to buffer")?;
     } else {
-        // Add two buffer-local autocmds on this buffer.
-        state.augroup.add_autocmds(
+        // Add two buffer-local autocommands on this buffer.
+        state.augroup.set_local(
             lua,
-            Some(&buffer),
+            &buffer,
             vec![
                 ("CursorMovedI", on_cursor_moved_i),
                 ("InsertLeave", on_insert_leave),

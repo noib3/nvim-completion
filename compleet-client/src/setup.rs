@@ -1,15 +1,23 @@
 use std::{cell::RefCell, rc::Rc};
 
-use mlua::prelude::{Lua, LuaError, LuaResult, LuaValue};
-use mlua::serde::Deserializer;
+use mlua::{
+    prelude::{Lua, LuaError, LuaResult, LuaValue},
+    serde::Deserializer,
+};
 use serde_path_to_error::deserialize;
 
-use crate::bindings::r#fn;
-use crate::channel::Channel;
-use crate::settings::Settings;
-use crate::state::State;
-use crate::ui::Ui;
-use crate::{autocmds, commands, hlgroups, mappings, utils};
+use crate::{
+    autocmds::Augroup,
+    bindings::{nvim, r#fn},
+    channel::Channel,
+    commands,
+    hlgroups,
+    mappings,
+    settings::Settings,
+    state::State,
+    ui::Ui,
+    utils,
+};
 
 /// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
@@ -63,18 +71,21 @@ pub fn setup(
             utils::echoerr(
                 lua,
                 format!(
-                    "Invalid value \"{:?}\". The setup function accepts \
-                     either a table or `nil`",
-                    preferences
+                    "Invalid value \"{}\". The setup function accepts either \
+                     a table or `nil`",
+                    nvim::inspect(lua, preferences)?
                 ),
             )?;
             return Ok(());
         },
     };
 
-    // If there aren't any sources enabled we echo an error message and return.
+    crate::bindings::nvim::print(lua, format!("{:#?}", settings))?;
+
+    // If there aren't any sources enabled we echo a warning message and
+    // return.
     if settings.sources.is_empty() {
-        utils::echoerr(
+        utils::echowar(
             lua,
             "All sources are disabled, I'm more useless than nipples on a man",
         )?;
@@ -84,18 +95,18 @@ pub fn setup(
     // Update the state if this is the first time this function is called.
     let borrowed = &mut state.borrow_mut();
     if !borrowed.did_setup {
-        commands::setup(lua, state)?;
+        borrowed.did_setup = true;
+
         hlgroups::setup(lua)?;
+        commands::setup(lua, state)?;
         mappings::setup(lua, state)?;
 
-        let (augroup, registry_key) = autocmds::setup(lua, state)?;
-        borrowed.augroup = augroup;
-        borrowed.on_buf_enter_key = Some(registry_key);
+        borrowed.augroup = Augroup::new(lua, state)?;
+        borrowed.augroup.set(lua)?;
 
         borrowed.channel = Channel::new(lua, state)?;
         borrowed.ui = Ui::new(lua, &settings.ui)?;
         borrowed.settings = settings;
-        borrowed.did_setup = true;
     }
 
     Ok(())

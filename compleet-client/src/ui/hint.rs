@@ -2,6 +2,7 @@ use compleet::{completion::Completion, cursor::Cursor};
 use mlua::{prelude::LuaResult, Lua, ToLua};
 
 use crate::bindings::api;
+use crate::constants::hlgroups::ui;
 
 #[derive(Debug, Default)]
 pub struct CompletionHint {
@@ -42,7 +43,7 @@ impl CompletionHint {
 
         let opts = lua.create_table_from([
             ("id", 1u8.to_lua(lua)?),
-            ("virt_text", [[text, "CompleetHint"]].to_lua(lua)?),
+            ("virt_text", [[text, ui::HINT]].to_lua(lua)?),
             ("virt_text_pos", "overlay".to_lua(lua)?),
         ])?;
 

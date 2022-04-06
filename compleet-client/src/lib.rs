@@ -1,11 +1,4 @@
 #![feature(iter_intersperse)]
-
-use std::{cell::RefCell, rc::Rc};
-
-use mlua::{prelude::LuaResult, Lua, Table};
-
-use crate::state::State;
-
 mod autocmds;
 mod bindings;
 mod channel;
@@ -18,6 +11,12 @@ mod setup;
 mod state;
 mod ui;
 mod utils;
+
+use std::{cell::RefCell, rc::Rc};
+
+use mlua::{prelude::LuaResult, Lua, Table};
+
+use crate::state::State;
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {

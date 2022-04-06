@@ -4,29 +4,29 @@ use std::fmt::Display;
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::bindings::api;
-use crate::constants::*;
+use crate::constants::{hlgroups::messages, MSG_TAG};
 
 /// Echoes an error message.
 pub fn echoerr<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
-    self::echo(lua, msg.to_string(), HLGROUP_ERROR_MSG_TAG)
+    self::echo(lua, msg.to_string(), messages::ERROR_MSG_TAG)
 }
 
 /// Echoes a warning message.
 pub fn echowar<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
-    self::echo(lua, msg.to_string(), HLGROUP_WARNING_MSG_TAG)
+    self::echo(lua, msg.to_string(), messages::WARNING_MSG_TAG)
 }
 
 // TODO: create highlight group
 /// Echoes a info message.
 pub fn echoinfo<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
-    self::echo(lua, msg.to_string(), HLGROUP_WARNING_MSG_TAG)
+    self::echo(lua, msg.to_string(), messages::INFO_MSG_TAG)
 }
 
 /// Echoes a nicely highlighted message and adds it to the message history.
 fn echo(lua: &Lua, msg: String, hl_group_tag: &'static str) -> LuaResult<()> {
     let msg_chunks = to_highlighted_chunks(
         msg,
-        vec![(b'`', HLGROUP_OPTION_PATH), (b'"', HLGROUP_MSG_FIELD)],
+        vec![(b'`', messages::OPTION_PATH), (b'"', messages::MSG_FIELD)],
     );
 
     let chunks = [

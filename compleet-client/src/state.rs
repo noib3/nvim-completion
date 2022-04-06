@@ -1,22 +1,21 @@
-use compleet::completion::Completions;
-use compleet::cursor::Cursor;
-use mlua::prelude::LuaRegistryKey;
+use compleet::{completion::Completions, cursor::Cursor};
 
-use crate::autocmds::Augroup;
-use crate::channel::Channel;
-use crate::settings::Settings;
-use crate::ui::{Buffer, Ui};
+use crate::{
+    autocmds::Augroup,
+    channel::Channel,
+    settings::Settings,
+    ui::{Buffer, Ui},
+};
 
 #[derive(Debug, Default)]
 pub struct State {
     /// The currently attached buffers.
     pub attached_buffers: Vec<Buffer>,
 
-    /// The augroup namespacing all the autocmds.
+    /// The augroup namespacing all the autocommands.
     pub augroup: Augroup,
 
-    /// A vector of buffers numbers to be detached on the next call to
-    /// `on_bytes`.
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The channel used to communicate with the server.
@@ -36,10 +35,6 @@ pub struct State {
 
     /// The current settings.
     pub settings: Settings,
-
-    /// The registry key of the Lua function called on `BufEnter` to try to
-    /// attach to the buffer.
-    pub on_buf_enter_key: Option<LuaRegistryKey>,
 
     /// The current state of the UI.
     pub ui: Ui,

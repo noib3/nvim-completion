@@ -6,6 +6,7 @@ use mlua::{prelude::LuaResult, Lua};
 
 use super::floater::Floater;
 use crate::bindings::{api, r#fn};
+use crate::constants::hlgroups::ui;
 use crate::settings::ui::menu::MenuSettings;
 
 #[derive(Debug, Default)]
@@ -25,6 +26,7 @@ pub struct CompletionMenu {
 impl CompletionMenu {
     pub fn new(lua: &Lua, settings: &MenuSettings) -> LuaResult<Self> {
         let bufnr = api::create_buf(lua, false, true)?;
+
         Ok(CompletionMenu {
             bufnr,
             floater: Floater::new(
@@ -32,9 +34,8 @@ impl CompletionMenu {
                 bufnr,
                 &settings.border,
                 vec![
-                    // TODO: use hlgroup names from `constants.rs`
-                    ("FloatBorder", "CompleetMenuBorder"),
-                    ("Normal", "CompleetMenu"),
+                    ("FloatBorder", ui::MENU_BORDER),
+                    ("Normal", ui::MENU),
                     ("Search", "None"),
                 ],
             )?,
@@ -49,11 +50,6 @@ impl CompletionMenu {
         api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
     }
 
-    /// Whether a completion is currently selected.
-    pub fn is_item_selected(&self) -> bool {
-        self.selected_index.is_some()
-    }
-
     /// Selects a new completion. Should only be called if the completion menu
     /// is already open.
     pub fn select(
@@ -65,12 +61,12 @@ impl CompletionMenu {
 
         match new_index {
             Some(index) => {
-                // `api.nvim_win_set_cursor`'s expects a 1-indexed row number.
+                // `api.nvim_win_set_cursor` expects a 1-indexed row number.
                 let row = (index + 1).try_into().unwrap();
                 api::win_set_cursor(lua, winid, row, 0)?;
 
                 // If no completion was previously selected we turn on the
-                // `cursorline` option which highlights the row.
+                // `cursorline` option which highlights the current line.
                 if self.selected_index.is_none() {
                     api::win_set_option(lua, winid, "cursorline", true)?;
                 }

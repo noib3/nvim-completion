@@ -5,40 +5,29 @@ use crate::ui::Buffer;
 use crate::utils;
 use crate::State;
 
-/// Executed by the `CompleetStop` user command.
-pub fn compleet_stop(
-    lua: &Lua,
-    state: &mut State,
-    bang: bool,
-) -> LuaResult<()> {
-    // The `CompleetStop!` command detaches all the buffers, while
-    // `CompleetStop` only detaches the current buffer. To detach a buffer we
-    // need to return `true` the next time the `on_bytes` function is called.
-    match bang {
-        true => self::detach_all(lua, state),
-        false => self::detach_current(lua, state),
-    }
-}
-
 /// Detaches `nvim-compleet` from all the buffers.
-fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    if !state.augroup.is_active() {
+pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
+    if !state.augroup.is_set() {
         utils::echoerr(lua, "Completion is already off")?;
         return Ok(());
     }
 
-    // Delete the  augroup containing all the autocmds.
-    state.augroup.delete_all(lua)?;
-
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // Move all the buffer numbers from the `attached_buffers` vector to
     // `buffers_to_be_detached`.
     state.buffers_to_be_detached.extend::<Vec<u32>>(
         state.attached_buffers.iter().map(|b| b.number).collect(),
     );
 
-    // Cleanup the UI in case the user has somehow executed
-    // `CompleetStop!` without exiting insert mode (for example via an
-    // autocmd. Unlikely but possible).
+    // Clear the vector of attached buffers.
+    state.attached_buffers.clear();
+
+    // Delete the augroup containing all the autocommands.
+    state.augroup.unset(lua)?;
+
+    // Cleanup the UI in case the user has somehow executed `CompleetStop!`
+    // without exiting insert mode (for example via an autocommand. Unlikely
+    // but possible).
     ui::cleanup(lua, &mut state.ui)?;
 
     utils::echoinfo(lua, "Stopped completion in all buffers")?;
@@ -47,7 +36,7 @@ fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
 }
 
 /// Detaches `nvim-compleet` from the current buffer.
-fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
+pub fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let current = Buffer::get_current(lua)?;
 
     if !state.attached_buffers.contains(&current) {
@@ -55,19 +44,18 @@ fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
         return Ok(());
     }
 
-    // Remove the current buffer
+    // Remove the buffer from `attached_buffers` and schedule it to be
+    // detached.
     state.attached_buffers.retain(|b| b != &current);
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     state.buffers_to_be_detached.push(current.number);
+
+    // Delete all the buffer-local autocommands on this buffer.
+    state.augroup.clear_local(lua, &current)?;
 
     ui::cleanup(lua, &mut state.ui)?;
 
-    // Delete all the buffer-local autocmds we had set for this buffer.
-    state.augroup.delete_local(lua, &current)?;
-
-    utils::echoinfo(
-        lua,
-        format!("Stopped completion for buffer {}", current.number),
-    )?;
+    utils::echoinfo(lua, format!("Stopped completion in buffer {current}"))?;
 
     Ok(())
 }

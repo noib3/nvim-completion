@@ -1,19 +1,36 @@
 use std::fmt;
 use std::sync::Arc;
 
-use compleet::source::{Source, Sources};
-use compleet::sources::*;
-use serde::de::{Deserializer, MapAccess, Visitor};
+use compleet::{
+    source::{Source, Sources},
+    sources,
+};
+use serde::{
+    de::{Deserializer, MapAccess, Visitor},
+    Deserialize,
+};
 
-use super::CompletionSource;
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValidSource {
+    Lipsum,
+    Lsp,
+}
+
+pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserializer.deserialize_map(SourcesVisitor)
+}
 
 struct SourcesVisitor;
 
 impl<'de> Visitor<'de> for SourcesVisitor {
     type Value = Sources;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "a list of completion sources")
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("a list of completion sources")
     }
 
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
@@ -25,17 +42,17 @@ impl<'de> Visitor<'de> for SourcesVisitor {
             None => Vec::new(),
         };
 
-        while let Some(source) = access.next_key::<CompletionSource>()? {
+        while let Some(source) = access.next_key::<ValidSource>()? {
             match source {
-                CompletionSource::Lipsum => {
-                    let lipsum = access.next_value::<Lipsum>()?;
+                ValidSource::Lipsum => {
+                    let lipsum = access.next_value::<sources::Lipsum>()?;
                     if lipsum.enable {
                         sources.push(Arc::new(lipsum) as Arc<dyn Source>);
                     }
                 },
 
-                CompletionSource::Lsp => {
-                    let lsp = access.next_value::<Lsp>()?;
+                ValidSource::Lsp => {
+                    let lsp = access.next_value::<sources::Lsp>()?;
                     if lsp.enable {
                         sources.push(Arc::new(lsp) as Arc<dyn Source>);
                     }
@@ -45,11 +62,4 @@ impl<'de> Visitor<'de> for SourcesVisitor {
 
         Ok(sources)
     }
-}
-
-pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    deserializer.deserialize_map(SourcesVisitor)
 }

@@ -13,8 +13,8 @@ pub fn on_exit(lua: &Lua, state: &mut State, exit_code: u32) -> LuaResult<()> {
 
         // Every other exit code should be considered an error.
         num => {
-            // Delete the augroup and all its autocmds.
-            state.augroup.delete_all(lua)?;
+            // Delete the augroup and all its autocommands.
+            state.augroup.unset(lua)?;
 
             // Register all the attached buffers to be detached on the next
             // call to `on_bytes`.

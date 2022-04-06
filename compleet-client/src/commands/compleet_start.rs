@@ -1,62 +1,34 @@
-use mlua::prelude::{Lua, LuaFunction, LuaResult};
+use mlua::prelude::{Lua, LuaResult};
 
-use crate::autocmds::Augroup;
-use crate::bindings::nvim;
-use crate::ui::Buffer;
-use crate::utils;
-use crate::State;
-
-/// Executed by the `CompleetStart{!}` user commands.
-pub fn compleet_start(
-    lua: &Lua,
-    state: &mut State,
-    bang: bool,
-) -> LuaResult<()> {
-    // `CompleetStart!` attaches to all the buffers, while `CompleetStart` only
-    // attaches to the current buffer.
-    match bang {
-        true => self::attach_all(lua, state),
-        false => self::attach_current(lua, state),
-    }
-}
+use crate::{bindings::api, ui::Buffer, utils, State};
 
 /// Attaches `nvim-compleet` to all the buffers.
-fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    // If the autocmd for the `BufEnter` event is already set then completion
-    // is in general already on. If it's disabled in the current buffer we try
-    // to attach, if not we echo an error message.
-    if state.augroup.is_buf_enter_set() {
+pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
+    if state.augroup.is_set() {
         let current = Buffer::get_current(lua)?;
-        match state.attached_buffers.contains(&current) {
-            true => utils::echoerr(lua, "Completion is already on")?,
-            false => self::attach_current(lua, state)?,
+        // If the current buffer is not attached we try to attach it.
+        if !state.attached_buffers.contains(&current) {
+            self::attach_current(lua, state)?;
+        }
+        // If it is we echo an error message.
+        else {
+            utils::echoerr(lua, "Completion is already on")?;
         }
         return Ok(());
     }
 
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     state.buffers_to_be_detached.clear();
 
-    // Recreate the `Compleet` augroup.
-    state.augroup = Augroup::new(lua)?;
+    // Set the augroup.
+    state.augroup.set(lua)?;
 
-    // Add the `BufEnter` autocmd.
-    let on_buf_enter = lua.registry_value::<LuaFunction>(
-        state
-            .on_buf_enter_key
-            .as_ref()
-            .expect("`on_buf_enter` has already been created"),
-    )?;
-
-    state.augroup.add_autocmds(
+    // Trigger a `BufEnter` event on this buffer to attach it.
+    api::exec_autocmds(
         lua,
-        None,
-        vec![("BufEnter", on_buf_enter.clone())],
+        ["BufEnter"],
+        lua.create_table_from([("buffer", 0)])?,
     )?;
-
-    // NOTE: We can't call `on_buf_enter` here or the state's RefCell would
-    // panic. Instead we schedule it for a later time in Neovim's event loop
-    // via `vim.schedule`.
-    nvim::schedule(lua, on_buf_enter)?;
 
     utils::echoinfo(lua, "Started completion in all buffers")?;
 
@@ -64,7 +36,7 @@ fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
 }
 
 /// Attaches `nvim-compleet` to the current buffer.
-fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
+pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let current = Buffer::get_current(lua)?;
 
     if state.attached_buffers.contains(&current) {
@@ -72,33 +44,28 @@ fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
         return Ok(());
     }
 
+    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // If this buffer was queued to be detached from buffer update events (the
-    // ones setup by `nvim_buf_attach`, not autocmds) now it no longer needs
-    // to.
+    // ones setup by `nvim_buf_attach`, not autocommands) now it no longer
+    // needs to.
     state
         .buffers_to_be_detached
         .retain(|&b| b != current.number);
 
-    // If the augroup is off we need to recreate it.
-    if !state.augroup.is_active() {
-        state.augroup = Augroup::new(lua)?;
+    // Set the the augroup if it wasn't already set.
+    if !state.augroup.is_set() {
+        state.augroup.set(lua)?;
     }
 
-    // Schedule a `on_buf_enter` to attach to the current buffer.
-    let on_buf_enter = lua.registry_value::<LuaFunction>(
-        state
-            .on_buf_enter_key
-            .as_ref()
-            .expect("`try_buf_attach` has already been created"),
-    )?;
-    nvim::schedule(lua, on_buf_enter)?;
-
-    // TODO: only display this once we've successfully attached to the
-    // buffer.
-    utils::echoinfo(
+    // Trigger a `BufEnter` event on this buffer to attach it.
+    api::exec_autocmds(
         lua,
-        format!("Started completion in buffer {}", current.number),
+        ["BufEnter"],
+        lua.create_table_from([("buffer", 0)])?,
     )?;
+
+    // TODO: only display this if we've successfully attached to the buffer.
+    utils::echoinfo(lua, format!("Started completion in buffer {current}"))?;
 
     Ok(())
 }
