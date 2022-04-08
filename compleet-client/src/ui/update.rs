@@ -58,12 +58,7 @@ pub fn update(
     ui.menu.floater.open(lua, position, height, width)?;
 
     // Fill the menu's buffer.
-    let lines = new
-        .iter()
-        .map(|completion| completion.format.clone())
-        .collect::<Vec<String>>();
-
-    ui.menu.fill(lua, lines)?;
+    ui.menu.fill(lua, &new)?;
 
     state.completions = new;
 

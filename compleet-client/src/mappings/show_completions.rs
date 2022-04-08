@@ -1,24 +1,28 @@
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::state::State;
+use crate::ui::{floater::RelativeTo, menu};
 
 /// Executed on `<Plug>(compleet-show-completions)`.
 pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    // let menu = &mut state.ui.completion_menu;
-    // let completions = &state.completions;
+    let menu = &mut state.ui.menu;
 
-    // if !menu.is_visible() && !completions.is_empty() {
-    //     let maybe_position = menu::positioning::get_position(
-    //         lua,
-    //         completions,
-    //         &state.settings.ui.menu,
-    //     )?;
+    if !menu.floater.is_open() && !state.completions.is_empty() {
+        let (position, height, width) = match menu::find_position(
+            lua,
+            &state.completions,
+            &menu.floater,
+            state.settings.ui.menu.max_height,
+        )? {
+            Some((row, col, h, w)) => (RelativeTo::Cursor(row, col), h, w),
+            None => {
+                return Ok(());
+            },
+        };
 
-    //     if let Some(position) = maybe_position {
-    //         menu.spawn(lua, &position, &state.settings.ui.menu.border)?;
-    //         menu.fill(lua, completions)?;
-    //     }
-    // }
+        menu.floater.open(lua, position, height, width)?;
+        menu.fill(lua, &state.completions)?;
+    }
 
     Ok(())
 }

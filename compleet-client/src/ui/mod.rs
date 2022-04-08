@@ -1,9 +1,9 @@
 mod buffer;
 mod cleanup;
 mod details;
-mod floater;
+pub mod floater;
 mod hint;
-mod menu;
+pub mod menu;
 mod ui;
 mod update;
 

@@ -46,7 +46,12 @@ impl CompletionMenu {
 
 impl CompletionMenu {
     /// Fills the buffer with a list of lines.
-    pub fn fill(&self, lua: &Lua, lines: Vec<String>) -> LuaResult<()> {
+    pub fn fill(&self, lua: &Lua, completions: &Completions) -> LuaResult<()> {
+        let lines = completions
+            .iter()
+            .map(|completion| completion.format.clone())
+            .collect::<Vec<String>>();
+
         api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
     }
 
