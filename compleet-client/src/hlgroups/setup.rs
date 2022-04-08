@@ -38,7 +38,7 @@ pub fn setup(lua: &Lua) -> LuaResult<()> {
 
     // Used to highlight the completion hint.
     opts.set("link", "Comment")?;
-    api::set_hl(lua, 0, ui::HINT, opts.clone())?;
+    api::set_hl(lua, 0, ui::HINT, opts)?;
 
     Ok(())
 }

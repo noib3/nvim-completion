@@ -83,7 +83,7 @@ fn get_current_line(lua: &Lua, current_row: u32) -> LuaResult<String> {
         false,
     )?
     .into_iter()
-    .nth(0)
+    .next()
     .expect("There's always at least 1 line in this range");
 
     Ok(current_line)

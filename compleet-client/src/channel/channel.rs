@@ -20,9 +20,23 @@ use crate::state::State;
 #[derive(Debug, Default)]
 pub struct Channel(u32);
 
+pub enum NewChannelError {
+    Lua(LuaError),
+    Custom(String),
+}
+
+impl From<LuaError> for NewChannelError {
+    fn from(e: LuaError) -> Self {
+        Self::Lua(e)
+    }
+}
+
 impl Channel {
     /// Opens a new RPC channel via `vim.fn.jobstart`.
-    pub fn new(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<Channel> {
+    pub fn new(
+        lua: &Lua,
+        state: &Rc<RefCell<State>>,
+    ) -> Result<Channel, NewChannelError> {
         let cloned = state.clone();
         let on_exit =
             lua.create_function(move |lua, (_id, code): (u32, _)| {
@@ -55,8 +69,7 @@ impl Channel {
 
         let id = match r#fn::jobstart(lua, &[path], opts)? {
             -1 => {
-                // TODO: custom error
-                return Err(LuaError::RuntimeError(format!(
+                return Err(NewChannelError::Custom(format!(
                     "The `{SERVER_BINARY_NAME}` binary is not executable!"
                 )));
             },
@@ -115,17 +128,16 @@ impl Channel {
 }
 
 /// Returns the full path of the compleet server binary.
-fn compleet_server_path(lua: &Lua) -> LuaResult<String> {
+fn compleet_server_path(lua: &Lua) -> Result<String, NewChannelError> {
     match api::get_runtime_file(
         lua,
         &format!("lua/{SERVER_BINARY_NAME}"),
         false,
     )? {
-        // TODO: custom error
-        vec if vec.is_empty() => Err(LuaError::RuntimeError(format!(
+        vec if vec.is_empty() => Err(NewChannelError::Custom(format!(
             "Couldn't find the `{SERVER_BINARY_NAME}` binary :("
         ))),
 
-        vec => Ok(vec.into_iter().nth(0).expect("Already checked empty")),
+        vec => Ok(vec.into_iter().next().expect("Already checked empty")),
     }
 }

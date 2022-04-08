@@ -52,21 +52,19 @@ impl Floater {
         border: &Border,
         hl_groups: Vec<(&'static str, &'static str)>,
     ) -> LuaResult<Self> {
-        let (border_style_key, border_edges) = match border.enable {
-            false => (None, [false; 4]),
+        let (border_style_key, border_edges) = if border.enable {
+            (None, [false; 4])
+        } else {
+            let style = border.style.to_lua(lua)?;
 
-            true => {
-                let style = border.style.to_lua(lua)?;
+            let edges = [
+                border.style.has_top_edge(),
+                border.style.has_bottom_edge(),
+                border.style.has_left_edge(),
+                border.style.has_right_edge(),
+            ];
 
-                let edges = [
-                    border.style.has_top_edge(),
-                    border.style.has_bottom_edge(),
-                    border.style.has_left_edge(),
-                    border.style.has_right_edge(),
-                ];
-
-                (Some(lua.create_registry_value(style)?), edges)
-            },
+            (Some(lua.create_registry_value(style)?), edges)
         };
 
         let winhl = hl_groups

@@ -38,7 +38,7 @@ pub fn echo(
         })
         .collect::<Vec<Vec<String>>>();
 
-    super::api(&lua)?
+    super::api(lua)?
         .get::<&str, LuaFunction>("nvim_echo")?
         .call((chunks, history, Vec::<u8>::new()))
 }
@@ -52,9 +52,9 @@ pub fn get_current_buf(lua: &Lua) -> LuaResult<u32> {
 
 /// Binding to `vim.api.nvim_get_current_line`
 pub fn get_current_line(lua: &Lua) -> LuaResult<String> {
-    Ok(super::api(lua)?
+    super::api(lua)?
         .get::<&str, LuaFunction>("nvim_get_current_line")?
-        .call(())?)
+        .call(())
 }
 
 /// Binding to `vim.api.nvim_get_mode`
@@ -82,7 +82,7 @@ pub fn get_runtime_file(
     name: &str,
     all: bool,
 ) -> LuaResult<Vec<String>> {
-    super::api(&lua)?
+    super::api(lua)?
         .get::<_, LuaFunction>("nvim_get_runtime_file")?
         .call((name, all))
 }
@@ -119,7 +119,7 @@ pub fn set_hl(
     name: &str,
     opts: Table,
 ) -> LuaResult<()> {
-    super::api(&lua)?
+    super::api(lua)?
         .get::<&str, LuaFunction>("nvim_set_hl")?
         .call((ns_id, name, opts))
 }

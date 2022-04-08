@@ -11,14 +11,13 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
     let cloned = state.clone();
     let insert_completion = lua.create_function(move |lua, first| {
         let state = cloned.borrow();
-        let maybe = match first {
-            true => state.completions.get(0),
-            false => {
-                state.ui.menu.selected_index.map(|i| &state.completions[i])
-            },
+        let maybe = if first {
+            state.completions.get(0)
+        } else {
+            state.ui.menu.selected_index.map(|i| &state.completions[i])
         };
         if let Some(completion) = maybe {
-            super::insert_completion(lua, &state.cursor, &completion)?;
+            super::insert_completion(lua, &state.cursor, completion)?;
         }
         Ok(())
     })?;

@@ -71,7 +71,7 @@ fn deserialize_menu_border<'de, D: Deserializer<'de>>(
 
             Border {
                 enable,
-                style: maybe_style.unwrap_or(default_border_style()),
+                style: maybe_style.unwrap_or_else(default_border_style),
             }
         },
     )

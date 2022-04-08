@@ -5,14 +5,14 @@ use mlua::{
 
 /// Binding to `vim.api.nvim_clear_autocmds`.
 pub fn clear_autocmds(lua: &Lua, opts: Table) -> LuaResult<()> {
-    super::api(&lua)?
+    super::api(lua)?
         .get::<&str, LuaFunction>("nvim_clear_autocmds")?
         .call(opts)
 }
 
 /// Binding to `vim.api.nvim_create_augroup`.
 pub fn create_augroup(lua: &Lua, name: &str, opts: Table) -> LuaResult<u32> {
-    super::api(&lua)?
+    super::api(lua)?
         .get::<&str, LuaFunction>("nvim_create_augroup")?
         .call((name, opts))
 }

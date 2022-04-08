@@ -1,4 +1,4 @@
-pub const LOREM_IPSUM: &'static [&'static str] = &[
+pub const LOREM_IPSUM: &[&str] = &[
     "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit,",
     "vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum \
      gravida",
@@ -21,7 +21,7 @@ pub const LOREM_IPSUM: &'static [&'static str] = &[
     "amet orci dignissim",
 ];
 
-pub const LOREMS: &'static [&'static str] = &[
+pub const LOREMS: &[&str] = &[
     "Lorem",
     "ipsum",
     "dolor",

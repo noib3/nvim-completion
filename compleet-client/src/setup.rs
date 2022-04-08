@@ -9,7 +9,7 @@ use serde_path_to_error::deserialize;
 use crate::{
     autocmds::Augroup,
     bindings::{nvim, r#fn},
-    channel::Channel,
+    channel::{Channel, NewChannelError},
     commands,
     hlgroups,
     mappings,
@@ -80,7 +80,7 @@ pub fn setup(
         },
     };
 
-    crate::bindings::nvim::print(lua, format!("{:#?}", settings))?;
+    // crate::bindings::nvim::print(lua, format!("{settings:#?}"))?;
 
     // If there aren't any sources enabled we echo a warning message and
     // return.
@@ -104,7 +104,18 @@ pub fn setup(
         borrowed.augroup = Augroup::new(lua, state)?;
         borrowed.augroup.set(lua)?;
 
-        borrowed.channel = Channel::new(lua, state)?;
+        borrowed.channel = match Channel::new(lua, state) {
+            Ok(channel) => channel,
+
+            Err(e) => match e {
+                NewChannelError::Custom(s) => {
+                    utils::echoerr(lua, s)?;
+                    return Ok(());
+                },
+                NewChannelError::Lua(e) => return Err(e),
+            },
+        };
+
         borrowed.ui = Ui::new(lua, &settings.ui)?;
         borrowed.settings = settings;
     }
