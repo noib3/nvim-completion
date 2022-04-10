@@ -1,8 +1,7 @@
-use compleet::source::Sources;
 use serde::Deserialize;
+use sources::sources::Sources;
 
 use super::completion::CompletionSettings;
-use super::sources;
 use super::ui::UiSettings;
 
 #[derive(Debug, Default, Deserialize)]
@@ -14,6 +13,6 @@ pub struct Settings {
     #[serde(default)]
     pub completion: CompletionSettings,
 
-    #[serde(default, with = "sources")]
+    #[serde(default, with = "super::sources")]
     pub sources: Sources,
 }

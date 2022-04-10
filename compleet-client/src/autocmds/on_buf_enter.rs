@@ -1,4 +1,3 @@
-use compleet::api::incoming::Request;
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 
 use crate::state::State;
@@ -26,9 +25,9 @@ pub fn on_buf_enter(
     // 3. the server doesn't have any source for this buffer.
     if state.attached_buffers.contains(&buffer)
         || !buffer.get_option(lua, "modifiable")?
-        || !state
-            .channel
-            .request(lua, Request::ShouldAttach(buffer.number))?
+    // || !state
+    //     .channel
+    //     .request(lua, Request::ShouldAttach(buffer.number))?
     {
         return Ok(());
     }

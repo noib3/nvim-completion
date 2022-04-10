@@ -1,6 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
 
-use compleet::api::incoming::Notification;
 use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaValue};
 
 use crate::channel;
@@ -27,7 +26,8 @@ impl Augroup {
                 let state = &mut cloned.borrow_mut();
                 // Send a notification to the server to stop all running tasks,
                 // then cleanup the UI.
-                state.channel.notify(lua, Notification::StopTasks)?;
+                // state.channel.notify(lua, Notification::StopTasks)?;
+                state.channel.as_mut().unwrap().stop_tasks();
                 ui::cleanup(lua, &mut state.ui)?;
                 Ok(())
             })?,
@@ -46,7 +46,7 @@ impl Augroup {
                 // If not we send a notification to the server to stop all
                 // running tasks and cleanup the UI.
                 else {
-                    state.channel.notify(lua, Notification::StopTasks)?;
+                    state.channel.as_mut().unwrap().stop_tasks();
                     ui::cleanup(lua, &mut state.ui)?;
                 }
                 Ok(())
@@ -156,6 +156,7 @@ impl Augroup {
             lua.create_table_from([
                 ("group", LuaValue::Integer(id as i64)),
                 ("callback", LuaValue::Function(on_buf_enter)),
+                // ("callback", LuaValue::Function(cb)),
             ])?,
         )?;
 

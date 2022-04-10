@@ -1,21 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use compleet::{
-    source::{Source, Sources},
-    sources,
-};
-use serde::{
-    de::{Deserializer, MapAccess, Visitor},
-    Deserialize,
-};
-
-#[derive(Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ValidSource {
-    Lipsum,
-    Lsp,
-}
+use serde::de::{Deserializer, MapAccess, Visitor};
+use sources::sources::*;
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
 where
@@ -45,16 +32,19 @@ impl<'de> Visitor<'de> for SourcesVisitor {
         while let Some(source) = access.next_key::<ValidSource>()? {
             match source {
                 ValidSource::Lipsum => {
-                    let lipsum = access.next_value::<sources::Lipsum>()?;
+                    let lipsum = access.next_value::<Lipsum>()?;
                     if lipsum.enable {
-                        sources.push(Arc::new(lipsum) as Arc<dyn Source>);
+                        sources.push(
+                            Arc::new(lipsum) as Arc<dyn CompletionSource>
+                        );
                     }
                 },
 
                 ValidSource::Lsp => {
-                    let lsp = access.next_value::<sources::Lsp>()?;
+                    let lsp = access.next_value::<Lsp>()?;
                     if lsp.enable {
-                        sources.push(Arc::new(lsp) as Arc<dyn Source>);
+                        sources
+                            .push(Arc::new(lsp) as Arc<dyn CompletionSource>);
                     }
                 },
             }

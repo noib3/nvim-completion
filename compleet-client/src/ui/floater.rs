@@ -1,8 +1,4 @@
-use mlua::{
-    prelude::{LuaRegistryKey, LuaResult},
-    Lua,
-    Table,
-};
+use mlua::prelude::{Lua, LuaRegistryKey, LuaResult, LuaValue};
 
 use crate::bindings::api;
 use crate::settings::ui::border::Border;
@@ -161,7 +157,7 @@ impl Floater {
         if let Some(key) = &self.border_style_key {
             // Retrieve the Lua table defining the border style from its
             // registry key.
-            opts.set("border", lua.registry_value::<Table>(key)?)?;
+            opts.set("border", lua.registry_value::<LuaValue>(key)?)?;
         }
 
         let winid = api::open_win(lua, self.bufnr, false, opts)?;

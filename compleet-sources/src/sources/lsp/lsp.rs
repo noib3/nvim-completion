@@ -1,18 +1,22 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 
-use crate::completion::{Completion, Completions};
+use super::super::completion_source::CompletionSource;
+use crate::completion::{CompletionItem, Completions};
 use crate::cursor::Cursor;
-use crate::source::Source;
 
 #[derive(Debug, Deserialize)]
 pub struct Lsp {
     pub enable: bool,
+    pub test: String,
 }
 
 impl Default for Lsp {
     fn default() -> Self {
-        Lsp { enable: false }
+        Lsp {
+            enable: false,
+            test: "Default".into(),
+        }
     }
 }
 
@@ -34,7 +38,7 @@ returns a `handle` and a `pid`
 */
 
 #[async_trait]
-impl Source for Lsp {
+impl CompletionSource for Lsp {
     async fn attach(&self, _bufnr: u32) -> bool {
         // let clients = nvim.lsp.buf_get_clients(bufnr)?;
         true
@@ -45,13 +49,13 @@ impl Source for Lsp {
         // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         // std::thread::sleep(std::time::Duration::from_secs(5));
 
-        let item = Completion {
+        let item = CompletionItem {
             details: None,
-            format: " Lsp".into(),
+            format: self.test.clone(),
             hl_ranges: vec![],
             matched_bytes: 1,
             source: "Lsp".into(),
-            text: "Lsp".into(),
+            text: self.test.clone(),
         };
 
         vec![item]

@@ -1,4 +1,4 @@
-use compleet::api::incoming::Notification;
+// use compleet::api::incoming::Notification;
 use mlua::{prelude::LuaResult, Lua};
 
 use crate::bindings::api;
@@ -63,12 +63,8 @@ pub fn on_bytes(
         )?;
     }
 
-    // Send a notification to the server to send completion results for this
-    // buffer.
-    state
-        .channel
-        .notify(lua, Notification::SendCompletions(bufnr, cursor.clone()))?;
-
+    // TODO
+    state.channel.as_mut().unwrap().fetch_completions(&cursor)?;
     state.did_on_bytes = true;
 
     Ok(None)

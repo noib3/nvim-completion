@@ -1,7 +1,7 @@
 use std::cmp;
 
-use compleet::completion::Completion;
 use mlua::{prelude::LuaResult, Lua};
+use sources::completion::CompletionItem;
 
 use super::floater::{Floater, RelativeTo};
 use crate::bindings::api;
@@ -47,7 +47,7 @@ impl CompletionDetails {
     pub fn update(
         &mut self,
         lua: &Lua,
-        completion: Option<&Completion>,
+        completion: Option<&CompletionItem>,
         menu: &Floater,
         force_reopen: bool,
     ) -> LuaResult<()> {

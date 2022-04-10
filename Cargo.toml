@@ -2,7 +2,7 @@
 
 members = [
   "compleet-client",
-  "compleet-server",
+  "compleet-sources",
 ]
 
 # Sacrifice compilation speed for runtime performance.

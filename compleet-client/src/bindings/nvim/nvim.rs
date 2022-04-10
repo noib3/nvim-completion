@@ -1,6 +1,5 @@
 use mlua::{
     prelude::{Lua, LuaFunction, LuaResult, LuaValue},
-    MultiValue,
     Table,
 };
 
@@ -23,34 +22,6 @@ pub fn print<S: std::fmt::Display>(lua: &Lua, msg: S) -> LuaResult<()> {
     lua.globals()
         .get::<_, LuaFunction>("print")?
         .call(msg.to_string())
-}
-
-/// Binding to `vim.rpcnotify`.
-pub fn rpcnotify(
-    lua: &Lua,
-    channel: u32,
-    event: String,
-    args: Vec<LuaValue>,
-) -> LuaResult<()> {
-    self::nvim(lua)?.get::<_, LuaFunction>("rpcnotify")?.call((
-        channel,
-        event,
-        MultiValue::from_vec(args),
-    ))
-}
-
-/// Binding to `vim.rpcrequest`.
-pub fn rpcrequest(
-    lua: &Lua,
-    channel: u32,
-    method: String,
-    args: Vec<LuaValue>,
-) -> LuaResult<()> {
-    self::nvim(lua)?.get::<_, LuaFunction>("rpcrequest")?.call((
-        channel,
-        method,
-        MultiValue::from_vec(args),
-    ))
 }
 
 /// Binding to `vim.schedule`.

@@ -1,6 +1,3 @@
-/// The filename of the compleet server binary.
-pub const SERVER_BINARY_NAME: &str = "compleet";
-
 /// The name of the augroup used to namespace all the autocommands.
 pub const AUGROUP_NAME: &str = "Compleet";
 

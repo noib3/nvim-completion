@@ -1,5 +1,5 @@
-use compleet::{completion::Completion, cursor::Cursor};
 use mlua::{prelude::LuaResult, Lua, ToLua};
+use sources::{completion::CompletionItem, cursor::Cursor};
 
 use crate::bindings::api;
 use crate::constants::hlgroups::ui;
@@ -36,7 +36,7 @@ impl CompletionHint {
     pub fn set(
         &mut self,
         lua: &Lua,
-        completion: &Completion,
+        completion: &CompletionItem,
         cursor: &Cursor,
     ) -> LuaResult<()> {
         let text = &completion.text[(completion.matched_bytes as usize)..];

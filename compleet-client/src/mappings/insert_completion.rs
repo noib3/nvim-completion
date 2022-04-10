@@ -1,5 +1,5 @@
-use compleet::{completion::Completion, cursor::Cursor};
 use mlua::prelude::{Lua, LuaResult};
+use sources::{completion::CompletionItem, cursor::Cursor};
 
 use crate::bindings::{api, nvim};
 
@@ -8,7 +8,7 @@ use crate::bindings::{api, nvim};
 pub fn insert_completion(
     lua: &Lua,
     cursor: &Cursor,
-    completion: &Completion,
+    completion: &CompletionItem,
 ) -> LuaResult<()> {
     let text_to_insert = get_text_to_insert(
         completion.matched_bytes as usize,

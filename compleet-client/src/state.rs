@@ -1,4 +1,4 @@
-use compleet::{completion::Completions, cursor::Cursor};
+use sources::{completion::Completions, cursor::Cursor};
 
 use crate::{
     autocmds::Augroup,
@@ -19,7 +19,7 @@ pub struct State {
     pub buffers_to_be_detached: Vec<u32>,
 
     /// The channel used to communicate with the server.
-    pub channel: Channel,
+    pub channel: Option<Channel>,
 
     /// The currently available completion items.
     pub completions: Completions,

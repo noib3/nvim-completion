@@ -1,6 +1,11 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::{bindings::api, ui::Buffer, utils, State};
+use crate::{
+    bindings::{api, nvim},
+    ui::Buffer,
+    utils,
+    State,
+};
 
 /// Attaches `nvim-compleet` to all the buffers.
 pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
@@ -23,8 +28,13 @@ pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // Set the augroup.
     state.augroup.set(lua)?;
 
-    // Trigger a `BufEnter` event on this buffer to attach it.
-    api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)?;
+    // Schedule a `BufEnter` event on this buffer to attach it.
+    nvim::schedule(
+        lua,
+        lua.create_function(move |lua, ()| {
+            api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)
+        })?,
+    )?;
 
     utils::echoinfo(lua, "Started completion in all buffers")?;
 
@@ -53,8 +63,13 @@ pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
         state.augroup.set(lua)?;
     }
 
-    // Trigger a `BufEnter` event on this buffer to attach it.
-    api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)?;
+    // Schedule a `BufEnter` event on this buffer to attach it.
+    nvim::schedule(
+        lua,
+        lua.create_function(move |lua, ()| {
+            api::exec_autocmds(lua, ["BufEnter"], lua.create_table()?)
+        })?,
+    )?;
 
     // TODO: only display this if we've successfully attached to the buffer.
     utils::echoinfo(lua, format!("Started completion in buffer {current}"))?;

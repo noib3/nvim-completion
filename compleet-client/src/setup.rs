@@ -9,7 +9,7 @@ use serde_path_to_error::deserialize;
 use crate::{
     autocmds::Augroup,
     bindings::{nvim, r#fn},
-    channel::{Channel, NewChannelError},
+    channel::Channel,
     commands,
     hlgroups,
     mappings,
@@ -37,7 +37,11 @@ pub fn setup(
 
     // Try to merge the `preferences` table with the default settings, echoing
     // an error message and returning early if something goes wrong.
-    let settings = match preferences {
+    let Settings {
+        ui,
+        completion,
+        sources,
+    } = match preferences {
         LuaValue::Nil => Settings::default(),
 
         LuaValue::Table(t) => {
@@ -80,11 +84,11 @@ pub fn setup(
         },
     };
 
-    // crate::bindings::nvim::print(lua, format!("{settings:#?}"))?;
+    // crate::bindings::nvim::print(lua, format!("{sources:#?}"))?;
 
     // If there aren't any sources enabled we echo a warning message and
     // return.
-    if settings.sources.is_empty() {
+    if sources.is_empty() {
         utils::echowar(
             lua,
             "All sources are disabled, I'm more useless than nipples on a man",
@@ -95,7 +99,7 @@ pub fn setup(
     // Update the state if this is the first time this function is called.
     let borrowed = &mut state.borrow_mut();
     if !borrowed.did_setup {
-        borrowed.did_setup = true;
+        borrowed.channel = Some(Channel::new(lua, state, sources)?);
 
         hlgroups::setup(lua)?;
         commands::setup(lua, state)?;
@@ -103,21 +107,10 @@ pub fn setup(
 
         borrowed.augroup = Augroup::new(lua, state)?;
         borrowed.augroup.set(lua)?;
-
-        borrowed.channel = match Channel::new(lua, state) {
-            Ok(channel) => channel,
-
-            Err(e) => match e {
-                NewChannelError::Custom(s) => {
-                    utils::echoerr(lua, s)?;
-                    return Ok(());
-                },
-                NewChannelError::Lua(e) => return Err(e),
-            },
-        };
-
-        borrowed.ui = Ui::new(lua, &settings.ui)?;
-        borrowed.settings = settings;
+        borrowed.did_setup = true;
+        borrowed.ui = Ui::new(lua, &ui)?;
+        borrowed.settings.ui = ui;
+        borrowed.settings.completion = completion;
     }
 
     Ok(())

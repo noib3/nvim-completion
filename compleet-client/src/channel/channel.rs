@@ -1,143 +1,141 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, thread};
 
-use compleet::api::incoming::{Notification, Request};
-use compleet::rpc::RpcMessage;
-use mlua::prelude::{
-    FromLua,
-    Lua,
-    LuaError,
-    LuaResult,
-    LuaSerdeExt,
-    LuaString,
-    LuaValue,
+use mlua::prelude::{Lua, LuaResult};
+use nix::{
+    sys::signal::{self, Signal},
+    unistd::Pid,
+};
+use parking_lot::Mutex;
+use sources::{completion::Completions, cursor::Cursor, sources::Sources};
+use tokio::{
+    runtime::{Builder as RuntimeBuilder, Runtime},
+    sync::mpsc::{self, UnboundedSender},
+    task::JoinHandle,
 };
 
-use crate::bindings::{api, nvim, r#fn};
-use crate::constants::*;
-use crate::state::State;
+use crate::{bindings::nvim, state::State, ui};
 
-#[derive(Debug, Default)]
-pub struct Channel(u32);
+#[derive(Debug)]
+pub struct Channel {
+    /// TODO: docs
+    handles: Vec<JoinHandle<()>>,
 
-pub enum NewChannelError {
-    Lua(LuaError),
-    Custom(String),
-}
+    /// TODO: docs
+    sender: UnboundedSender<Completions>,
 
-impl From<LuaError> for NewChannelError {
-    fn from(e: LuaError) -> Self {
-        Self::Lua(e)
-    }
+    /// TODO: docs
+    runtime: Runtime,
+
+    /// TODO: docs
+    sources: Sources,
 }
 
 impl Channel {
-    /// Opens a new RPC channel via `vim.fn.jobstart`.
+    /// Creates a new unbounded channel to communicate with the main thread and
+    /// spawns a tokio runtime.
     pub fn new(
         lua: &Lua,
         state: &Rc<RefCell<State>>,
-    ) -> Result<Channel, NewChannelError> {
+        sources: Sources,
+    ) -> LuaResult<Channel> {
+        let this = Arc::new(Mutex::new(Vec::new()));
+
+        // This is the callback that's executed when there are new completions
+        // to be displayed.
         let cloned = state.clone();
-        let on_exit =
-            lua.create_function(move |lua, (_id, code): (u32, _)| {
-                super::on_exit(lua, &mut cloned.borrow_mut(), code)
-            })?;
+        let that = this.clone();
+        let callback = lua.create_function(move |lua, ()| {
+            let new = {
+                let this = &mut that.lock();
+                this.drain(..).collect::<Completions>()
+            };
+            if !new.is_empty() {
+                let state = cloned.clone();
+                // Schedule a UI update.
+                nvim::schedule(
+                    lua,
+                    lua.create_function(move |lua, ()| {
+                        ui::update(lua, &mut state.borrow_mut(), new.clone())
+                    })?,
+                )?;
+            }
+            Ok(())
+        })?;
 
-        let cloned = state.clone();
-        let on_stderr = lua.create_function(
-            move |lua, (_id, data): (u32, Vec<LuaString>)| {
-                // Convert the received data from Lua strings to raw bytes.
-                let bytes = data
-                    .into_iter()
-                    .map(|s| s.as_bytes().to_vec())
-                    // Re-add a newline byte between every string byte chunk.
-                    .intersperse(vec![b'\n'])
-                    .flatten()
-                    .collect::<Vec<u8>>();
+        // Add an event listener on the SIGUSR2 signal along with the
+        // associated callback.
+        lua.load(
+            r#"
+            function(callback)
+                local signal = vim.loop.new_signal()
+                signal:start("sigusr2", callback)
+            end
+            "#,
+        )
+        .eval::<mlua::Function>()?
+        .call(callback)?;
 
-                super::on_stderr(lua, &mut cloned.borrow_mut(), bytes)
-            },
-        )?;
+        let (sender, mut receiver) = mpsc::unbounded_channel::<Completions>();
 
-        let opts = lua.create_table_from([
-            ("on_exit", LuaValue::Function(on_exit)),
-            ("on_stderr", LuaValue::Function(on_stderr)),
-            ("rpc", LuaValue::Boolean(true)),
-        ])?;
+        let _ = thread::spawn(move || {
+            let rt = RuntimeBuilder::new_current_thread()
+                .enable_time()
+                .build()
+                .expect("Couldn't create async runtime");
 
-        let path = self::compleet_server_path(lua)?;
+            rt.block_on(async {
+                let pid = i32::try_from(std::process::id()).unwrap();
+                loop {
+                    if let Some(completions) = receiver.recv().await {
+                        // TODO: place the completions inside the state
+                        {
+                            let that = &mut this.lock();
+                            that.extend(completions);
+                        }
+                        // Notify the main thread that new completions are
+                        // available by sending a SIGUSR2 signal.
+                        signal::kill(Pid::from_raw(pid), Signal::SIGUSR2)
+                            .unwrap();
+                    }
+                }
+            })
+        });
 
-        let id = match r#fn::jobstart(lua, &[path], opts)? {
-            -1 => {
-                return Err(NewChannelError::Custom(format!(
-                    "The `{SERVER_BINARY_NAME}` binary is not executable!"
-                )));
-            },
+        let runtime = RuntimeBuilder::new_multi_thread()
+            .enable_io()
+            .enable_time()
+            .build()
+            .expect("Couldn't create async runtime");
 
-            id => id as u32,
-        };
-
-        Ok(Channel(id))
+        Ok(Channel {
+            handles: Vec::new(),
+            sender,
+            runtime,
+            sources,
+        })
     }
 
-    /// Sends a notification to the server.
-    pub fn notify(&self, lua: &Lua, ntf: Notification) -> LuaResult<()> {
-        // TODO: this is ugly
-        let (method, params) = match RpcMessage::from(ntf) {
-            RpcMessage::Notification { method, params } => {
-                let params = params
-                    .into_iter()
-                    .flat_map(|v| lua.to_value(&v))
-                    .collect::<Vec<LuaValue>>();
-
-                (method, params)
-            },
-            _ => unreachable!(),
-        };
-
-        nvim::rpcnotify(lua, self.0, method, params)
+    /// TODO: docs
+    pub fn stop_tasks(&mut self) {
+        self.handles.iter().for_each(|handle| handle.abort());
+        self.handles.clear();
     }
 
-    /// Sends a request to the server and blocks until the response is
-    /// received.
-    pub fn request<'lua, T: FromLua<'lua>>(
-        &self,
-        _lua: &'lua Lua,
-        _req: Request,
-    ) -> LuaResult<T> {
-        // let (method, params) = match RpcMessage::from(req) {
-        //     RpcMessage::Request {
-        //         msgid: _,
-        //         method,
-        //         params,
-        //     } => {
-        //         let params = params
-        //             .into_iter()
-        //             .flat_map(|v| lua.to_value(&v))
-        //             .collect::<Vec<LuaValue>>();
-
-        //         (method, params)
-        //     },
-        //     _ => unreachable!(),
-        // };
-
-        // nvim::rpcrequest(lua, self.0, method, params)
-
-        todo!()
-    }
-}
-
-/// Returns the full path of the compleet server binary.
-fn compleet_server_path(lua: &Lua) -> Result<String, NewChannelError> {
-    match api::get_runtime_file(
-        lua,
-        &format!("lua/{SERVER_BINARY_NAME}"),
-        false,
-    )? {
-        vec if vec.is_empty() => Err(NewChannelError::Custom(format!(
-            "Couldn't find the `{SERVER_BINARY_NAME}` binary :("
-        ))),
-
-        vec => Ok(vec.into_iter().next().expect("Already checked empty")),
+    /// TODO: docs
+    pub fn fetch_completions(&mut self, cursor: &Cursor) -> LuaResult<()> {
+        let cursor = Arc::new(cursor.clone());
+        for source in self.sources.iter() {
+            let sender = self.sender.clone();
+            let cur = cursor.clone();
+            let source = source.clone();
+            self.handles.push(self.runtime.spawn(async move {
+                let completions = source.complete(&cur).await;
+                if let Err(_) = sender.send(completions) {
+                    // TODO: error handling
+                }
+            }));
+        }
+        Ok(())
     }
 }

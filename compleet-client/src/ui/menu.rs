@@ -1,8 +1,8 @@
 use std::cmp;
 use std::num::NonZeroUsize;
 
-use compleet::completion::Completions;
 use mlua::{prelude::LuaResult, Lua};
+use sources::completion::Completions;
 
 use super::floater::Floater;
 use crate::bindings::{api, r#fn};

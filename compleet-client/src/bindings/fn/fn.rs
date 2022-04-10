@@ -16,13 +16,6 @@ pub fn has(lua: &Lua, feature: &str) -> LuaResult<bool> {
     Ok(bit == 1)
 }
 
-/// Binding to `vim.fn.jobstart`.
-pub fn jobstart(lua: &Lua, cmd: &[String], opts: Table) -> LuaResult<i64> {
-    self::r#fn(lua)?
-        .get::<_, LuaFunction>("jobstart")?
-        .call((cmd, opts))
-}
-
 /// Binding to `vim.fn.screenrow`.
 pub fn screenrow(lua: &Lua) -> LuaResult<u16> {
     self::r#fn(lua)?

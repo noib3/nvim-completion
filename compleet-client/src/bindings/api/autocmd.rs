@@ -68,7 +68,7 @@ pub fn exec_autocmds<S: AsRef<str>, E: IntoIterator<Item = S>>(
         .collect::<Vec<String>>();
 
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_do_autocmd")?
+        .get::<&str, LuaFunction>("nvim_exec_autocmds")?
         .call((events, opts))
 }
 
