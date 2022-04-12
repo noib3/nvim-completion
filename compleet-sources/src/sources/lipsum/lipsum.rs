@@ -31,10 +31,6 @@ impl CompletionSource for Lipsum {
             return Vec::new();
         }
 
-        // Simulate a slow source, this shouldn't block.
-        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        // std::thread::sleep(std::time::Duration::from_secs(5));
-
         LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
@@ -42,13 +38,10 @@ impl CompletionSource for Lipsum {
                 details: Some(
                     LOREM_IPSUM.iter().map(|word| word.to_string()).collect(),
                 ),
-                format: format!(" {}", word),
-                hl_ranges: vec![(
-                    1..word_pre.len() + 1,
-                    "CompleetMenuMatchingChars".into(),
-                )],
+                format: word.to_string(),
+                hl_ranges: vec![],
                 matched_bytes: word_pre.len() as u32,
-                source: "Lipsum".into(),
+                source: "Lipsum",
                 text: word.to_string(),
             })
             .collect()

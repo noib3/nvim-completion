@@ -24,11 +24,9 @@ impl Augroup {
             // Called on every `InsertLeave` event in attached buffers.
             lua.create_function(move |lua, ()| {
                 let state = &mut cloned.borrow_mut();
-                // Send a notification to the server to stop all running tasks,
-                // then cleanup the UI.
-                // state.channel.notify(lua, Notification::StopTasks)?;
                 state.channel.as_mut().unwrap().stop_tasks();
                 ui::cleanup(lua, &mut state.ui)?;
+                state.completions.clear();
                 Ok(())
             })?,
         )?;
@@ -48,6 +46,7 @@ impl Augroup {
                 else {
                     state.channel.as_mut().unwrap().stop_tasks();
                     ui::cleanup(lua, &mut state.ui)?;
+                    state.completions.clear();
                 }
                 Ok(())
             })?,
@@ -61,7 +60,7 @@ impl Augroup {
                       (
                     _,
                     bufnr,
-                    _,
+                    changedtick,
                     start_row,
                     start_col,
                     _,
@@ -74,7 +73,7 @@ impl Augroup {
                 ): (
                     String,
                     _,
-                    u32,
+                    _,
                     _,
                     _,
                     u32,
@@ -89,6 +88,7 @@ impl Augroup {
                         lua,
                         &mut cloned.borrow_mut(),
                         bufnr,
+                        changedtick,
                         start_row,
                         start_col,
                         rows_deleted,
@@ -156,7 +156,6 @@ impl Augroup {
             lua.create_table_from([
                 ("group", LuaValue::Integer(id as i64)),
                 ("callback", LuaValue::Function(on_buf_enter)),
-                // ("callback", LuaValue::Function(cb)),
             ])?,
         )?;
 

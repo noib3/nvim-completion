@@ -85,6 +85,7 @@ pub fn setup(
     };
 
     // crate::bindings::nvim::print(lua, format!("{sources:#?}"))?;
+    // crate::bindings::nvim::print(lua, format!("{ui:#?}"))?;
 
     // If there aren't any sources enabled we echo a warning message and
     // return.

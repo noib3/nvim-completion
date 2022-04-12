@@ -7,6 +7,7 @@ use super::ui::Ui;
 pub fn cleanup(lua: &Lua, ui: &mut Ui) -> LuaResult<()> {
     if ui.menu.floater.is_open() {
         ui.menu.floater.close(lua)?;
+        ui.menu.selected_index = None;
 
         // The details window can only be open if a completion is selected,
         // which in turn can only happen if the menu is open.

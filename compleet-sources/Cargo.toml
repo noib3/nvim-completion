@@ -10,3 +10,8 @@ version = "0.1"
 [dependencies.serde]
 version = "1.0"
 features = ["derive"]
+
+# Async runtime.
+[dependencies.tokio]
+version = "1.17.0"
+features = ["full"]

@@ -18,6 +18,9 @@ pub struct State {
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     pub buffers_to_be_detached: Vec<u32>,
 
+    /// TODO:.
+    pub changedtick_last_update: u32,
+
     /// The channel used to communicate with the server.
     pub channel: Option<Channel>,
 

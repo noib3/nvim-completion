@@ -10,6 +10,7 @@ pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
     bufnr: u32,
+    changedtick: u32,
     start_row: u32,
     start_col: u32,
     rows_deleted: u32,
@@ -49,22 +50,26 @@ pub fn on_bytes(
     cursor.bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
 
-    #[cfg(debug)]
-    {
-        debug_cursor_position(
-            lua,
-            start_row,
-            start_col,
-            rows_deleted,
-            bytes_deleted,
-            rows_added,
-            bytes_added,
-            cursor,
-        )?;
-    }
+    state.completions.clear();
+    // #[cfg(debug)]
+    // {
+    //     debug_cursor_position(
+    //         lua,
+    //         start_row,
+    //         start_col,
+    //         rows_deleted,
+    //         bytes_deleted,
+    //         rows_added,
+    //         bytes_added,
+    //         cursor,
+    //     )?;
+    // }
 
-    // TODO
-    state.channel.as_mut().unwrap().fetch_completions(&cursor)?;
+    let channel = state.channel.as_mut().expect("channel already created");
+
+    channel.stop_tasks();
+    channel.fetch_completions(&cursor, changedtick)?;
+
     state.did_on_bytes = true;
 
     Ok(None)
@@ -80,41 +85,41 @@ fn get_current_line(lua: &Lua, current_row: u32) -> LuaResult<String> {
     )?
     .into_iter()
     .next()
-    .expect("There's always at least 1 line in this range");
+    .expect("there's always at least 1 line in this range");
 
     Ok(current_line)
 }
 
-#[cfg(debug)]
-fn debug_cursor_position(
-    lua: &Lua,
-    start_row: u32,
-    start_col: u32,
-    rows_deleted: u32,
-    bytes_deleted: u32,
-    rows_added: u32,
-    bytes_added: u32,
-    cursor: &compleet::cursor::Cursor,
-) -> LuaResult<()> {
-    use crate::bindings::nvim;
+// #[cfg(debug)]
+// fn debug_cursor_position(
+//     lua: &Lua,
+//     start_row: u32,
+//     start_col: u32,
+//     rows_deleted: u32,
+//     bytes_deleted: u32,
+//     rows_added: u32,
+//     bytes_added: u32,
+//     cursor: &compleet::cursor::Cursor,
+// ) -> LuaResult<()> {
+//     use crate::bindings::nvim;
 
-    nvim::print(lua, "----------------")?;
-    nvim::print(lua, format!("Start row: {start_row}"))?;
-    nvim::print(lua, format!("Start col: {start_col}"))?;
-    nvim::print(lua, format!("Rows deleted: {rows_deleted}"))?;
-    nvim::print(lua, format!("Bytes deleted: {bytes_deleted}"))?;
-    nvim::print(lua, format!("Rows added: {rows_added}"))?;
-    nvim::print(lua, format!("Bytes added: {bytes_added}"))?;
-    nvim::print(lua, "")?;
+//     nvim::print(lua, "----------------")?;
+//     nvim::print(lua, format!("Start row: {start_row}"))?;
+//     nvim::print(lua, format!("Start col: {start_col}"))?;
+//     nvim::print(lua, format!("Rows deleted: {rows_deleted}"))?;
+//     nvim::print(lua, format!("Bytes deleted: {bytes_deleted}"))?;
+//     nvim::print(lua, format!("Rows added: {rows_added}"))?;
+//     nvim::print(lua, format!("Bytes added: {bytes_added}"))?;
+//     nvim::print(lua, "")?;
 
-    let mut current_line = cursor.line.clone();
-    current_line.insert(cursor.bytes as usize, '|');
-    nvim::print(lua, format!("Current row: {}", cursor.row))?;
-    nvim::print(lua, format!("Current bytes: {}", cursor.bytes))?;
-    nvim::print(
-        lua,
-        format!("Current line (`|` is cursor): '{current_line}'"),
-    )?;
+//     let mut current_line = cursor.line.clone();
+//     current_line.insert(cursor.bytes as usize, '|');
+//     nvim::print(lua, format!("Current row: {}", cursor.row))?;
+//     nvim::print(lua, format!("Current bytes: {}", cursor.bytes))?;
+//     nvim::print(
+//         lua,
+//         format!("Current line (`|` is cursor): '{current_line}'"),
+//     )?;
 
-    Ok(())
-}
+//     Ok(())
+// }

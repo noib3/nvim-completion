@@ -44,20 +44,26 @@ impl CompletionSource for Lsp {
         true
     }
 
-    async fn complete(&self, _cursor: &Cursor) -> Completions {
+    async fn complete(&self, cursor: &Cursor) -> Completions {
         // Simulate a slow source, this shouldn't block.
-        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        // std::thread::sleep(std::time::Duration::from_secs(5));
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        let item = CompletionItem {
-            details: None,
-            format: self.test.clone(),
-            hl_ranges: vec![],
-            matched_bytes: 1,
-            source: "Lsp".into(),
-            text: self.test.clone(),
-        };
+        let word_pre = cursor.word_pre();
+        if word_pre.is_empty() {
+            return Vec::new();
+        }
 
-        vec![item]
+        if self.test.starts_with(word_pre) && self.test != word_pre {
+            vec![CompletionItem {
+                details: None,
+                format: self.test.clone(),
+                hl_ranges: vec![],
+                matched_bytes: word_pre.len() as u32,
+                source: "Lsp",
+                text: self.test.clone(),
+            }]
+        } else {
+            Vec::new()
+        }
     }
 }

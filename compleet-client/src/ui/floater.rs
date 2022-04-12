@@ -48,7 +48,7 @@ impl Floater {
         border: &Border,
         hl_groups: Vec<(&'static str, &'static str)>,
     ) -> LuaResult<Self> {
-        let (border_style_key, border_edges) = if border.enable {
+        let (border_style_key, border_edges) = if !border.enable {
             (None, [false; 4])
         } else {
             let style = border.style.to_lua(lua)?;
@@ -177,8 +177,8 @@ impl Floater {
         &mut self,
         lua: &Lua,
         position: RelativeTo,
-        width: u16,
         height: u16,
+        width: u16,
     ) -> LuaResult<()> {
         let winid = self.id.expect("The floater is open so it has an id");
 

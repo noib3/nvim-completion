@@ -22,7 +22,7 @@ pub struct CompletionItem {
     pub matched_bytes: u32,
 
     /// The name of the source this completion comes from.
-    pub source: String,
+    pub source: &'static str,
 
     /// The text that will be inserted into the buffer if the completion is
     /// selected.

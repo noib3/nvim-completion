@@ -30,6 +30,8 @@ pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // but possible).
     ui::cleanup(lua, &mut state.ui)?;
 
+    state.completions.clear();
+
     utils::echoinfo(lua, "Stopped completion in all buffers")?;
 
     Ok(())
@@ -54,6 +56,8 @@ pub fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     state.augroup.clear_local(lua, &current)?;
 
     ui::cleanup(lua, &mut state.ui)?;
+
+    state.completions.clear();
 
     utils::echoinfo(lua, format!("Stopped completion in buffer {current}"))?;
 

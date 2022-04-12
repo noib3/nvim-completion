@@ -16,13 +16,15 @@ use tokio::{
 
 use crate::{bindings::nvim, state::State, ui};
 
+/// TODO: REFACTOR THE WHOLE FILE, IT'S A MESS!!
+
 #[derive(Debug)]
 pub struct Channel {
     /// TODO: docs
     handles: Vec<JoinHandle<()>>,
 
     /// TODO: docs
-    sender: UnboundedSender<Completions>,
+    sender: UnboundedSender<(Completions, u32, u32)>,
 
     /// TODO: docs
     runtime: Runtime,
@@ -39,27 +41,55 @@ impl Channel {
         state: &Rc<RefCell<State>>,
         sources: Sources,
     ) -> LuaResult<Channel> {
-        let this = Arc::new(Mutex::new(Vec::new()));
-
+        let this = Arc::new(Mutex::new((Vec::new(), 0u32, 0u32)));
         // This is the callback that's executed when there are new completions
         // to be displayed.
         let cloned = state.clone();
         let that = this.clone();
+
+        let ctick = Arc::new(Mutex::new(0u32));
+        let count = Arc::new(Mutex::new(0u32));
+
         let callback = lua.create_function(move |lua, ()| {
-            let new = {
+            let state = cloned.clone();
+            let (new, changedtick, num_sources) = {
                 let this = &mut that.lock();
-                this.drain(..).collect::<Completions>()
+                (this.0.drain(..).collect::<Completions>(), this.1, this.2)
             };
-            if !new.is_empty() {
-                let state = cloned.clone();
-                // Schedule a UI update.
-                nvim::schedule(
-                    lua,
-                    lua.create_function(move |lua, ()| {
-                        ui::update(lua, &mut state.borrow_mut(), new.clone())
-                    })?,
-                )?;
-            }
+
+            // TODO: omg refactor what even is this.
+            let is_last = {
+                let tick = &mut *ctick.lock();
+                let num = &mut *count.lock();
+
+                if changedtick != *tick {
+                    *tick = changedtick;
+                    *num = 1;
+                    num_sources == 1
+                } else {
+                    *num += 1;
+                    if *num == num_sources {
+                        *num = 1;
+                        true
+                    } else {
+                        false
+                    }
+                }
+            };
+
+            // Schedule a UI update.
+            nvim::schedule(
+                lua,
+                lua.create_function(move |lua, ()| {
+                    ui::update(
+                        lua,
+                        &mut state.borrow_mut(),
+                        new.clone(),
+                        changedtick,
+                        is_last,
+                    )
+                })?,
+            )?;
             Ok(())
         })?;
 
@@ -76,7 +106,8 @@ impl Channel {
         .eval::<mlua::Function>()?
         .call(callback)?;
 
-        let (sender, mut receiver) = mpsc::unbounded_channel::<Completions>();
+        let (sender, mut receiver) =
+            mpsc::unbounded_channel::<(Completions, u32, u32)>();
 
         let _ = thread::spawn(move || {
             let rt = RuntimeBuilder::new_current_thread()
@@ -87,11 +118,22 @@ impl Channel {
             rt.block_on(async {
                 let pid = i32::try_from(std::process::id()).unwrap();
                 loop {
-                    if let Some(completions) = receiver.recv().await {
+                    if let Some((completions, changedtick, num_sources)) =
+                        receiver.recv().await
+                    {
+                        // println!("{changedtick}, {}", completions.len());
+
                         // TODO: place the completions inside the state
                         {
                             let that = &mut this.lock();
-                            that.extend(completions);
+                            // Clear any completions that haven't been
+                            // consumed?
+                            // TODO: test this w/ multiple sources arriving at
+                            // the same moment.
+                            // that.0.extend(completions);
+                            that.0 = completions;
+                            that.1 = changedtick;
+                            that.2 = num_sources;
                         }
                         // Notify the main thread that new completions are
                         // available by sending a SIGUSR2 signal.
@@ -103,10 +145,9 @@ impl Channel {
         });
 
         let runtime = RuntimeBuilder::new_multi_thread()
-            .enable_io()
-            .enable_time()
+            .enable_all()
             .build()
-            .expect("Couldn't create async runtime");
+            .expect("couldn't create async runtime");
 
         Ok(Channel {
             handles: Vec::new(),
@@ -123,15 +164,22 @@ impl Channel {
     }
 
     /// TODO: docs
-    pub fn fetch_completions(&mut self, cursor: &Cursor) -> LuaResult<()> {
+    pub fn fetch_completions(
+        &mut self,
+        cursor: &Cursor,
+        changedtick: u32,
+    ) -> LuaResult<()> {
         let cursor = Arc::new(cursor.clone());
+        let num_sources = u32::try_from(self.sources.len()).unwrap();
         for source in self.sources.iter() {
             let sender = self.sender.clone();
             let cur = cursor.clone();
             let source = source.clone();
             self.handles.push(self.runtime.spawn(async move {
                 let completions = source.complete(&cur).await;
-                if let Err(_) = sender.send(completions) {
+                if let Err(_) =
+                    sender.send((completions, changedtick, num_sources))
+                {
                     // TODO: error handling
                 }
             }));

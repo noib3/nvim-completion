@@ -4,42 +4,64 @@ use mlua::prelude::{Lua, LuaResult};
 use sources::completion::Completions;
 
 use super::floater::RelativeTo;
-use crate::state::State;
+use crate::{bindings::api, state::State, ui};
 
-// TODO: what we send in `on_bytes` should be a request, not a notification.
-//
-// TODO: handle `state.completions` being non empty.
-//
-// TODO: how do we cleanup the UI if after sometime the server tells us no
-// completions were found?.
-//
-//
-/// Executed when new completions arrive to the channel.
+// BUGS:
+// Lorem i -> select ipsum -> insert -> alt - bs -> 4 ipsums??
+
+/// Scheduled when a source sends its completions to the channel.
 pub fn update(
     lua: &Lua,
     state: &mut State,
     new: Completions,
+    changedtick: u32,
+    is_last: bool,
 ) -> LuaResult<()> {
+    // A source sending no completions should usually cause no UI update. The
+    // only exception is if that was the last source for a given `changedtick`,
+    // and that `changedtick` is newer that the last one that caused a UI
+    // update. This means there are no completions available and the UI should
+    // be cleaned up.
+    if new.is_empty() {
+        if is_last && changedtick != state.changedtick_last_update {
+            ui::cleanup(lua, &mut state.ui)?;
+        }
+        return Ok(());
+    }
+
     let ui = &mut state.ui;
     let settings = &state.settings;
+    let completions = &mut state.completions;
 
-    // TODO
+    // Update the contents of the completion menu.
+    if completions.is_empty() {
+        ui.menu.fill(lua, &new)?;
+    } else {
+        ui.menu.insert(lua, &new, 0)?;
+    }
+
+    // Extend the already present completions with the new ones.
+    // NOTE: for now they are added to the end of the vector. Once we have more
+    // sources we'll have to do some sorting.
+    completions.extend(new);
+
+    // Update the selected completion (if there was one).
     if let Some(old) = ui.menu.selected_index {
-        ui.menu.selected_index = Some(cmp::min(old, new.len() - 1));
+        ui.menu.selected_index = Some(cmp::min(old, completions.len() - 1));
     }
 
     // Update the completion hint.
     if settings.ui.hint.enable && state.cursor.is_at_eol() {
         let i = ui.menu.selected_index.unwrap_or(0);
-        ui.hint.set(lua, &new[i], &state.cursor)?;
-    } else if ui.hint.is_visible {
-        ui.hint.erase(lua)?;
+        ui.hint.set(lua, &completions[i], &state.cursor)?;
     }
+
+    // TODO: respect `settings.menu.autoshow`.
 
     // Try to position the completion menu.
     let (position, height, width) = match super::menu::find_position(
         lua,
-        &new,
+        &completions,
         &ui.menu.floater,
         settings.ui.menu.max_height,
     )? {
@@ -50,17 +72,48 @@ pub fn update(
         None => {
             ui.menu.floater.close(lua)?;
             ui.details.floater.close(lua)?;
+            ui.menu.selected_index = None;
             return Ok(());
         },
     };
 
     // Open the menu.
-    ui.menu.floater.open(lua, position, height, width)?;
+    if let Some(winid) = ui.menu.floater.id {
+        ui.menu.floater.r#move(lua, position, height, width)?;
 
-    // Fill the menu's buffer.
-    ui.menu.fill(lua, &new)?;
+        // Reset the cursor to the first row of the window.
+        // TODO: document why.
+        api::win_set_cursor(lua, winid, 1, 0)?;
 
-    state.completions = new;
+        if let Some(index) = ui.menu.selected_index {
+            // Moving the floater resets the value of the `cursorline` option.
+            // If a completion is selected it needs to be turned
+            // back on.
+            api::win_set_option(lua, winid, "cursorline", true)?;
+
+            // Reset the cursor to the row of the selected completion.
+            api::win_set_cursor(
+                lua,
+                winid,
+                u32::try_from(index + 1).unwrap(),
+                0,
+            )?;
+
+            // Update the completion details.
+            ui.details.update(
+                lua,
+                completions.get(index),
+                &ui.menu.floater,
+                true,
+            )?;
+        } else {
+            ui.details.floater.close(lua)?;
+        }
+    } else {
+        ui.menu.floater.open(lua, position, height, width)?;
+    }
+
+    state.changedtick_last_update = changedtick;
 
     Ok(())
 }

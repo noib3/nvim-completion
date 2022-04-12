@@ -55,6 +55,21 @@ impl CompletionMenu {
         api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
     }
 
+    /// TODO: docs.
+    pub fn insert(
+        &self,
+        lua: &Lua,
+        completions: &Completions,
+        index: i32,
+    ) -> LuaResult<()> {
+        let lines = completions
+            .iter()
+            .map(|completion| completion.format.clone())
+            .collect::<Vec<String>>();
+
+        api::buf_set_lines(lua, self.bufnr, index as u32, index, false, lines)
+    }
+
     /// Selects a new completion. Should only be called if the completion menu
     /// is already open.
     pub fn select(
