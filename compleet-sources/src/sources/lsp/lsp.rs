@@ -56,9 +56,9 @@ impl CompletionSource for Lsp {
         if self.test.starts_with(word_pre) && self.test != word_pre {
             vec![CompletionItem {
                 details: None,
-                format: self.test.clone(),
-                hl_ranges: vec![],
-                matched_bytes: word_pre.len() as u32,
+                format: format!(" {word_pre} "),
+                matched_bytes: vec![0..word_pre.len()],
+                matched_prefix: word_pre.len() as u32,
                 source: "Lsp",
                 text: self.test.clone(),
             }]

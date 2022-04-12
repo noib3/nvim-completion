@@ -11,12 +11,12 @@ pub fn insert_completion(
     completion: &CompletionItem,
 ) -> LuaResult<()> {
     let text_to_insert = get_text_to_insert(
-        completion.matched_bytes as usize,
+        completion.matched_prefix as usize,
         &cursor.line[cursor.bytes as usize..],
         &completion.text,
     );
 
-    let end_column = (cursor.bytes - completion.matched_bytes) as usize
+    let end_column = (cursor.bytes - completion.matched_prefix) as usize
         + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point

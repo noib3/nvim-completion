@@ -18,6 +18,9 @@ pub struct CompletionMenu {
     /// Floating window used to show the completion menu.
     pub floater: Floater,
 
+    /// TODO: docs
+    mc_nsid: u32,
+
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.
     pub selected_index: Option<usize>,
@@ -39,6 +42,7 @@ impl CompletionMenu {
                     ("Search", "None"),
                 ],
             )?,
+            mc_nsid: api::create_namespace(lua, "compleet_matched_chars")?,
             selected_index: None,
         })
     }
@@ -52,7 +56,30 @@ impl CompletionMenu {
             .map(|completion| completion.format.clone())
             .collect::<Vec<String>>();
 
-        api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
+        api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)?;
+
+        // Highlight the matching characters of every completion item.
+        let mut id = 0u16;
+        let opts = lua.create_table_with_capacity(0, 4)?;
+        for (row, completion) in completions.iter().enumerate() {
+            for range in &completion.matched_bytes {
+                id += 1;
+                opts.set("id", id)?;
+                opts.set("end_row", row)?;
+                opts.set("end_col", range.end + 1)?;
+                opts.set("hl_group", ui::MENU_MATCHING)?;
+                api::buf_set_extmark(
+                    lua,
+                    self.bufnr,
+                    self.mc_nsid,
+                    row as u32,
+                    range.start as u32 + 1,
+                    opts.clone(),
+                )?;
+            }
+        }
+
+        Ok(())
     }
 
     /// TODO: docs.

@@ -121,9 +121,6 @@ impl Channel {
                     if let Some((completions, changedtick, num_sources)) =
                         receiver.recv().await
                     {
-                        // println!("{changedtick}, {}", completions.len());
-
-                        // TODO: place the completions inside the state
                         {
                             let that = &mut this.lock();
                             // Clear any completions that haven't been

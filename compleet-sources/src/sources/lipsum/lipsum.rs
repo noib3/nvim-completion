@@ -25,6 +25,8 @@ impl CompletionSource for Lipsum {
     }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {
+        // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {
@@ -38,9 +40,9 @@ impl CompletionSource for Lipsum {
                 details: Some(
                     LOREM_IPSUM.iter().map(|word| word.to_string()).collect(),
                 ),
-                format: word.to_string(),
-                hl_ranges: vec![],
-                matched_bytes: word_pre.len() as u32,
+                format: format!(" {word} "),
+                matched_bytes: vec![0..word_pre.len()],
+                matched_prefix: word_pre.len() as u32,
                 source: "Lipsum",
                 text: word.to_string(),
             })

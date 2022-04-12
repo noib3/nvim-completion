@@ -46,7 +46,7 @@ pub fn buf_set_extmark(
 }
 
 /// Binding to `vim.api.nvim_create_namespace`.
-pub fn create_namespace(lua: &Lua, name: String) -> LuaResult<u32> {
+pub fn create_namespace(lua: &Lua, name: &'static str) -> LuaResult<u32> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_create_namespace")?
         .call(name)
