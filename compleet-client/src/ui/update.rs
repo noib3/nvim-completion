@@ -8,6 +8,7 @@ use crate::{bindings::api, state::State, ui};
 
 // BUGS:
 // Lorem i -> select ipsum -> insert -> alt - bs -> 4 ipsums??
+// lec -> bs -> ui isn't updated
 
 /// Scheduled when a source sends its completions to the channel.
 pub fn update(

@@ -15,7 +15,10 @@ version = "0.23.1"
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"
-features = ["luajit", "vendored", "module", "serialize"]
+features = ["luajit", "vendored", "module", "serialize", "macros"]
+
+[dependencies.os_pipe]
+version = "1.0.1"
 
 # Better `Mutex`es.
 [dependencies.parking_lot]

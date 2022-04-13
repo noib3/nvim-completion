@@ -1,11 +1,17 @@
+use std::io::Write;
+use std::os::unix::io::IntoRawFd;
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc, thread};
 
-use mlua::prelude::{Lua, LuaResult};
-use nix::{
-    sys::signal::{self, Signal},
-    unistd::Pid,
+use mlua::{
+    chunk,
+    prelude::{Lua, LuaResult},
 };
+// use nix::{
+//     sys::signal::{self, Signal},
+//     unistd::Pid,
+// };
+// use os_pipe::PipeWriter;
 use parking_lot::Mutex;
 use sources::{completion::Completions, cursor::Cursor, sources::Sources};
 use tokio::{
@@ -31,6 +37,8 @@ pub struct Channel {
 
     /// TODO: docs
     sources: Sources,
+    // /// TODO: docs
+    // writer: Arc<PipeWriter>,
 }
 
 impl Channel {
@@ -93,21 +101,37 @@ impl Channel {
             Ok(())
         })?;
 
-        // Add an event listener on the SIGUSR2 signal along with the
-        // associated callback.
-        lua.load(
-            r#"
-            function(callback)
-                local signal = vim.loop.new_signal()
-                signal:start("sigusr2", callback)
-            end
-            "#,
-        )
-        .eval::<mlua::Function>()?
-        .call(callback)?;
+        // r#"
+        // function(callback)
+        //     local signal = vim.loop.new_signal()
+        //     signal:start("sigusr2", callback)
+        // end
+        // "#,
+        // )
+        // .eval::<mlua::Function>()?
+        // .call(callback)?;
 
         let (sender, mut receiver) =
             mpsc::unbounded_channel::<(Completions, u32, u32)>();
+
+        let (reader, mut writer) = os_pipe::pipe()?;
+
+        // Add an event listener on the SIGUSR2 signal along with the
+        // associated callback.
+        let read_fd = reader.into_raw_fd();
+        lua.load(chunk! {
+            local read_pipe = vim.loop.new_pipe()
+            read_pipe:open($read_fd)
+            read_pipe:read_start(function(err, chunk)
+                assert(not err, err)
+                if chunk then
+                    for _ = 1,string.len(chunk) do
+                        $callback()
+                    end
+                end
+            end)
+        })
+        .exec()?;
 
         let _ = thread::spawn(move || {
             let rt = RuntimeBuilder::new_current_thread()
@@ -116,7 +140,7 @@ impl Channel {
                 .expect("Couldn't create async runtime");
 
             rt.block_on(async {
-                let pid = i32::try_from(std::process::id()).unwrap();
+                // let pid = i32::try_from(std::process::id()).unwrap();
                 loop {
                     if let Some((completions, changedtick, num_sources)) =
                         receiver.recv().await
@@ -132,10 +156,14 @@ impl Channel {
                             that.1 = changedtick;
                             that.2 = num_sources;
                         }
-                        // Notify the main thread that new completions are
-                        // available by sending a SIGUSR2 signal.
-                        signal::kill(Pid::from_raw(pid), Signal::SIGUSR2)
-                            .unwrap();
+                        // Signal Neovim that a source has sent its
+                        // completions.
+                        writer.write_all(&[b'1']).unwrap();
+
+                        // // Notify the main thread that new completions are
+                        // // available by sending a SIGUSR2 signal.
+                        // signal::kill(Pid::from_raw(pid), Signal::SIGUSR2)
+                        //     .unwrap();
                     }
                 }
             })
@@ -172,6 +200,7 @@ impl Channel {
             let sender = self.sender.clone();
             let cur = cursor.clone();
             let source = source.clone();
+            // let writer = self.writer.clone();
             self.handles.push(self.runtime.spawn(async move {
                 let completions = source.complete(&cur).await;
                 if let Err(_) =
