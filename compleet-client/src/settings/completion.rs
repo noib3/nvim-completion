@@ -8,8 +8,6 @@ pub struct CompletionSettings {
 
 impl Default for CompletionSettings {
     fn default() -> Self {
-        CompletionSettings {
-            while_deleting: false,
-        }
+        CompletionSettings { while_deleting: false }
     }
 }

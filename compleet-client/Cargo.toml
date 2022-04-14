@@ -9,9 +9,6 @@ crate-type = ["cdylib"]
 [dependencies.sources]
 path = "../compleet-sources"
 
-[dependencies.nix]
-version = "0.23.1"
-
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"

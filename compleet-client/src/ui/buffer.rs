@@ -18,9 +18,7 @@ impl Display for Buffer {
 impl Buffer {
     /// Returns the current buffer.
     pub fn get_current(lua: &Lua) -> LuaResult<Self> {
-        Ok(Self {
-            number: api::get_current_buf(lua)?,
-        })
+        Ok(Self { number: api::get_current_buf(lua)? })
     }
 
     /// Get a buffer-local option.

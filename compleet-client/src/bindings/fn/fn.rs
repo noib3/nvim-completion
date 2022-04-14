@@ -18,7 +18,5 @@ pub fn has(lua: &Lua, feature: &str) -> LuaResult<bool> {
 
 /// Binding to `vim.fn.screenrow`.
 pub fn screenrow(lua: &Lua) -> LuaResult<u16> {
-    self::r#fn(lua)?
-        .get::<_, LuaFunction>("screenrow")?
-        .call(())
+    self::r#fn(lua)?.get::<_, LuaFunction>("screenrow")?.call(())
 }

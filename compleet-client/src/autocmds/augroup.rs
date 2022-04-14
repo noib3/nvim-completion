@@ -145,9 +145,7 @@ impl Augroup {
         )?;
 
         let on_buf_enter = lua.registry_value::<LuaFunction>(
-            self.on_buf_enter_key
-                .as_ref()
-                .expect("augroup already setup"),
+            self.on_buf_enter_key.as_ref().expect("augroup already setup"),
         )?;
 
         api::create_autocmd(

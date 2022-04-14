@@ -5,16 +5,12 @@ use mlua::{
 };
 
 fn r#loop(lua: &Lua) -> LuaResult<Table> {
-    lua.globals()
-        .get::<_, Table>("vim")?
-        .get::<_, Table>("loop")
+    lua.globals().get::<_, Table>("vim")?.get::<_, Table>("loop")
 }
 
 /// Binding to `vim.loop.new_signal()`.
 pub fn new_signal(lua: &Lua) -> LuaResult<AnyUserData> {
-    self::r#loop(lua)?
-        .get::<_, LuaFunction>("new_signal")?
-        .call(())
+    self::r#loop(lua)?.get::<_, LuaFunction>("new_signal")?.call(())
 }
 
 /// Binding to `vim.loop.signal_start()`.

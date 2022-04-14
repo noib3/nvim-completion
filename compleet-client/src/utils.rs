@@ -45,9 +45,7 @@ fn to_highlighted_chunks(
     msg: String,
     separators: Vec<(u8, &'static str)>,
 ) -> Vec<(String, Option<&'static str>)> {
-    let map = separators
-        .into_iter()
-        .collect::<HashMap<u8, &'static str>>();
+    let map = separators.into_iter().collect::<HashMap<u8, &'static str>>();
 
     let mut start = 0;
     let mut current_hl = None;

@@ -37,11 +37,7 @@ pub fn setup(
 
     // Try to merge the `preferences` table with the default settings, echoing
     // an error message and returning early if something goes wrong.
-    let Settings {
-        ui,
-        completion,
-        sources,
-    } = match preferences {
+    let Settings { ui, completion, sources } = match preferences {
         LuaValue::Nil => Settings::default(),
 
         LuaValue::Table(t) => {

@@ -18,6 +18,15 @@ pub fn update(
     changedtick: u32,
     is_last: bool,
 ) -> LuaResult<()> {
+    crate::bindings::nvim::print(
+        lua,
+        format!(
+            "{}, {changedtick}, {is_last}, {},",
+            new.len(),
+            state.changedtick_last_seen
+        ),
+    )?;
+
     // A source sending no completions should usually cause no UI update. The
     // only exception is if that was the last source for a given `changedtick`,
     // and that `changedtick` is newer that the last one that caused a UI

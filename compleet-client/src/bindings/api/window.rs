@@ -58,9 +58,7 @@ pub fn win_get_height(lua: &Lua, winid: u32) -> LuaResult<u32> {
 
 /// Binding to `vim.api.nvim_win_hide`.
 pub fn win_hide(lua: &Lua, winid: u32) -> LuaResult<()> {
-    super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_win_hide")?
-        .call(winid)
+    super::api(lua)?.get::<&str, LuaFunction>("nvim_win_hide")?.call(winid)
 }
 
 /// Binding to `vim.api.nvim_win_set_cursor`

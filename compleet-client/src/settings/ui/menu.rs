@@ -47,20 +47,14 @@ fn default_border_style() -> BorderStyle {
 }
 
 fn default_menu_border() -> Border {
-    Border {
-        enable: default_border_enable(),
-        style: default_border_style(),
-    }
+    Border { enable: default_border_enable(), style: default_border_style() }
 }
 
 fn deserialize_menu_border<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Border, D::Error> {
     Deserialize::deserialize(deserializer).map(
-        |IncompleteBorder {
-             maybe_enable,
-             maybe_style,
-         }| {
+        |IncompleteBorder { maybe_enable, maybe_style }| {
             let enable = match (maybe_enable, &maybe_style) {
                 (Some(bool), _) => bool,
                 // If the `enable` field is missing but `style` is set the
