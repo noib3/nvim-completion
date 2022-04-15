@@ -1,6 +1,7 @@
 use std::cmp;
 use std::num::NonZeroUsize;
 
+use mlua::Table;
 use mlua::{prelude::LuaResult, Lua};
 use sources::completion::Completions;
 
@@ -153,14 +154,14 @@ pub fn find_position(
 
     // The total height of the completion menu, also counting the top and
     // bottom edges of its border.
-    let height_with_borders = height
+    let total_height = height
         + if floater.border_edges[0] { 1 } else { 0 }
         + if floater.border_edges[1] { 1 } else { 0 };
 
-    let row = if height_with_borders <= rows_below {
+    let row = if total_height <= rows_below {
         1
-    } else if height_with_borders <= rows_above {
-        -(height_with_borders as i32)
+    } else if total_height <= rows_above {
+        -(total_height as i32)
     } else {
         return Ok(None);
     };
@@ -174,8 +175,26 @@ pub fn find_position(
 /// Returns the number of screen rows above and below the current cursor
 /// position.
 fn rows_above_below_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
-    let total_rows = api::get_option::<u16>(lua, "lines")?;
-    let rows_above = r#fn::screenrow(lua)? - 1;
+    let lines = api::get_option::<u16>(lua, "lines")?;
+    let cmdheight = api::get_option::<u16>(lua, "cmdheight")?;
+    let laststatus = api::get_option::<u16>(lua, "laststatus")?;
+    let tabline = api::get_option::<String>(lua, "tabline")?;
 
-    Ok((rows_above, total_rows - rows_above - 1))
+    let (screenrow, _) = crate::utils::get_screen_cursor(lua)?;
+
+    let layout = r#fn::winlayout(lua)?;
+    let is_split = layout.get::<_, String>(1)? != "leaf";
+
+    let statuslineoffset = match laststatus {
+        0 => 0,
+        1 if !is_split => 0,
+        _ => 1,
+    };
+
+    let tablineoffset = if tabline.is_empty() { 0 } else { 1 };
+    let row_above = screenrow - (tablineoffset + 1);
+    let row_below =
+        lines - row_above - (tablineoffset + statuslineoffset + cmdheight + 1);
+
+    Ok((row_above, row_below))
 }

@@ -6,14 +6,14 @@ use mlua::{
 
 // TODO: make `command` accept strings.
 /// Binding to `vim.api.nvim_add_user_command`.
-pub fn add_user_command(
+pub fn create_user_command(
     lua: &Lua,
     name: &str,
     command: LuaFunction,
     opts: Table,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_add_user_command")?
+        .get::<&str, LuaFunction>("nvim_create_user_command")?
         .call((name, command, opts))
 }
 

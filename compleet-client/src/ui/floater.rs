@@ -93,29 +93,21 @@ impl Floater {
     /// considering the left and right edges of its border. Should only be
     /// called if the floater is open.
     pub fn cols_before_after(&self, lua: &Lua) -> LuaResult<(u16, u16)> {
-        let cols_total = api::get_option::<u16>(lua, "columns")?;
+        let columns = api::get_option::<u16>(lua, "columns")?;
+        let (_, mut col_before) = crate::utils::get_screen_cursor(lua)?;
 
-        let winid = self.id.expect("The floater is open so it has an id");
-
-        // BUG: the `col` of `win_get_position` is sometimes bigger that the
-        // total number of columns, causing the following subtractions to
-        // overflow.
-        //
-        // TODO: Open an issue upstream.
-        let mut cols_before = api::win_get_position(lua, winid)?.1;
-
-        let cols_after = cols_total
-            - cols_before
+        let cols_after = columns
+            - (col_before + 1)
             - self.width
             - if self.border_edges[3] { 1 } else { 0 };
 
         // If the left edge of the border is set there's one less available
         // column before the floater.
-        if cols_before > 0 && self.border_edges[2] {
-            cols_before -= 1;
+        if col_before > 0 && self.border_edges[2] {
+            col_before -= 1;
         }
 
-        Ok((cols_before, cols_after))
+        Ok((col_before, cols_after))
     }
 
     /// Whether the floater is currently open.
