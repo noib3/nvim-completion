@@ -1,4 +1,3 @@
-// use compleet::api::incoming::Notification;
 use mlua::{prelude::LuaResult, Lua};
 
 use crate::bindings::api;
@@ -67,11 +66,6 @@ pub fn on_bytes(
 
     state.changedtick_last_seen = changedtick;
     state.did_on_bytes = true;
-
-    crate::bindings::nvim::print(
-        lua,
-        format!("did on bytes is ct {changedtick}, line is {}", cursor.line),
-    )?;
 
     let channel = state.channel.as_mut().expect("channel already created");
     let cursor = std::sync::Arc::new(cursor.clone());

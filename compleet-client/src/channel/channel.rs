@@ -118,7 +118,11 @@ impl Channel {
             pipe:open($reader_fd)
             pipe:read_start(function(err, chunk)
                 assert(not err, err)
-                if chunk then $callback() end
+                if chunk then
+                    for i = 1, chunk:len() do
+                        $callback()
+                    end
+                end
             end)
         })
         .exec()?;

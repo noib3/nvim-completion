@@ -40,7 +40,7 @@ pub mod hlgroups {
         /// Highlights the details window.
         pub const DETAILS: &str = "CompleetDetails";
 
-        /// Highlights the border of the details menu.
+        /// Highlights the border of the details window.
         pub const DETAILS_BORDER: &str = "CompleetDetailsBorder";
 
         /// Highlights the completion hint.

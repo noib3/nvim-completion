@@ -6,10 +6,6 @@ use sources::completion::Completions;
 use super::floater::RelativeTo;
 use crate::{bindings::api, state::State, ui};
 
-// BUGS:
-// Lorem i -> select ipsum -> insert -> alt - bs -> 4 ipsums??
-// lec -> bs -> ui isn't updated
-
 /// Scheduled when a source sends its completions to the channel.
 pub fn update(
     lua: &Lua,
@@ -18,15 +14,6 @@ pub fn update(
     changedtick: u32,
     is_last: bool,
 ) -> LuaResult<()> {
-    crate::bindings::nvim::print(
-        lua,
-        format!(
-            "{}, {changedtick}, {is_last}, {},",
-            new.len(),
-            state.changedtick_last_seen
-        ),
-    )?;
-
     // A source sending no completions should usually cause no UI update. The
     // only exception is if that was the last source for a given `changedtick`,
     // and that `changedtick` is newer that the last one that caused a UI

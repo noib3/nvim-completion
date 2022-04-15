@@ -43,7 +43,7 @@ pub fn del_augroup_by_id(lua: &Lua, id: u32) -> LuaResult<()> {
 pub fn del_augroup_by_name(lua: &Lua, name: &str) -> LuaResult<()> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_del_augroup_by_name")?
-        .call::<_, ()>(name)
+        .call(name)
 }
 
 #[allow(dead_code)]
