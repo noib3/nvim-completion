@@ -2,7 +2,7 @@ use std::ops::Range;
 
 pub type Completions = Vec<CompletionItem>;
 
-#[derive(Debug, Clone /* Serialize, Deserialize */)]
+#[derive(Debug)]
 pub struct CompletionItem {
     /// The text to display in the details window as a vector of strings.
     pub details: Option<Vec<String>>,

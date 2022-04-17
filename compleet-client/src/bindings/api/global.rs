@@ -5,15 +5,15 @@ use mlua::{
 };
 
 // TODO: make `command` accept strings.
-/// Binding to `vim.api.nvim_add_user_command`.
-pub fn add_user_command(
+/// Binding to `vim.api.nvim_create_user_command`.
+pub fn create_user_command(
     lua: &Lua,
     name: &str,
     command: LuaFunction,
     opts: Table,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_add_user_command")?
+        .get::<&str, LuaFunction>("nvim_create_user_command")?
         .call((name, command, opts))
 }
 
@@ -50,6 +50,7 @@ pub fn get_current_buf(lua: &Lua) -> LuaResult<u32> {
     super::api(lua)?.get::<&str, LuaFunction>("nvim_get_current_buf")?.call(())
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_get_current_line`
 pub fn get_current_line(lua: &Lua) -> LuaResult<String> {
     super::api(lua)?
@@ -74,6 +75,7 @@ pub fn get_option<'lua, V: FromLua<'lua>>(
     super::api(lua)?.get::<&str, LuaFunction>("nvim_get_option")?.call(name)
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_get_runtime_file`.
 pub fn get_runtime_file(
     lua: &Lua,
@@ -85,6 +87,7 @@ pub fn get_runtime_file(
         .call((name, all))
 }
 
+#[allow(dead_code)]
 /// Binding to `vim.api.nvim_notify`.
 pub fn notify<S: AsRef<str>>(
     lua: &Lua,

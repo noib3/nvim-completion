@@ -36,8 +36,8 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
 
     let opts = lua.create_table_from([("bang", true)])?;
 
-    api::add_user_command(lua, "CompleetStart", start, opts.clone())?;
-    api::add_user_command(lua, "CompleetStop", stop, opts)?;
+    api::create_user_command(lua, "CompleetStart", start, opts.clone())?;
+    api::create_user_command(lua, "CompleetStop", stop, opts)?;
 
     Ok(())
 }

@@ -6,6 +6,12 @@ use sources::completion::Completions;
 use super::floater::RelativeTo;
 use crate::{bindings::api, state::State, ui};
 
+// TODO: refactor everything
+
+// BUGS:
+// 1. selecting a completion while the UI is waiting for the last source before
+//    being cleanup up panics.
+
 /// Scheduled when a source sends its completions to the channel.
 pub fn update(
     lua: &Lua,

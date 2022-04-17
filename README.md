@@ -32,7 +32,7 @@ require("packer").startup(function()
     config = function()
       require("compleet").setup()
     end,
-    run = "cargo build --release && make install",
+    run = "./install.sh release",
   })
 end)
 ```
@@ -127,9 +127,9 @@ The following key mappings are exposed:
   * `<Plug>(compleet-insert-selected-completion)`: inserts the currently
     selected completion item into the buffer;
 
-  * `<Plug>(compleet-insert-hinted-completion)`: inserts the currently
-    hinted completion item into the buffer. Useful when hints are enabled and
-    `ui.menu.autoshow` is set to `false`;
+  * `<Plug>(compleet-insert-first-completion)`: inserts the first completion
+    into the buffer. Useful when hints are enabled and `ui.menu.autoshow` is
+    set to `false`;
 
   * `<Plug>(compleet-show-completions)`: shows all the available completions at
     the current cursor position.
@@ -142,14 +142,14 @@ local keymap = vim.keymap
 
 local tab = function()
   return
-    (compleet.is_menu_visible() and "<Plug>(compleet-next-completion)")
+    (compleet.is_menu_open() and "<Plug>(compleet-next-completion)")
     or (compleet.has_completions() and "<Plug>(compleet-show-completions)")
     or "<Tab>"
 end
 
 local s_tab = function()
   return
-    compleet.is_menu_visible()
+    compleet.is_menu_open()
     and "<Plug>(compleet-prev-completion)"
      or "<S-Tab>"
 end
@@ -157,7 +157,7 @@ end
 local right = function()
   return
     compleet.is_hint_visible()
-    and "<Plug>(compleet-insert-hinted-completion)"
+    and "<Plug>(compleet-insert-first-completion)"
      or "<Right>"
 end
 

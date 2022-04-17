@@ -1,10 +1,14 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 
-use super::super::completion_source::CompletionSource;
-use super::lorems::{LOREMS, LOREM_IPSUM};
-use crate::completion::{CompletionItem, Completions};
-use crate::cursor::Cursor;
+use super::{
+    super::completion_source::CompletionSource,
+    lorems::{LOREMS, LOREM_IPSUM},
+};
+use crate::{
+    completion::{CompletionItem, Completions},
+    cursor::Cursor,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Lipsum {
@@ -25,8 +29,6 @@ impl CompletionSource for Lipsum {
     }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {
-        // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {
@@ -36,7 +38,7 @@ impl CompletionSource for Lipsum {
         LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
-            .map(|&word| CompletionItem {
+            .map(|word| CompletionItem {
                 details: Some(
                     LOREM_IPSUM.iter().map(|word| word.to_string()).collect(),
                 ),
