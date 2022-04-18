@@ -2,7 +2,7 @@ use std::cmp;
 use std::num::NonZeroUsize;
 
 use mlua::{prelude::LuaResult, Lua};
-use sources::completion::Completions;
+use sources::prelude::Completions;
 
 use super::floater::Floater;
 use crate::bindings::{api, r#fn};
@@ -13,7 +13,7 @@ use crate::settings::ui::menu::MenuSettings;
 pub struct CompletionMenu {
     /// Number of the buffer used to show the completions. It's created on
     /// once in `CompletionMenu::new` and never changes.
-    pub bufnr: u32,
+    pub bufnr: u16,
 
     /// Floating window used to show the completion menu.
     pub floater: Floater,

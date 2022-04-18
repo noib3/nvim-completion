@@ -12,7 +12,7 @@ use mlua::{
 };
 use os_pipe::PipeWriter;
 use parking_lot::Mutex;
-use sources::{completion::Completions, cursor::Cursor, sources::Sources};
+use sources::prelude::{Completions, Cursor, Sources};
 use tokio::{
     runtime::{Builder as RuntimeBuilder, Runtime},
     sync::mpsc::{self, UnboundedSender},
@@ -174,5 +174,14 @@ impl Channel {
                 writer.lock().write_all(&[0]).unwrap();
             }));
         }
+    }
+
+    /// TODO: docs
+    pub fn should_attach(
+        &mut self,
+        _lua: &Lua,
+        _bufnr: u16,
+    ) -> LuaResult<bool> {
+        Ok(true)
     }
 }

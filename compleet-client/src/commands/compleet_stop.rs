@@ -15,7 +15,7 @@ pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // Move all the buffer numbers from the `attached_buffers` vector to
     // `buffers_to_be_detached`.
-    state.buffers_to_be_detached.extend::<Vec<u32>>(
+    state.buffers_to_be_detached.extend::<Vec<u16>>(
         state.attached_buffers.iter().map(|b| b.number).collect(),
     );
 

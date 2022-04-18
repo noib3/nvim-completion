@@ -1,5 +1,5 @@
 use mlua::{prelude::LuaResult, Lua, ToLua};
-use sources::{completion::CompletionItem, cursor::Cursor};
+use sources::prelude::{CompletionItem, Cursor};
 
 use crate::bindings::api;
 use crate::constants::hlgroups::ui;

@@ -1,31 +1,27 @@
 use async_trait::async_trait;
-use serde::Deserialize;
+use mlua::prelude::{Lua, LuaResult};
 
 use super::{
-    super::completion_source::CompletionSource,
     lorems::{LOREMS, LOREM_IPSUM},
+    LipsumConfig,
 };
-use crate::{
-    completion::{CompletionItem, Completions},
-    cursor::Cursor,
-};
+use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default)]
 pub struct Lipsum {
-    pub enable: bool,
+    _config: LipsumConfig,
 }
 
-impl Default for Lipsum {
-    fn default() -> Self {
-        Lipsum { enable: false }
+impl From<LipsumConfig> for Lipsum {
+    fn from(_config: LipsumConfig) -> Self {
+        Self { _config, ..Default::default() }
     }
 }
 
 #[async_trait]
 impl CompletionSource for Lipsum {
-    // Attach to all buffers.
-    async fn attach(&self, _bufnr: u32) -> bool {
-        true
+    fn attach(&mut self, _lua: &Lua, _bufnr: u16) -> LuaResult<bool> {
+        Ok(true)
     }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {

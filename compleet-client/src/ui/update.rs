@@ -1,7 +1,7 @@
 use std::cmp;
 
 use mlua::prelude::{Lua, LuaResult};
-use sources::completion::Completions;
+use sources::prelude::Completions;
 
 use super::floater::RelativeTo;
 use crate::{bindings::api, state::State, ui};

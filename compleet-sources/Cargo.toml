@@ -7,6 +7,11 @@ edition = "2021"
 [dependencies.async-trait]
 version = "0.1"
 
+# Rust bindings to Lua
+[dependencies.mlua]
+version = "0.7"
+features = ["luajit", "vendored", "module", "serialize", "macros"]
+
 [dependencies.serde]
 version = "1.0"
 features = ["derive"]

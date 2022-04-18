@@ -16,7 +16,7 @@ pub struct Floater {
     border_style_key: Option<LuaRegistryKey>,
 
     /// The number of the buffer this floating window should contain.
-    bufnr: u32,
+    bufnr: u16,
 
     /// The window id of the floater, or `None` if it's currently closed.
     pub id: Option<u32>,
@@ -44,7 +44,7 @@ pub enum RelativeTo {
 impl Floater {
     pub fn new(
         lua: &Lua,
-        bufnr: u32,
+        bufnr: u16,
         border: &Border,
         hl_groups: Vec<(&'static str, &'static str)>,
     ) -> LuaResult<Self> {

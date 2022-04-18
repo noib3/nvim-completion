@@ -1,5 +1,5 @@
 use mlua::prelude::{Lua, LuaResult};
-use sources::{completion::CompletionItem, cursor::Cursor};
+use sources::prelude::{CompletionItem, Cursor};
 
 use crate::bindings::{api, nvim};
 

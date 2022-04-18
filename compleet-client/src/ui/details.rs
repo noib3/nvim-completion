@@ -1,18 +1,20 @@
 use std::cmp;
 
 use mlua::{prelude::LuaResult, Lua};
-use sources::completion::CompletionItem;
+use sources::prelude::CompletionItem;
 
 use super::floater::{Floater, RelativeTo};
-use crate::bindings::api;
-use crate::constants::hlgroups::ui;
-use crate::settings::ui::details::DetailsSettings;
+use crate::{
+    bindings::api,
+    constants::hlgroups::ui,
+    settings::ui::details::DetailsSettings,
+};
 
 #[derive(Debug, Default)]
 pub struct CompletionDetails {
     /// Number of the buffer used to show the completion details. It's created
     /// once in `CompletionDetails::new` and never changes.
-    bufnr: u32,
+    bufnr: u16,
 
     /// Floating window used to show the completion details.
     pub floater: Floater,

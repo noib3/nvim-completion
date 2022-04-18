@@ -25,9 +25,11 @@ pub fn on_buf_enter(
     // 3. the server doesn't have any source for this buffer.
     if state.attached_buffers.contains(&buffer)
         || !buffer.get_option(lua, "modifiable")?
-    // || !state
-    //     .channel
-    //     .request(lua, Request::ShouldAttach(buffer.number))?
+        || !state
+            .channel
+            .as_mut()
+            .expect("channel already created")
+            .should_attach(lua, buffer.number)?
     {
         return Ok(());
     }

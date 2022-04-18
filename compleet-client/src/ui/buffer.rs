@@ -6,7 +6,7 @@ use crate::bindings::api;
 
 #[derive(Debug, PartialEq)]
 pub struct Buffer {
-    pub number: u32,
+    pub number: u16,
 }
 
 impl Display for Buffer {

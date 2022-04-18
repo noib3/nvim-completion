@@ -2,6 +2,9 @@ use std::ops::Range;
 
 pub type Completions = Vec<CompletionItem>;
 
+// TODO: make this more similar to
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionItem.
+
 #[derive(Debug)]
 pub struct CompletionItem {
     /// The text to display in the details window as a vector of strings.

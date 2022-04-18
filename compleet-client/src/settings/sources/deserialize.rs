@@ -2,7 +2,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use serde::de::{Deserializer, MapAccess, Visitor};
-use sources::sources::*;
+use sources::{prelude::*, *};
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
 where
@@ -29,22 +29,23 @@ impl<'de> Visitor<'de> for SourcesVisitor {
             None => Vec::new(),
         };
 
-        while let Some(source) = access.next_key::<ValidSource>()? {
-            match source {
-                ValidSource::Lipsum => {
-                    let lipsum = access.next_value::<Lipsum>()?;
-                    if lipsum.enable {
-                        sources.push(
-                            Arc::new(lipsum) as Arc<dyn CompletionSource>
-                        );
+        use ValidSource::*;
+        while let Some(name) = access.next_key::<ValidSource>()? {
+            match name {
+                Lipsum => {
+                    let config =
+                        access.next_value::<lipsum::LipsumConfig>()?;
+                    if config.enable {
+                        let lipsum = Arc::new(lipsum::Lipsum::from(config));
+                        sources.push(lipsum as Arc<dyn CompletionSource>);
                     }
                 },
 
-                ValidSource::Lsp => {
-                    let lsp = access.next_value::<Lsp>()?;
-                    if lsp.enable {
-                        sources
-                            .push(Arc::new(lsp) as Arc<dyn CompletionSource>);
+                Lsp => {
+                    let config = access.next_value::<lsp::LspConfig>()?;
+                    if config.enable {
+                        let lsp = Arc::new(lsp::Lsp::from(config));
+                        sources.push(lsp as Arc<dyn CompletionSource>);
                     }
                 },
             }

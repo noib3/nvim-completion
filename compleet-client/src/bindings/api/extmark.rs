@@ -6,7 +6,7 @@ use mlua::{
 /// Binding to `vim.api.nvim_buf_add_highlight`.
 pub fn buf_add_highlight(
     lua: &Lua,
-    bufnr: u32,
+    bufnr: u16,
     ns_id: i32,
     hl_group: String,
     line: u32,
@@ -21,7 +21,7 @@ pub fn buf_add_highlight(
 /// Binding to `vim.api.nvim_buf_clear_namespace`.
 pub fn buf_clear_namespace(
     lua: &Lua,
-    bufnr: u32,
+    bufnr: u16,
     ns_id: i32,
     line_start: u32,
     line_end: i32,
@@ -34,7 +34,7 @@ pub fn buf_clear_namespace(
 /// Binding to `vim.api.nvim_buf_set_extmark`.
 pub fn buf_set_extmark(
     lua: &Lua,
-    bufnr: u32,
+    bufnr: u16,
     ns_id: u32,
     row: u32,
     col: u32,
