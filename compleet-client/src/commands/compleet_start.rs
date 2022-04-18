@@ -54,7 +54,7 @@ pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // If this buffer was queued to be detached from buffer update events (the
     // ones setup by `nvim_buf_attach`, not autocommands) now it no longer
     // needs to.
-    state.buffers_to_be_detached.retain(|&b| b != current.number);
+    state.buffers_to_be_detached.retain(|&b| b != current.bufnr);
 
     // Set the the augroup if it wasn't already set.
     if !state.augroup.is_set() {

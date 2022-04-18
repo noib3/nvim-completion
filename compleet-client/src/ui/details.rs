@@ -12,7 +12,7 @@ use crate::settings::ui::details::DetailsSettings;
 pub struct CompletionDetails {
     /// Number of the buffer used to show the completion details. It's created
     /// once in `CompletionDetails::new` and never changes.
-    bufnr: u32,
+    bufnr: u16,
 
     /// Floating window used to show the completion details.
     pub floater: Floater,

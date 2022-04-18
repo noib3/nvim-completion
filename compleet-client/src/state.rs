@@ -16,7 +16,7 @@ pub struct State {
     pub augroup: Augroup,
 
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    pub buffers_to_be_detached: Vec<u32>,
+    pub buffers_to_be_detached: Vec<u16>,
 
     /// TODO: docs
     pub changedtick_last_seen: u32,

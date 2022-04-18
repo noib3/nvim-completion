@@ -16,10 +16,10 @@ pub struct Floater {
     border_style_key: Option<LuaRegistryKey>,
 
     /// The number of the buffer this floating window should contain.
-    bufnr: u32,
+    bufnr: u16,
 
     /// The window id of the floater, or `None` if it's currently closed.
-    pub id: Option<u32>,
+    pub id: Option<u16>,
 
     #[allow(dead_code)]
     /// The height of the floater in terminal rows, **not** including the
@@ -38,13 +38,13 @@ pub struct Floater {
 /// floater.
 pub enum RelativeTo {
     Cursor(i32, i32),
-    Floater(u32, i32, i32),
+    Floater(u16, i32, i32),
 }
 
 impl Floater {
     pub fn new(
         lua: &Lua,
-        bufnr: u32,
+        bufnr: u16,
         border: &Border,
         hl_groups: Vec<(&'static str, &'static str)>,
     ) -> LuaResult<Self> {

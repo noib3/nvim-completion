@@ -10,7 +10,7 @@ use crate::{bindings::api, constants::AUGROUP_NAME, ui::Buffer};
 #[derive(Debug, Default)]
 pub struct Augroup {
     /// The augroup id returned by `vim.api.nvim_create_autocmd`.
-    id: Option<u32>,
+    id: Option<u16>,
 
     /// The registry key of the Lua function called on `BufEnter` to try to
     /// attach to the buffer.
@@ -125,7 +125,7 @@ impl Augroup {
     pub fn clear_local(&self, lua: &Lua, buffer: &Buffer) -> LuaResult<()> {
         api::clear_autocmds(
             lua,
-            lua.create_table_from([("buffer", buffer.number)])?,
+            lua.create_table_from([("buffer", buffer.bufnr)])?,
         )
     }
 
@@ -176,7 +176,7 @@ impl Augroup {
             let opts = lua.create_table_from([
                 ("group", LuaValue::Integer(id as i64)),
                 ("callback", LuaValue::Function(callback)),
-                ("buffer", LuaValue::Integer(buffer.number as i64)),
+                ("buffer", LuaValue::Integer(buffer.bufnr as i64)),
             ])?;
 
             api::create_autocmd(lua, vec![event], opts)?;

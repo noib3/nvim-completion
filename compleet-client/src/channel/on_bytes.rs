@@ -8,7 +8,7 @@ use crate::state::State;
 pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
-    bufnr: u32,
+    bufnr: u16,
     changedtick: u32,
     start_row: u32,
     start_col: u32,

@@ -15,8 +15,8 @@ pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // Move all the buffer numbers from the `attached_buffers` vector to
     // `buffers_to_be_detached`.
-    state.buffers_to_be_detached.extend::<Vec<u32>>(
-        state.attached_buffers.iter().map(|b| b.number).collect(),
+    state.buffers_to_be_detached.extend::<Vec<u16>>(
+        state.attached_buffers.iter().map(|b| b.bufnr).collect(),
     );
 
     // Clear the vector of attached buffers.
@@ -50,7 +50,7 @@ pub fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     // detached.
     state.attached_buffers.retain(|b| b != &current);
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    state.buffers_to_be_detached.push(current.number);
+    state.buffers_to_be_detached.push(current.bufnr);
 
     // Delete all the buffer-local autocommands on this buffer.
     state.augroup.clear_local(lua, &current)?;

@@ -10,7 +10,7 @@ pub struct CompletionHint {
     pub is_visible: bool,
 
     /// The namespace id associated to the completion hint.
-    nsid: u32,
+    nsid: u16,
 }
 
 impl CompletionHint {

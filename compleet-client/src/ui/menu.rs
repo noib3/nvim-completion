@@ -1,7 +1,6 @@
 use std::cmp;
 use std::num::NonZeroUsize;
 
-use mlua::Table;
 use mlua::{prelude::LuaResult, Lua};
 use sources::completion::Completions;
 
@@ -14,13 +13,13 @@ use crate::settings::ui::menu::MenuSettings;
 pub struct CompletionMenu {
     /// Number of the buffer used to show the completions. It's created on
     /// once in `CompletionMenu::new` and never changes.
-    pub bufnr: u32,
+    pub bufnr: u16,
 
     /// Floating window used to show the completion menu.
     pub floater: Floater,
 
     /// TODO: docs
-    mc_nsid: u32,
+    mc_nsid: u16,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.

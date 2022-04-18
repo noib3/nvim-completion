@@ -5,7 +5,7 @@ use mlua::{
 };
 
 // TODO: make `command` accept strings.
-/// Binding to `vim.api.nvim_add_user_command`.
+/// Binding to `vim.api.nvim_create_user_command`.
 pub fn create_user_command(
     lua: &Lua,
     name: &str,
@@ -18,7 +18,7 @@ pub fn create_user_command(
 }
 
 /// Binding to `vim.api.nvim_create_buf`.
-pub fn create_buf(lua: &Lua, listed: bool, scratch: bool) -> LuaResult<u32> {
+pub fn create_buf(lua: &Lua, listed: bool, scratch: bool) -> LuaResult<u16> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_create_buf")?
         .call((listed, scratch))
@@ -46,7 +46,7 @@ pub fn echo(
 }
 
 /// Binding to `vim.api.nvim_get_current_buf`
-pub fn get_current_buf(lua: &Lua) -> LuaResult<u32> {
+pub fn get_current_buf(lua: &Lua) -> LuaResult<u16> {
     super::api(lua)?.get::<&str, LuaFunction>("nvim_get_current_buf")?.call(())
 }
 
@@ -115,7 +115,7 @@ pub fn replace_termcodes(
 /// Binding to `vim.api.nvim_set_hl`.
 pub fn set_hl(
     lua: &Lua,
-    ns_id: u32,
+    ns_id: u16,
     name: &str,
     opts: Table,
 ) -> LuaResult<()> {
