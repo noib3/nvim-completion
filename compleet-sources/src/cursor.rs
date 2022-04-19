@@ -1,7 +1,4 @@
-// use rmpv::Value;
-// use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone /* Serialize, Deserialize */)]
+#[derive(Debug, Default, Clone)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.
     pub bytes: u32,
@@ -12,63 +9,6 @@ pub struct Cursor {
     /// The row the cursor is currently on.
     pub row: u32,
 }
-
-impl Default for Cursor {
-    fn default() -> Self {
-        Cursor {
-            bytes: 0,
-            line: "".into(),
-            row: 0,
-        }
-    }
-}
-
-// /// Encode a `Cursor` into a vector of msgpack values.
-// impl From<Cursor> for Vec<Value> {
-//     fn from(cursor: Cursor) -> Vec<Value> {
-//         vec![
-//             Value::from(cursor.bytes),
-//             Value::from(cursor.line),
-//             Value::from(cursor.row),
-//         ]
-//     }
-// }
-
-// /// Try to decode a `Cursor` from a vector of msgpack values.
-// impl TryFrom<Vec<Value>> for Cursor {
-//     type Error = &'static str;
-
-//     fn try_from(vec: Vec<Value>) -> Result<Cursor, Self::Error> {
-//         if vec.len() != 3 {
-//             return Err("cursor array should have 3 values");
-//         }
-
-//         let mut iter = vec.into_iter();
-
-//         let bytes = match iter.next() {
-//             Some(Value::Integer(n)) if n.is_u64() => {
-//                 n.as_u64().expect("already checked that it's a u64") as u32
-//             },
-//             _ => return Err("bytes arent't valid"),
-//         };
-
-//         let line = match iter.next() {
-//             Some(Value::String(s)) if s.is_str() => {
-//                 s.into_str().expect("already checked that it's valid utf8")
-//             },
-//             _ => return Err("line isn't valid"),
-//         };
-
-//         let row = match iter.next() {
-//             Some(Value::Integer(n)) if n.is_u64() => {
-//                 n.as_u64().expect("already checked that it's a u64") as u32
-//             },
-//             _ => return Err("row isn't valid"),
-//         };
-
-//         Ok(Cursor { bytes, line, row })
-//     }
-// }
 
 impl Cursor {
     /// Whether the cursor is at the end of the line.

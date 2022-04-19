@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
+use bindings::{nvim, r#fn};
 use mlua::{
     prelude::{Lua, LuaError, LuaResult, LuaValue},
     serde::Deserializer,
@@ -8,7 +9,6 @@ use serde_path_to_error::deserialize;
 
 use crate::{
     autocmds::Augroup,
-    bindings::{nvim, r#fn},
     channel::Channel,
     commands,
     hlgroups,

@@ -1,8 +1,7 @@
 use std::fmt::{self, Display};
 
+use bindings::api;
 use mlua::prelude::{FromLua, Lua, LuaFunction, LuaResult, LuaValue};
-
-use crate::bindings::api;
 
 #[derive(Debug, PartialEq)]
 pub struct Buffer {

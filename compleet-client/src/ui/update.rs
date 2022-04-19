@@ -1,10 +1,11 @@
 use std::cmp;
 
+use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 use sources::prelude::Completions;
 
 use super::floater::RelativeTo;
-use crate::{bindings::api, state::State, ui};
+use crate::{state::State, ui};
 
 // TODO: refactor everything
 

@@ -1,6 +1,6 @@
+use bindings::api;
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::bindings::api;
 use crate::settings::ui::border::Border;
 
 /// Abstracts Neovim's floating windows (see `:h api-floatwin` for details).

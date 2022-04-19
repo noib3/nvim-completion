@@ -1,6 +1,6 @@
+use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
 use crate::constants::hlgroups::messages;
 
 /// Sets the highlight groups used in the warning and error messages.

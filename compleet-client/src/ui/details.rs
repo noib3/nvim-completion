@@ -1,14 +1,11 @@
 use std::cmp;
 
+use bindings::api;
 use mlua::{prelude::LuaResult, Lua};
 use sources::prelude::CompletionItem;
 
 use super::floater::{Floater, RelativeTo};
-use crate::{
-    bindings::api,
-    constants::hlgroups::ui,
-    settings::ui::details::DetailsSettings,
-};
+use crate::{constants::hlgroups::ui, settings::ui::details::DetailsSettings};
 
 #[derive(Debug, Default)]
 pub struct CompletionDetails {

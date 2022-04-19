@@ -6,6 +6,9 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[dependencies.bindings]
+path = "../nvim-bindings"
+
 [dependencies.sources]
 path = "../compleet-sources"
 

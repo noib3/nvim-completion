@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
+use bindings::nvim;
 use mlua::{
     prelude::{Lua, LuaFunction, LuaResult},
     Table,
@@ -33,6 +34,7 @@ impl CompletionSource for Lsp {
             .len()? as usize;
 
         self.clients.insert(bufnr, clients);
+        nvim::print(lua, format!("{:?}", self.clients))?;
 
         Ok(clients != 0)
     }

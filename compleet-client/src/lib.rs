@@ -1,6 +1,5 @@
 #![feature(iter_intersperse)]
 mod autocmds;
-mod bindings;
 mod channel;
 mod commands;
 mod constants;

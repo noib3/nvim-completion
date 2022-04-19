@@ -1,6 +1,6 @@
+use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
 use crate::constants::hlgroups::ui;
 
 /// Sets up the highlight groups, linking them to pre-existing defaults. These

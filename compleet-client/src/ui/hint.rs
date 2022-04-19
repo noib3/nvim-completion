@@ -1,7 +1,7 @@
+use bindings::api;
 use mlua::{prelude::LuaResult, Lua, ToLua};
 use sources::prelude::{CompletionItem, Cursor};
 
-use crate::bindings::api;
 use crate::constants::hlgroups::ui;
 
 #[derive(Debug, Default)]

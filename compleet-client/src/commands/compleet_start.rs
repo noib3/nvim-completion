@@ -1,11 +1,7 @@
+use bindings::{api, nvim};
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::{
-    bindings::{api, nvim},
-    ui::Buffer,
-    utils,
-    State,
-};
+use crate::{ui::Buffer, utils, State};
 
 /// Attaches `nvim-compleet` to all the buffers.
 pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {

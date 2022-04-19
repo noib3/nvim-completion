@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
+use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::{bindings::api, state::State};
+use crate::state::State;
 
 pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
     // Insert either the first or the selected completion into the buffer,

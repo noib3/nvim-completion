@@ -3,6 +3,9 @@ name = "sources"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies.bindings]
+path = "../nvim-bindings"
+
 # Use async functions in traits.
 [dependencies.async-trait]
 version = "0.1"

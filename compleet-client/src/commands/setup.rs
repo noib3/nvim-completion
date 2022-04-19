@@ -1,12 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
+use bindings::api;
 use mlua::{
     prelude::{Lua, LuaResult},
     Table,
 };
 
 use super::{compleet_start, compleet_stop};
-use crate::bindings::api;
 use crate::State;
 
 pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {

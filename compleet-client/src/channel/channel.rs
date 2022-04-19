@@ -6,6 +6,7 @@ use std::{
     sync::Arc,
 };
 
+use bindings::nvim;
 use mlua::{
     chunk,
     prelude::{Lua, LuaResult},
@@ -19,7 +20,7 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{bindings::nvim, state::State, ui};
+use crate::{state::State, ui};
 
 /// TODO: docs
 #[derive(Debug)]

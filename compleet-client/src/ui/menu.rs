@@ -1,11 +1,11 @@
 use std::cmp;
 use std::num::NonZeroUsize;
 
+use bindings::{api, r#fn};
 use mlua::{prelude::LuaResult, Lua};
 use sources::prelude::Completions;
 
 use super::floater::Floater;
-use crate::bindings::{api, r#fn};
 use crate::constants::hlgroups::ui;
 use crate::settings::ui::menu::MenuSettings;
 

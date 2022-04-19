@@ -1,11 +1,14 @@
 use std::{cell::RefCell, rc::Rc};
 
+use bindings::api;
 use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::channel;
-use crate::state::State;
-use crate::ui;
-use crate::{bindings::api, constants::AUGROUP_NAME, ui::Buffer};
+use crate::{
+    channel,
+    constants::AUGROUP_NAME,
+    state::State,
+    ui::{self, Buffer},
+};
 
 #[derive(Debug, Default)]
 pub struct Augroup {

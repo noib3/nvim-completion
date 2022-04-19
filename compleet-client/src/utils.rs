@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
+use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::api;
 use crate::constants::{hlgroups::messages, MSG_TAG};
 
 /// Echoes an error message.

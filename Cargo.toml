@@ -3,6 +3,7 @@
 members = [
   "compleet-client",
   "compleet-sources",
+  "nvim-bindings",
 ]
 
 # Sacrifice compilation speed for runtime performance.

@@ -1,6 +1,6 @@
+use bindings::api;
 use mlua::{prelude::LuaResult, Lua};
 
-use crate::bindings::api;
 use crate::state::State;
 
 /// Executed every time a byte or a group of bytes in an attached buffer is
