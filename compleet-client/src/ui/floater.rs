@@ -1,6 +1,6 @@
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::bindings::{api, r#fn};
+use crate::bindings::api;
 use crate::settings::ui::border::Border;
 
 /// Abstracts Neovim's floating windows (see `:h api-floatwin` for details).
@@ -94,20 +94,20 @@ impl Floater {
     /// called if the floater is open.
     pub fn cols_before_after(&self, lua: &Lua) -> LuaResult<(u16, u16)> {
         let columns = api::get_option::<u16>(lua, "columns")?;
-        let mut col_before = r#fn::screencol(lua)? - 1;
+        let (_, mut cols_before) = crate::utils::get_screen_cursor(lua)?;
 
         let cols_after = columns
-            - (col_before + 1)
+            - (cols_before + 1)
             - self.width
             - if self.border_edges[3] { 1 } else { 0 };
 
         // If the left edge of the border is set there's one less available
         // column before the floater.
-        if col_before > 0 && self.border_edges[2] {
-            col_before -= 1;
+        if cols_before > 0 && self.border_edges[2] {
+            cols_before -= 1;
         }
 
-        Ok((col_before, cols_after))
+        Ok((cols_before, cols_after))
     }
 
     /// Whether the floater is currently open.

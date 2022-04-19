@@ -178,7 +178,8 @@ fn rows_above_below_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
     let cmdheight = api::get_option::<u8>(lua, "cmdheight")?;
     let laststatus = api::get_option::<u8>(lua, "laststatus")?;
     let showtabline = api::get_option::<u8>(lua, "showtabline")?;
-    let screenrow = r#fn::screenrow(lua)?;
+
+    let (screenrow, _) = crate::utils::get_screen_cursor(lua)?;
 
     let statuslineoffset: u8 = match laststatus {
         0 => 0,
@@ -209,10 +210,11 @@ fn rows_above_below_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
         _ => 1,
     };
 
-    let row_above = screenrow - (tablineoffset + 1) as u16;
-    let row_below = lines
-        - row_above
+    let rows_above = screenrow - (tablineoffset + 1) as u16;
+
+    let rows_below = lines
+        - rows_above
         - (tablineoffset + statuslineoffset + cmdheight + 1) as u16;
 
-    Ok((row_above, row_below))
+    Ok((rows_above, rows_below))
 }

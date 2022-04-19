@@ -11,7 +11,7 @@ pub fn update(
     lua: &Lua,
     state: &mut State,
     new: Completions,
-    changedtick: u16,
+    changedtick: u32,
     is_last: bool,
 ) -> LuaResult<()> {
     // A source sending no completions should usually cause no UI update. The

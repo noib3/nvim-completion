@@ -16,18 +16,11 @@ pub fn has(lua: &Lua, feature: &str) -> LuaResult<bool> {
     Ok(bit == 1)
 }
 
-/// Binding to `vim.fn.screenrow`
-pub fn screenrow(lua: &Lua) -> LuaResult<u16> {
-    Ok(self::r#fn(lua)?
-        .get::<_, LuaFunction>("screenrow")?
-        .call::<_, u16>(())?)
-}
-
 /// Binding to `vim.fn.screenpos`
-pub fn screencol(lua: &Lua) -> LuaResult<u16> {
+pub fn screenpos(lua: &Lua, row: u16, col: u16) -> LuaResult<Table> {
     Ok(self::r#fn(lua)?
-        .get::<_, LuaFunction>("screencol")?
-        .call::<_, u16>(())?)
+        .get::<_, LuaFunction>("screenpos")?
+        .call::<_, Table>((0, row, col))?)
 }
 
 /// Binding to `vim.fn.winlayout`

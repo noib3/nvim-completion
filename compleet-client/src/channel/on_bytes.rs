@@ -9,7 +9,7 @@ pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
     bufnr: u16,
-    changedtick: u16,
+    changedtick: u32,
     start_row: u16,
     start_col: u16,
     rows_deleted: u16,
