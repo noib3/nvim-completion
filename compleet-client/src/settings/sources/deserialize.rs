@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use serde::de::{Deserializer, MapAccess, Visitor};
 use sources::{prelude::*, *};
+use tokio::sync::Mutex;
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
 where
@@ -36,16 +37,18 @@ impl<'de> Visitor<'de> for SourcesVisitor {
                     let config =
                         access.next_value::<lipsum::LipsumConfig>()?;
                     if config.enable {
-                        let lipsum = Arc::new(lipsum::Lipsum::from(config));
-                        sources.push(lipsum as Arc<dyn CompletionSource>);
+                        let lipsum =
+                            Arc::new(Mutex::new(lipsum::Lipsum::from(config)));
+                        sources
+                            .push(lipsum as Arc<Mutex<dyn CompletionSource>>);
                     }
                 },
 
                 Lsp => {
                     let config = access.next_value::<lsp::LspConfig>()?;
                     if config.enable {
-                        let lsp = Arc::new(lsp::Lsp::from(config));
-                        sources.push(lsp as Arc<dyn CompletionSource>);
+                        let lsp = Arc::new(Mutex::new(lsp::Lsp::from(config)));
+                        sources.push(lsp as Arc<Mutex<dyn CompletionSource>>);
                     }
                 },
             }

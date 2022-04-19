@@ -43,7 +43,7 @@ pub fn buf_get_lines(
     ))
 }
 
-/// Binding to `vim.api.nvim_buf_get_lines`.
+/// Binding to `vim.api.nvim_buf_get_option`.
 pub fn buf_get_option<'lua, V: FromLua<'lua>>(
     lua: &'lua Lua,
     bufnr: u16,

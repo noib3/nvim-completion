@@ -1,11 +1,9 @@
 use std::collections::HashMap;
+use std::process::{Child, Command};
 
 use async_trait::async_trait;
-use bindings::nvim;
-use mlua::{
-    prelude::{Lua, LuaFunction, LuaResult},
-    Table,
-};
+use bindings::{api, nvim};
+use mlua::prelude::{Lua, LuaResult};
 
 use super::LspConfig;
 use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
@@ -13,7 +11,7 @@ use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
 #[derive(Debug, Default)]
 pub struct Lsp {
     config: LspConfig,
-    clients: HashMap<u16, usize>,
+    clients: HashMap<u16, Vec<Child>>,
 }
 
 impl From<LspConfig> for Lsp {
@@ -25,18 +23,24 @@ impl From<LspConfig> for Lsp {
 #[async_trait]
 impl CompletionSource for Lsp {
     fn attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
-        let clients = lua
-            .globals()
-            .get::<_, Table>("vim")?
-            .get::<_, Table>("lsp")?
-            .get::<_, LuaFunction>("buf_get_clients")?
-            .call::<_, Table>(bufnr)?
-            .len()? as usize;
+        if self.clients.get(&bufnr).is_some() {
+            return Ok(true);
+        }
 
-        self.clients.insert(bufnr, clients);
-        nvim::print(lua, format!("{:?}", self.clients))?;
+        let filetype = api::buf_get_option::<String>(lua, bufnr, "filetype")?;
+        if filetype != "rust" {
+            return Ok(false);
+        }
 
-        Ok(clients != 0)
+        let anal = match Command::new("rust-analyzer").spawn() {
+            Ok(child) => child,
+            Err(_) => return Ok(false),
+        };
+
+        nvim::print(lua, anal.id())?;
+        self.clients.insert(bufnr, vec![anal]);
+
+        Ok(true)
     }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {

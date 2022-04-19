@@ -19,7 +19,7 @@ pub fn update(
     state: &mut State,
     new: Completions,
     changedtick: u32,
-    is_last: bool,
+    has_last: bool,
 ) -> LuaResult<()> {
     // A source sending no completions should usually cause no UI update. The
     // only exception is if that was the last source for a given `changedtick`,
@@ -27,7 +27,7 @@ pub fn update(
     // update. This means there are no completions available and the UI should
     // be cleaned up.
     if new.is_empty() {
-        if is_last && changedtick != state.changedtick_last_update {
+        if has_last && changedtick != state.changedtick_last_update {
             ui::cleanup(lua, &mut state.ui)?;
         }
         return Ok(());

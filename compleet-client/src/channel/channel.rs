@@ -94,7 +94,7 @@ impl Channel {
                 .collect::<Completions>();
 
             // TODO: do we need this?
-            let is_last = {
+            let has_last = {
                 let count = &mut *count.lock();
                 if *count + arrived == num_sources {
                     *count = 0;
@@ -113,7 +113,7 @@ impl Channel {
                     &mut state.borrow_mut(),
                     completions.take().expect("this only gets called once"),
                     changedtick,
-                    is_last,
+                    has_last,
                 )
             })?;
 
@@ -166,7 +166,7 @@ impl Channel {
             let sender = self.sender.clone();
             let writer = self.writer.clone();
             self.handles.push(self.runtime.spawn(async move {
-                let completions = source.complete(&cursor).await;
+                let completions = source.lock().await.complete(&cursor).await;
                 sender
                     .send(Msg { completions, changedtick, num_sources })
                     .expect("the receiver has been closed");
@@ -178,11 +178,11 @@ impl Channel {
     }
 
     /// TODO: docs
-    pub fn should_attach(
-        &mut self,
-        _lua: &Lua,
-        _bufnr: u16,
-    ) -> LuaResult<bool> {
-        Ok(true)
+    pub fn should_attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
+        Ok(self
+            .sources
+            .iter()
+            .filter_map(|source| source.try_lock().ok())
+            .any(|mut source| source.attach(lua, bufnr).unwrap_or(false)))
     }
 }
