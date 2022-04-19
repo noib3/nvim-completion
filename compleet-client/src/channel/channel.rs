@@ -24,7 +24,7 @@ use crate::{bindings::nvim, state::State, ui};
 #[derive(Debug)]
 struct Msg {
     completions: Completions,
-    changedtick: u32,
+    changedtick: u16,
     num_sources: u8,
 }
 
@@ -58,7 +58,7 @@ impl Channel {
 
         // TODO: refactor from here --
         let cloned = state.clone();
-        let ctick = Arc::new(Mutex::new(0u32));
+        let ctick = Arc::new(Mutex::new(0u16));
         let count = Arc::new(Mutex::new(0u8));
 
         let callback = lua.create_function_mut(move |lua, ()| {
@@ -150,7 +150,7 @@ impl Channel {
     pub fn fetch_completions(
         &mut self,
         cursor: Arc<Cursor>,
-        changedtick: u32,
+        changedtick: u16,
     ) {
         let num_sources = u8::try_from(self.sources.len()).unwrap();
         for source in &self.sources {

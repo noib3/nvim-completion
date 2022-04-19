@@ -65,8 +65,8 @@ pub fn win_hide(lua: &Lua, winid: u16) -> LuaResult<()> {
 pub fn win_set_cursor(
     lua: &Lua,
     winid: u16,
-    row: u32,
-    col: u32,
+    row: u16,
+    col: u16,
 ) -> LuaResult<()> {
     super::api(lua)?
         .get::<&str, LuaFunction>("nvim_win_set_cursor")?

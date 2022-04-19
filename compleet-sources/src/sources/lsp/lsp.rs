@@ -39,7 +39,7 @@ returns a `handle` and a `pid`
 
 #[async_trait]
 impl CompletionSource for Lsp {
-    async fn attach(&self, _bufnr: u32) -> bool {
+    async fn attach(&self, _bufnr: u16) -> bool {
         // let clients = nvim.lsp.buf_get_clients(bufnr)?;
         true
     }
@@ -58,7 +58,7 @@ impl CompletionSource for Lsp {
                 details: None,
                 format: format!(" {word_pre} "),
                 matched_bytes: vec![0..word_pre.len()],
-                matched_prefix: word_pre.len() as u32,
+                matched_prefix: word_pre.len() as u16,
                 source: "Lsp",
                 text: self.test.clone(),
             }]

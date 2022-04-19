@@ -36,8 +36,8 @@ pub fn buf_set_extmark(
     lua: &Lua,
     bufnr: u16,
     ns_id: u16,
-    row: u32,
-    col: u32,
+    row: u16,
+    col: u16,
     opts: Table,
 ) -> LuaResult<u16> {
     super::api(lua)?

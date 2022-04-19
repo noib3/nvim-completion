@@ -31,7 +31,7 @@ pub fn buf_call(lua: &Lua, bufnr: u16, fun: LuaFunction) -> LuaResult<()> {
 pub fn buf_get_lines(
     lua: &Lua,
     bufnr: u16,
-    start: u32,
+    start: i32,
     end: i32,
     strict_indexing: bool,
 ) -> LuaResult<Vec<String>> {
@@ -58,7 +58,7 @@ pub fn buf_get_option<'lua, V: FromLua<'lua>>(
 pub fn buf_set_lines(
     lua: &Lua,
     bufnr: u16,
-    start: u32,
+    start: i32,
     end: i32,
     strict_indexing: bool,
     replacement: Vec<String>,
@@ -76,10 +76,10 @@ pub fn buf_set_lines(
 pub fn buf_set_text(
     lua: &Lua,
     bufnr: u16,
-    start_row: u32,
-    start_col: u32,
-    end_row: u32,
-    end_col: u32,
+    start_row: u16,
+    start_col: u16,
+    end_row: u16,
+    end_col: u16,
     replacement: Vec<String>,
 ) -> LuaResult<()> {
     super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_set_text")?.call((

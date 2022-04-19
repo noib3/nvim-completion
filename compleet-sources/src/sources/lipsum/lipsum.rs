@@ -20,7 +20,7 @@ impl Default for Lipsum {
 #[async_trait]
 impl CompletionSource for Lipsum {
     // Attach to all buffers.
-    async fn attach(&self, _bufnr: u32) -> bool {
+    async fn attach(&self, _bufnr: u16) -> bool {
         true
     }
 
@@ -42,7 +42,7 @@ impl CompletionSource for Lipsum {
                 ),
                 format: format!(" {word} "),
                 matched_bytes: vec![0..word_pre.len()],
-                matched_prefix: word_pre.len() as u32,
+                matched_prefix: word_pre.len() as u16,
                 source: "Lipsum",
                 text: word.to_string(),
             })

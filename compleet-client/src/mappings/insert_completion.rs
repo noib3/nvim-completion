@@ -28,9 +28,9 @@ pub fn insert_completion(
     // event loop.
 
     let insert_completion = lua
-        .create_function(move |lua, (row, col, text): (u32, u32, String)| {
+        .create_function(move |lua, (row, col, text): (u16, u16, String)| {
             api::buf_set_text(lua, 0, row, col, row, col, vec![text])?;
-            api::win_set_cursor(lua, 0, row + 1, end_column as u32)?;
+            api::win_set_cursor(lua, 0, row + 1, end_column as u16)?;
             Ok(())
         })?
         .bind((cursor.row, cursor.bytes, text_to_insert.to_string()))?;

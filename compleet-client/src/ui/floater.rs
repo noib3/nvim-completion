@@ -1,6 +1,6 @@
 use mlua::prelude::{Lua, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::bindings::api;
+use crate::bindings::{api, r#fn};
 use crate::settings::ui::border::Border;
 
 /// Abstracts Neovim's floating windows (see `:h api-floatwin` for details).
@@ -94,7 +94,7 @@ impl Floater {
     /// called if the floater is open.
     pub fn cols_before_after(&self, lua: &Lua) -> LuaResult<(u16, u16)> {
         let columns = api::get_option::<u16>(lua, "columns")?;
-        let (_, mut col_before) = crate::utils::get_screen_cursor(lua)?;
+        let mut col_before = r#fn::screencol(lua)? - 1;
 
         let cols_after = columns
             - (col_before + 1)

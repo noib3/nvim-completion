@@ -76,12 +76,12 @@ impl Augroup {
                     _,
                     _,
                     _,
-                    u32,
+                    u16,
                     _,
-                    u32,
+                    u16,
                     _,
                     _,
-                    u32,
+                    u16,
                     _,
                 )| {
                     channel::on_bytes(
@@ -125,7 +125,7 @@ impl Augroup {
     pub fn clear_local(&self, lua: &Lua, buffer: &Buffer) -> LuaResult<()> {
         api::clear_autocmds(
             lua,
-            lua.create_table_from([("buffer", buffer.bufnr)])?,
+            lua.create_table_from([("buffer", buffer.number)])?,
         )
     }
 
@@ -176,7 +176,7 @@ impl Augroup {
             let opts = lua.create_table_from([
                 ("group", LuaValue::Integer(id as i64)),
                 ("callback", LuaValue::Function(callback)),
-                ("buffer", LuaValue::Integer(buffer.bufnr as i64)),
+                ("buffer", LuaValue::Integer(buffer.number as i64)),
             ])?;
 
             api::create_autocmd(lua, vec![event], opts)?;

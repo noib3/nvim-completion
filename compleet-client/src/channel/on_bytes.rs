@@ -9,13 +9,13 @@ pub fn on_bytes(
     lua: &Lua,
     state: &mut State,
     bufnr: u16,
-    changedtick: u32,
-    start_row: u32,
-    start_col: u32,
-    rows_deleted: u32,
-    bytes_deleted: u32,
-    rows_added: u32,
-    bytes_added: u32,
+    changedtick: u16,
+    start_row: u16,
+    start_col: u16,
+    rows_deleted: u16,
+    bytes_deleted: u16,
+    rows_added: u16,
+    bytes_added: u16,
 ) -> LuaResult<Option<bool>> {
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
     // If this buffer is queued to be detached we return `true`, as explained
@@ -76,12 +76,12 @@ pub fn on_bytes(
     Ok(None)
 }
 
-fn get_current_line(lua: &Lua, current_row: u32) -> LuaResult<String> {
+fn get_current_line(lua: &Lua, current_row: u16) -> LuaResult<String> {
     let current_line = api::buf_get_lines(
         lua,
         0,
-        current_row,
-        (current_row + 1).try_into().unwrap(),
+        current_row as i32,
+        current_row  as i32 + 1,
         false,
     )?
     .into_iter()

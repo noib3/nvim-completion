@@ -72,8 +72,8 @@ impl CompletionMenu {
                     lua,
                     self.bufnr,
                     self.mc_nsid,
-                    row as u32,
-                    range.start as u32 + 1,
+                    row as u16,
+                    range.start as u16 + 1,
                     opts.clone(),
                 )?;
             }
@@ -94,7 +94,7 @@ impl CompletionMenu {
             .map(|completion| completion.format.clone())
             .collect::<Vec<String>>();
 
-        api::buf_set_lines(lua, self.bufnr, index as u32, index, false, lines)
+        api::buf_set_lines(lua, self.bufnr, index, index, false, lines)
     }
 
     /// Selects a new completion. Should only be called if the completion menu
@@ -175,25 +175,44 @@ pub fn find_position(
 /// position.
 fn rows_above_below_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
     let lines = api::get_option::<u16>(lua, "lines")?;
-    let cmdheight = api::get_option::<u16>(lua, "cmdheight")?;
-    let laststatus = api::get_option::<u16>(lua, "laststatus")?;
-    let tabline = api::get_option::<String>(lua, "tabline")?;
+    let cmdheight = api::get_option::<u8>(lua, "cmdheight")?;
+    let laststatus = api::get_option::<u8>(lua, "laststatus")?;
+    let showtabline = api::get_option::<u8>(lua, "showtabline")?;
+    let screenrow = r#fn::screenrow(lua)?;
 
-    let (screenrow, _) = crate::utils::get_screen_cursor(lua)?;
-
-    let layout = r#fn::winlayout(lua)?;
-    let is_split = layout.get::<_, String>(1)? != "leaf";
-
-    let statuslineoffset = match laststatus {
+    let statuslineoffset: u8 = match laststatus {
         0 => 0,
-        1 if !is_split => 0,
+        1 => {
+            let is_split =
+                r#fn::winlayout(lua)?.get::<_, String>(1)? != "leaf";
+
+            if is_split {
+                1
+            } else {
+                0
+            }
+        },
         _ => 1,
     };
 
-    let tablineoffset = if tabline.is_empty() { 0 } else { 1 };
-    let row_above = screenrow - (tablineoffset + 1);
-    let row_below =
-        lines - row_above - (tablineoffset + statuslineoffset + cmdheight + 1);
+    let tablineoffset: u8 = match showtabline {
+        0 => 0,
+        1 => {
+            let tabpages = api::list_tabpages(lua)?;
+
+            if tabpages.len()? > 1 {
+                1
+            } else {
+                0
+            }
+        },
+        _ => 1,
+    };
+
+    let row_above = screenrow - (tablineoffset + 1) as u16;
+    let row_below = lines
+        - row_above
+        - (tablineoffset + statuslineoffset + cmdheight + 1) as u16;
 
     Ok((row_above, row_below))
 }

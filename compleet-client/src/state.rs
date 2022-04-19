@@ -19,10 +19,10 @@ pub struct State {
     pub buffers_to_be_detached: Vec<u16>,
 
     /// TODO: docs
-    pub changedtick_last_seen: u32,
+    pub changedtick_last_seen: u16,
 
     /// TODO: docs
-    pub changedtick_last_update: u32,
+    pub changedtick_last_update: u16,
 
     /// The channel used to communicate with the server.
     pub channel: Option<Channel>,

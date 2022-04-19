@@ -11,7 +11,7 @@ pub struct CompletionItem {
     pub format: String,
 
     /// TODO: docs
-    pub matched_prefix: u32,
+    pub matched_prefix: u16,
 
     /// The number of bytes before the current cursor position that are
     /// matched by the completion item.

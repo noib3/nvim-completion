@@ -11,7 +11,7 @@ pub type Sources = Vec<Arc<dyn CompletionSource>>;
 #[async_trait]
 pub trait CompletionSource: Debug + Send + Sync {
     /// Decides whether to attach the source to a buffer.
-    async fn attach(&self, bufnr: u32) -> bool;
+    async fn attach(&self, bufnr: u16) -> bool;
 
     /// Returns the completion results.
     async fn complete(&self, cursor: &Cursor) -> Completions;

@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::bindings::{api, r#fn};
+use crate::bindings::api;
 use crate::constants::{hlgroups::messages, MSG_TAG};
 
 /// Echoes an error message.
@@ -15,21 +15,14 @@ pub fn echoerr<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
 pub fn echowar<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
     self::echo(lua, msg.to_string(), messages::WARNING_MSG_TAG)
 }
-///
+
+// TODO: create highlight group
 /// Echoes an info message.
 pub fn echoinfo<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
     self::echo(lua, msg.to_string(), messages::INFO_MSG_TAG)
 }
 
-// TODO: create highlight group
-/// Echoes a info message. pub fn echoinfo<M: Display>(lua: &Lua, msg: M) ->
-/// LuaResult<()> { self::echo(lua, msg.to_string(), messages::INFO_MSG_TAG) }
-/// Echoes a nicely highlighted message and adds it to the message history.
-pub fn echo(
-    lua: &Lua,
-    msg: String,
-    hl_group_tag: &'static str,
-) -> LuaResult<()> {
+fn echo(lua: &Lua, msg: String, hl_group_tag: &'static str) -> LuaResult<()> {
     let msg_chunks = to_highlighted_chunks(
         msg,
         vec![(b'`', messages::OPTION_PATH), (b'"', messages::MSG_FIELD)],
@@ -84,12 +77,6 @@ fn to_highlighted_chunks(
     }
 
     chunks
-}
-
-pub fn get_screen_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
-    let (row, col) = api::win_get_cursor(lua, 0)?;
-
-    Ok(r#fn::screenpos(lua, row, col)?)
 }
 
 #[cfg(test)]
