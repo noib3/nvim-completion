@@ -58,7 +58,7 @@ impl CompletionSource for Lsp {
                 details: None,
                 format: format!(" {} ", test),
                 matched_bytes: vec![0..word_pre.len()],
-                matched_prefix: word_pre.len() as u32,
+                matched_prefix: word_pre.len() as u16,
                 source: "Lsp",
                 text: test.clone(),
             }]

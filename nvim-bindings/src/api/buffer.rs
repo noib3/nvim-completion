@@ -58,11 +58,7 @@ pub fn buf_get_option<'lua, V: FromLua<'lua>>(
 pub fn buf_set_lines(
     lua: &Lua,
     bufnr: u16,
-<<<<<<< HEAD:nvim-bindings/src/api/buffer.rs
-    start: u32,
-=======
     start: i32,
->>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338:compleet-client/src/bindings/api/buffer.rs
     end: i32,
     strict_indexing: bool,
     replacement: Vec<String>,
@@ -80,17 +76,10 @@ pub fn buf_set_lines(
 pub fn buf_set_text(
     lua: &Lua,
     bufnr: u16,
-<<<<<<< HEAD:nvim-bindings/src/api/buffer.rs
-    start_row: u32,
-    start_col: u32,
-    end_row: u32,
-    end_col: u32,
-=======
     start_row: u16,
     start_col: u16,
     end_row: u16,
     end_col: u16,
->>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338:compleet-client/src/bindings/api/buffer.rs
     replacement: Vec<String>,
 ) -> LuaResult<()> {
     super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_set_text")?.call((

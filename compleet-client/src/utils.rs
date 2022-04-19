@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use bindings::api;
+use bindings::{api, r#fn};
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::constants::{hlgroups::messages, MSG_TAG};

@@ -96,12 +96,7 @@ pub fn update(
             api::win_set_option(lua, winid, "cursorline", true)?;
 
             // Reset the cursor to the row of the selected completion.
-            api::win_set_cursor(
-                lua,
-                winid,
-                index as u16 + 1,
-                0,
-            )?;
+            api::win_set_cursor(lua, winid, index as u16 + 1, 0)?;
 
             // Update the completion details.
             ui.details.update(
