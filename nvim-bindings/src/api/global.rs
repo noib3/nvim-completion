@@ -101,6 +101,11 @@ pub fn notify<S: AsRef<str>>(
     ))
 }
 
+/// Binding to `vim.api.nvim_list_tabpages
+pub fn list_tabpages(lua: &Lua) -> LuaResult<Table> {
+    super::api(lua)?.get::<_, LuaFunction>("nvim_list_tabpages")?.call(())
+}
+
 #[allow(dead_code)]
 /// Binding to `vim.api.nvim_replace_termcodes`
 pub fn replace_termcodes(
@@ -118,7 +123,7 @@ pub fn replace_termcodes(
 /// Binding to `vim.api.nvim_set_hl`.
 pub fn set_hl(
     lua: &Lua,
-    ns_id: u32,
+    ns_id: u16,
     name: &str,
     opts: Table,
 ) -> LuaResult<()> {

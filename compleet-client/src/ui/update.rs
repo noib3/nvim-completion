@@ -99,7 +99,7 @@ pub fn update(
             api::win_set_cursor(
                 lua,
                 winid,
-                u32::try_from(index + 1).unwrap(),
+                index as u16 + 1,
                 0,
             )?;
 

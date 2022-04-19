@@ -19,7 +19,7 @@ pub struct Floater {
     bufnr: u16,
 
     /// The window id of the floater, or `None` if it's currently closed.
-    pub id: Option<u32>,
+    pub id: Option<u16>,
 
     #[allow(dead_code)]
     /// The height of the floater in terminal rows, **not** including the
@@ -38,7 +38,7 @@ pub struct Floater {
 /// floater.
 pub enum RelativeTo {
     Cursor(i32, i32),
-    Floater(u32, i32, i32),
+    Floater(u16, i32, i32),
 }
 
 impl Floater {
@@ -93,19 +93,11 @@ impl Floater {
     /// considering the left and right edges of its border. Should only be
     /// called if the floater is open.
     pub fn cols_before_after(&self, lua: &Lua) -> LuaResult<(u16, u16)> {
-        let cols_total = api::get_option::<u16>(lua, "columns")?;
+        let columns = api::get_option::<u16>(lua, "columns")?;
+        let (_, mut cols_before) = crate::utils::get_screen_cursor(lua)?;
 
-        let winid = self.id.expect("The floater is open so it has an id");
-
-        // BUG: the `col` of `win_get_position` is sometimes bigger that the
-        // total number of columns, causing the following subtractions to
-        // overflow.
-        //
-        // TODO: Open an issue upstream.
-        let mut cols_before = api::win_get_position(lua, winid)?.1;
-
-        let cols_after = cols_total
-            - cols_before
+        let cols_after = columns
+            - (cols_before + 1)
             - self.width
             - if self.border_edges[3] { 1 } else { 0 };
 

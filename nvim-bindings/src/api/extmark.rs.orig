@@ -35,9 +35,15 @@ pub fn buf_clear_namespace(
 pub fn buf_set_extmark(
     lua: &Lua,
     bufnr: u16,
+<<<<<<< HEAD:nvim-bindings/src/api/extmark.rs
+    ns_id: u32,
+    row: u32,
+    col: u32,
+=======
     ns_id: u16,
     row: u16,
     col: u16,
+>>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338:compleet-client/src/bindings/api/extmark.rs
     opts: Table,
 ) -> LuaResult<u16> {
     super::api(lua)?

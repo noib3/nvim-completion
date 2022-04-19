@@ -13,7 +13,7 @@ use crate::{
 #[derive(Debug, Default)]
 pub struct Augroup {
     /// The augroup id returned by `vim.api.nvim_create_autocmd`.
-    id: Option<u32>,
+    id: Option<u16>,
 
     /// The registry key of the Lua function called on `BufEnter` to try to
     /// attach to the buffer.
@@ -79,12 +79,12 @@ impl Augroup {
                     _,
                     _,
                     _,
-                    u32,
+                    u16,
                     _,
-                    u32,
+                    u16,
                     _,
                     _,
-                    u32,
+                    u16,
                     _,
                 )| {
                     channel::on_bytes(

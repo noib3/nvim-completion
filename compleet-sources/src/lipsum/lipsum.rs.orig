@@ -20,8 +20,14 @@ impl From<LipsumConfig> for Lipsum {
 
 #[async_trait]
 impl CompletionSource for Lipsum {
+<<<<<<< HEAD:compleet-sources/src/lipsum/lipsum.rs
     fn attach(&mut self, _lua: &Lua, _bufnr: u16) -> LuaResult<bool> {
         Ok(true)
+=======
+    // Attach to all buffers.
+    async fn attach(&self, _bufnr: u16) -> bool {
+        true
+>>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338:compleet-sources/src/sources/lipsum/lipsum.rs
     }
 
     async fn complete(&self, cursor: &Cursor) -> Completions {

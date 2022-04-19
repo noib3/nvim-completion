@@ -1,13 +1,13 @@
 #[derive(Debug, Default, Clone)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.
-    pub bytes: u32,
+    pub bytes: u16,
 
     /// The text in the row the cursor is currently on.
     pub line: String,
 
     /// The row the cursor is currently on.
-    pub row: u32,
+    pub row: u16,
 }
 
 impl Cursor {

@@ -19,7 +19,7 @@ pub struct CompletionMenu {
     pub floater: Floater,
 
     /// TODO: docs
-    mc_nsid: u32,
+    mc_nsid: u16,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.
@@ -72,8 +72,8 @@ impl CompletionMenu {
                     lua,
                     self.bufnr,
                     self.mc_nsid,
-                    row as u32,
-                    range.start as u32 + 1,
+                    row as u16,
+                    range.start as u16 + 1,
                     opts.clone(),
                 )?;
             }
@@ -94,7 +94,7 @@ impl CompletionMenu {
             .map(|completion| completion.format.clone())
             .collect::<Vec<String>>();
 
-        api::buf_set_lines(lua, self.bufnr, index as u32, index, false, lines)
+        api::buf_set_lines(lua, self.bufnr, index, index, false, lines)
     }
 
     /// Selects a new completion. Should only be called if the completion menu
@@ -153,14 +153,14 @@ pub fn find_position(
 
     // The total height of the completion menu, also counting the top and
     // bottom edges of its border.
-    let height_with_borders = height
+    let total_height = height
         + if floater.border_edges[0] { 1 } else { 0 }
         + if floater.border_edges[1] { 1 } else { 0 };
 
-    let row = if height_with_borders <= rows_below {
+    let row = if total_height <= rows_below {
         1
-    } else if height_with_borders <= rows_above {
-        -(height_with_borders as i32)
+    } else if total_height <= rows_above {
+        -(total_height as i32)
     } else {
         return Ok(None);
     };
@@ -174,8 +174,47 @@ pub fn find_position(
 /// Returns the number of screen rows above and below the current cursor
 /// position.
 fn rows_above_below_cursor(lua: &Lua) -> LuaResult<(u16, u16)> {
-    let total_rows = api::get_option::<u16>(lua, "lines")?;
-    let rows_above = r#fn::screenrow(lua)? - 1;
+    let lines = api::get_option::<u16>(lua, "lines")?;
+    let cmdheight = api::get_option::<u8>(lua, "cmdheight")?;
+    let laststatus = api::get_option::<u8>(lua, "laststatus")?;
+    let showtabline = api::get_option::<u8>(lua, "showtabline")?;
 
-    Ok((rows_above, total_rows - rows_above - 1))
+    let (screenrow, _) = crate::utils::get_screen_cursor(lua)?;
+
+    let statuslineoffset: u8 = match laststatus {
+        0 => 0,
+        1 => {
+            let is_split =
+                r#fn::winlayout(lua)?.get::<_, String>(1)? != "leaf";
+
+            if is_split {
+                1
+            } else {
+                0
+            }
+        },
+        _ => 1,
+    };
+
+    let tablineoffset: u8 = match showtabline {
+        0 => 0,
+        1 => {
+            let tabpages = api::list_tabpages(lua)?;
+
+            if tabpages.len()? > 1 {
+                1
+            } else {
+                0
+            }
+        },
+        _ => 1,
+    };
+
+    let rows_above = screenrow - (tablineoffset + 1) as u16;
+
+    let rows_below = lines
+        - rows_above
+        - (tablineoffset + statuslineoffset + cmdheight + 1) as u16;
+
+    Ok((rows_above, rows_below))
 }

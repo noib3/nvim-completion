@@ -31,7 +31,11 @@ pub fn buf_call(lua: &Lua, bufnr: u16, fun: LuaFunction) -> LuaResult<()> {
 pub fn buf_get_lines(
     lua: &Lua,
     bufnr: u16,
+<<<<<<< HEAD:nvim-bindings/src/api/buffer.rs
+    start: u32,
+=======
     start: i32,
+>>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338:compleet-client/src/bindings/api/buffer.rs
     end: i32,
     strict_indexing: bool,
 ) -> LuaResult<Vec<String>> {

@@ -4,6 +4,10 @@ use std::fmt::Display;
 use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
+<<<<<<< HEAD
+=======
+use crate::bindings::{api, r#fn};
+>>>>>>> 93fd99ad1f04e83fc0835113b62b955ba6eee338
 use crate::constants::{hlgroups::messages, MSG_TAG};
 
 /// Echoes an error message.
