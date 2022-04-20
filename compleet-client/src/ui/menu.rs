@@ -2,8 +2,8 @@ use std::cmp;
 use std::num::NonZeroUsize;
 
 use bindings::{api, r#fn};
+use common::Completions;
 use mlua::{prelude::LuaResult, Lua};
-use sources::prelude::Completions;
 
 use super::floater::Floater;
 use crate::constants::hlgroups::ui;

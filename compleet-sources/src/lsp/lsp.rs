@@ -1,17 +1,11 @@
-use std::collections::HashMap;
-use std::process::{Child, Command};
-
 use async_trait::async_trait;
-use bindings::{api, nvim};
-use mlua::prelude::{Lua, LuaResult};
 
 use super::LspConfig;
-use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
+use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
     config: LspConfig,
-    clients: HashMap<u16, Vec<Child>>,
 }
 
 impl From<LspConfig> for Lsp {
@@ -22,28 +16,14 @@ impl From<LspConfig> for Lsp {
 
 #[async_trait]
 impl CompletionSource for Lsp {
-    fn attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
-        if self.clients.get(&bufnr).is_some() {
-            return Ok(true);
-        }
-
-        let filetype = api::buf_get_option::<String>(lua, bufnr, "filetype")?;
-        if filetype != "rust" {
-            return Ok(false);
-        }
-
-        let anal = match Command::new("rust-analyzer").spawn() {
-            Ok(child) => child,
-            Err(_) => return Ok(false),
-        };
-
-        nvim::print(lua, anal.id())?;
-        self.clients.insert(bufnr, vec![anal]);
-
-        Ok(true)
+    async fn attach(&mut self, _nvim: &Neovim, _bufnr: u16) -> bool {
+        // TODO: check if buffer has any LSPs available.
+        true
     }
 
-    async fn complete(&self, cursor: &Cursor) -> Completions {
+    async fn complete(&self, nvim: &Neovim, cursor: &Cursor) -> Completions {
+        let attached = nvim.lsp_buf_get_clients(0).await;
+
         // Simulate a slow source, this shouldn't block.
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
@@ -56,7 +36,7 @@ impl CompletionSource for Lsp {
         if test.starts_with(word_pre) && test != word_pre {
             vec![CompletionItem {
                 details: None,
-                format: format!(" {} ", test),
+                format: format!(" {test} - {attached} "),
                 matched_bytes: vec![0..word_pre.len()],
                 matched_prefix: word_pre.len() as u16,
                 source: "Lsp",

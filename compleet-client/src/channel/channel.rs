@@ -1,19 +1,8 @@
-use std::{
-    cell::RefCell,
-    io::Write,
-    os::unix::io::IntoRawFd,
-    rc::Rc,
-    sync::Arc,
-};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use bindings::nvim;
-use mlua::{
-    chunk,
-    prelude::{Lua, LuaResult},
-};
-use os_pipe::PipeWriter;
+use common::{Completions, Cursor, Neovim, Signal, Sources};
+use mlua::prelude::{Lua, LuaResult};
 use parking_lot::Mutex;
-use sources::prelude::{Completions, Cursor, Sources};
 use tokio::{
     runtime::{Builder as RuntimeBuilder, Runtime},
     sync::mpsc::{self, UnboundedSender},
@@ -37,13 +26,16 @@ pub struct Channel {
     handles: Vec<JoinHandle<()>>,
 
     /// TODO: docs
-    sender: UnboundedSender<Msg>,
-
-    /// TODO: docs
-    writer: Arc<Mutex<PipeWriter>>,
+    nvim: Arc<Neovim>,
 
     /// TODO: docs
     runtime: Runtime,
+
+    /// TODO: docs
+    sender: UnboundedSender<Msg>,
+
+    /// TODO: docs
+    signal: Arc<Signal>,
 
     /// TODO: docs
     sources: Sources,
@@ -57,12 +49,11 @@ impl Channel {
         sources: Sources,
     ) -> LuaResult<Channel> {
         let (sender, mut receiver) = mpsc::unbounded_channel::<Msg>();
-        let (reader, writer) = os_pipe::pipe()?;
+
+        let state = state.clone();
 
         // TODO: do we need this?
         let count = Arc::new(Mutex::new(0u8));
-
-        let state = state.clone();
 
         // This is the callback that's executed when new bytes are written to
         // the pipe spawned w/ `vim.loop.new_pipe`.
@@ -105,34 +96,14 @@ impl Channel {
                 }
             };
 
-            let state = state.clone();
-            let mut completions = Some(completions);
-            let update_ui = lua.create_function_mut(move |lua, ()| {
-                ui::update(
-                    lua,
-                    &mut state.borrow_mut(),
-                    completions.take().expect("this only gets called once"),
-                    changedtick,
-                    has_last,
-                )
-            })?;
-
-            // Schedule a UI update.
-            nvim::schedule(lua, update_ui)
+            ui::update(
+                lua,
+                &mut state.borrow_mut(),
+                completions,
+                changedtick,
+                has_last,
+            )
         })?;
-
-        // Setup a pipe on the Neovim side that executes the callback when new
-        // data is written to it.
-        let reader_fd = reader.into_raw_fd();
-        lua.load(chunk! {
-            local pipe = vim.loop.new_pipe()
-            pipe:open($reader_fd)
-            pipe:read_start(function(err, chunk)
-                assert(not err, err)
-                if chunk then $callback() end
-            end)
-        })
-        .exec()?;
 
         let runtime = RuntimeBuilder::new_multi_thread()
             .enable_all()
@@ -140,7 +111,8 @@ impl Channel {
             .expect("couldn't create tokio runtime");
 
         Ok(Channel {
-            writer: Arc::new(Mutex::new(writer)),
+            signal: Arc::new(Signal::new(lua, callback)?),
+            nvim: Arc::new(Neovim::new(lua)?),
             handles: Vec::new(),
             sender,
             runtime,
@@ -163,26 +135,47 @@ impl Channel {
         for source in &self.sources {
             let source = source.clone();
             let cursor = cursor.clone();
+            let nvim = self.nvim.clone();
             let sender = self.sender.clone();
-            let writer = self.writer.clone();
+            let signal = self.signal.clone();
             self.handles.push(self.runtime.spawn(async move {
-                let completions = source.lock().await.complete(&cursor).await;
+                let completions =
+                    source.lock().await.complete(&nvim, &cursor).await;
+
                 sender
                     .send(Msg { completions, changedtick, num_sources })
                     .expect("the receiver has been closed");
 
                 // Signal Neovim that a source has sent its completions.
-                writer.lock().write_all(&[0]).unwrap();
+                signal.trigger();
             }));
         }
     }
 
     /// TODO: docs
-    pub fn should_attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
-        Ok(self
+    pub fn should_attach(&mut self, bufnr: u16) -> bool {
+        let handles = self
             .sources
             .iter()
-            .filter_map(|source| source.try_lock().ok())
-            .any(|mut source| source.attach(lua, bufnr).unwrap_or(false)))
+            .map(|source| {
+                let source = source.clone();
+                let nvim = self.nvim.clone();
+                self.runtime.spawn(async move {
+                    source.lock().await.attach(&nvim, bufnr).await
+                })
+            })
+            .collect::<Vec<JoinHandle<bool>>>();
+
+        let mut results = Vec::<bool>::with_capacity(self.sources.len());
+
+        self.runtime.block_on(async {
+            for handle in handles {
+                if let Ok(has_attached) = handle.await {
+                    results.push(has_attached);
+                }
+            }
+        });
+
+        results.into_iter().any(|has_attached| has_attached)
     }
 }

@@ -1,6 +1,6 @@
 use bindings::{api, nvim};
+use common::{CompletionItem, Cursor};
 use mlua::prelude::{Lua, LuaResult};
-use sources::prelude::{CompletionItem, Cursor};
 
 /// Executed on both `<Plug>(compleet-insert-first-completion)` and
 /// `<Plug>(compleet-insert-selected-completion)`.

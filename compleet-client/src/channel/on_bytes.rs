@@ -81,7 +81,7 @@ fn get_current_line(lua: &Lua, current_row: u16) -> LuaResult<String> {
         lua,
         0,
         current_row as i32,
-        current_row  as i32 + 1,
+        current_row as i32 + 1,
         false,
     )?
     .into_iter()

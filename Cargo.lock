@@ -84,12 +84,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bindings",
+ "mlua",
+ "os_pipe",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "compleet-client"
 version = "0.1.0"
 dependencies = [
  "bindings",
+ "common",
  "mlua",
- "os_pipe",
  "parking_lot 0.10.2",
  "serde",
  "serde_path_to_error",
@@ -493,8 +505,7 @@ name = "sources"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "bindings",
- "mlua",
+ "common",
  "serde",
  "tokio",
 ]

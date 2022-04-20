@@ -1,14 +1,22 @@
 [package]
-name = "sources"
+name = "common"
 version = "0.1.0"
 edition = "2021"
+
+[dependencies.bindings]
+path = "../nvim-bindings"
 
 # Use async functions in traits.
 [dependencies.async-trait]
 version = "0.1"
 
-[dependencies.common]
-path = "../compleet-common"
+# Rust bindings to Lua
+[dependencies.mlua]
+version = "0.7"
+features = ["luajit", "vendored", "macros"]
+
+[dependencies.os_pipe]
+version = "1.0.1"
 
 [dependencies.serde]
 version = "1.0"

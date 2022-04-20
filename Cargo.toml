@@ -2,6 +2,7 @@
 
 members = [
   "compleet-client",
+  "compleet-common",
   "compleet-sources",
   "nvim-bindings",
 ]

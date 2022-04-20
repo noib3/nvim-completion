@@ -1,4 +1,4 @@
-use sources::prelude::{Completions, Cursor};
+use common::{Completions, Cursor};
 
 use crate::{
     autocmds::Augroup,

@@ -29,7 +29,7 @@ pub fn on_buf_enter(
             .channel
             .as_mut()
             .expect("channel already created")
-            .should_attach(lua, buffer.number)?
+            .should_attach(buffer.number)
     {
         return Ok(());
     }

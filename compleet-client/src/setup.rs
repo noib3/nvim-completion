@@ -61,7 +61,7 @@ pub fn setup(
                         return Ok(());
                     },
 
-                    // All other errors are propagated up.
+                    // All other errors are bubbled up.
                     _ => return Err(e.into_inner()),
                 },
             }

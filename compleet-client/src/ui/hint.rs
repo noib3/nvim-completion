@@ -1,6 +1,6 @@
 use bindings::api;
+use common::{CompletionItem, Cursor};
 use mlua::{prelude::LuaResult, Lua, ToLua};
-use sources::prelude::{CompletionItem, Cursor};
 
 use crate::constants::hlgroups::ui;
 

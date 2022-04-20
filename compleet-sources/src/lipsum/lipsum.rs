@@ -1,11 +1,10 @@
 use async_trait::async_trait;
-use mlua::prelude::{Lua, LuaResult};
 
 use super::{
     lorems::{LOREMS, LOREM_IPSUM},
     LipsumConfig,
 };
-use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
+use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 #[derive(Debug, Default)]
 pub struct Lipsum {
@@ -20,11 +19,11 @@ impl From<LipsumConfig> for Lipsum {
 
 #[async_trait]
 impl CompletionSource for Lipsum {
-    fn attach(&mut self, _lua: &Lua, _bufnr: u16) -> LuaResult<bool> {
-        Ok(true)
+    async fn attach(&mut self, _nvim: &Neovim, _bufnr: u16) -> bool {
+        true
     }
 
-    async fn complete(&self, cursor: &Cursor) -> Completions {
+    async fn complete(&self, _nvim: &Neovim, cursor: &Cursor) -> Completions {
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {

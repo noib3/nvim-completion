@@ -1,18 +1,17 @@
 use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
-use mlua::prelude::{Lua, LuaResult};
 use tokio::sync::Mutex;
 
-use crate::prelude::{Completions, Cursor};
+use crate::{Completions, Cursor, Neovim};
 
 pub type Sources = Vec<Arc<Mutex<dyn CompletionSource>>>;
 
 #[async_trait]
 pub trait CompletionSource: Debug + Send + Sync {
     /// Decides whether to attach the source to a buffer.
-    fn attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool>;
+    async fn attach(&mut self, nvim: &Neovim, bufnr: u16) -> bool;
 
     /// Returns the completion results.
-    async fn complete(&self, cursor: &Cursor) -> Completions;
+    async fn complete(&self, nvim: &Neovim, cursor: &Cursor) -> Completions;
 }

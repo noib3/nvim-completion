@@ -1,5 +1,5 @@
+use common::Sources;
 use serde::Deserialize;
-use sources::prelude::Sources;
 
 use super::completion::CompletionSettings;
 use super::ui::UiSettings;

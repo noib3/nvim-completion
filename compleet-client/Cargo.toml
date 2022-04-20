@@ -9,16 +9,16 @@ crate-type = ["cdylib"]
 [dependencies.bindings]
 path = "../nvim-bindings"
 
+[dependencies.common]
+path = "../compleet-common"
+
 [dependencies.sources]
 path = "../compleet-sources"
 
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"
-features = ["luajit", "vendored", "module", "serialize", "macros"]
-
-[dependencies.os_pipe]
-version = "1.0.1"
+features = ["luajit", "vendored", "module", "serialize"]
 
 # Better `Mutex`es.
 [dependencies.parking_lot]
