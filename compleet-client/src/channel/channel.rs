@@ -55,8 +55,6 @@ impl Channel {
         // TODO: do we need this?
         let count = Arc::new(Mutex::new(0u8));
 
-        // This is the callback that's executed when new bytes are written to
-        // the pipe spawned w/ `vim.loop.new_pipe`.
         let callback = lua.create_function_mut(move |lua, ()| {
             let changedtick = state.borrow().changedtick_last_seen;
 

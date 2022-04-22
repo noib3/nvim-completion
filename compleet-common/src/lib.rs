@@ -1,6 +1,8 @@
+mod bridge;
 mod completion_item;
 mod completion_source;
 mod cursor;
+pub mod lsp;
 mod neovim;
 mod request;
 mod signal;

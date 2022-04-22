@@ -1,10 +1,10 @@
 use async_trait::async_trait;
+use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 use super::{
     lorems::{LOREMS, LOREM_IPSUM},
     LipsumConfig,
 };
-use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 #[derive(Debug, Default)]
 pub struct Lipsum {

@@ -1,20 +1,28 @@
-use bindings::{api, lsp};
-use mlua::prelude::{Lua, LuaResult};
+use std::sync::Arc;
 
+use bindings::{api, lsp};
+use mlua::{
+    prelude::{Lua, LuaFunction, LuaResult},
+    Table,
+};
 use tokio::sync::oneshot;
+
+use super::lsp::LspClient;
+use crate::bridge::LuaBridge;
 
 pub type Responder<T> = oneshot::Sender<T>;
 
 #[derive(Debug)]
 pub enum Request {
-    /// Requests `vim.api.nvim_get_current_buf`.
+    /// Binding to `vim.api.nvim_get_current_buf`.
     ApiGetCurrentBuf(Responder<u16>),
 
-    /// Requests `vim.lsp.buf_get_clients`.
-    LspBufGetClients(u16, Responder<u32>),
+    /// Binding to `vim.lsp.buf_get_clients`.
+    LspBufGetClients(u16, Responder<Vec<LspClient>>),
 }
 
 impl Request {
+    /// Handles a request coming from ??
     pub fn handle(self, lua: &Lua) -> LuaResult<()> {
         use Request::*;
 
@@ -25,8 +33,31 @@ impl Request {
             },
 
             LspBufGetClients(bufnr, resp) => {
-                let len = lsp::buf_get_clients(lua, bufnr)?.len()? as u32;
-                let _ = resp.send(len);
+                let client_tables = lsp::buf_get_clients(lua, bufnr)?
+                    .sequence_values::<Table>()
+                    .filter_map(|table_res| table_res.ok())
+                    .collect::<Vec<Table>>();
+
+                if client_tables.is_empty() {
+                    let _ = resp.send(Vec::new());
+                    return Ok(());
+                }
+
+                let bridge = Arc::new(LuaBridge::new(lua)?);
+
+                let mut clients =
+                    Vec::<LspClient>::with_capacity(client_tables.len());
+
+                for table in client_tables {
+                    let req = table.get::<_, LuaFunction>("request")?;
+
+                    clients.push(LspClient::new(
+                        bridge.clone(),
+                        lua.create_registry_value(req)?,
+                    ))
+                }
+
+                let _ = resp.send(clients);
             },
         }
 

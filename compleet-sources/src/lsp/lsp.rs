@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 use super::LspConfig;
-use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
@@ -18,14 +18,20 @@ impl From<LspConfig> for Lsp {
 impl CompletionSource for Lsp {
     async fn attach(&mut self, _nvim: &Neovim, _bufnr: u16) -> bool {
         // TODO: check if buffer has any LSPs available.
+        // vim.lsp.buf_is_attached
         true
     }
 
     async fn complete(&self, nvim: &Neovim, cursor: &Cursor) -> Completions {
-        let attached = nvim.lsp_buf_get_clients(0).await;
+        // // Simulate a slow source, this shouldn't block.
+        // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        // Simulate a slow source, this shouldn't block.
-        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        // TODO: send `textDocument/completion` request
+        // `:lua params = vim.lsp.util.make_position_params(0)`
+        // `:lua client.request('textDocument/completion', params,
+        // function(err,res,c)print(#res.items)end)`
+
+        let attached = nvim.lsp_buf_get_clients(0).await;
 
         let word_pre = cursor.word_pre();
         if word_pre.is_empty() {
@@ -36,7 +42,7 @@ impl CompletionSource for Lsp {
         if test.starts_with(word_pre) && test != word_pre {
             vec![CompletionItem {
                 details: None,
-                format: format!(" {test} - {attached} "),
+                format: format!(" {test} - {} ", attached.len(),),
                 matched_bytes: vec![0..word_pre.len()],
                 matched_prefix: word_pre.len() as u16,
                 source: "Lsp",

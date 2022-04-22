@@ -4,7 +4,7 @@ use tokio::sync::{
     oneshot::{self, Receiver},
 };
 
-use super::{Request, Signal};
+use super::{lsp, Request, Signal};
 
 #[derive(Debug)]
 pub struct Neovim {
@@ -18,7 +18,7 @@ impl Neovim {
 
         let callback = lua.create_function_mut(move |lua, ()| {
             while let Ok(request) = receiver.try_recv() {
-                request.handle(lua)?
+                request.handle(lua)?;
             }
             Ok(())
         })?;
@@ -49,7 +49,10 @@ impl Neovim {
         self.send(request, receiver).await
     }
 
-    pub async fn lsp_buf_get_clients(&self, bufnr: u16) -> u32 {
+    pub async fn lsp_buf_get_clients(
+        &self,
+        bufnr: u16,
+    ) -> Vec<lsp::LspClient> {
         let (responder, receiver) = oneshot::channel();
         let request = Request::LspBufGetClients(bufnr, responder);
         self.send(request, receiver).await
