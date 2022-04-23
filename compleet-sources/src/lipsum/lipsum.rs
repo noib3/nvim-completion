@@ -24,6 +24,9 @@ impl CompletionSource for Lipsum {
     }
 
     async fn complete(&self, _nvim: &Neovim, cursor: &Cursor) -> Completions {
+        // // Simulate a slow source, this shouldn't block.
+        // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {

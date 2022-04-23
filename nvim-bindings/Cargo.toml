@@ -6,4 +6,4 @@ edition = "2021"
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"
-features = ["luajit", "vendored"]
+features = ["luajit", "vendored", "serialize"]

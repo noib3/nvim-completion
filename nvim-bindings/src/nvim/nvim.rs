@@ -7,7 +7,6 @@ fn nvim(lua: &Lua) -> LuaResult<Table> {
     lua.globals().get::<_, Table>("vim")
 }
 
-#[allow(dead_code)]
 /// Binding to `vim.inspect`.
 pub fn inspect(lua: &Lua, t: LuaValue) -> LuaResult<String> {
     self::nvim(lua)?
@@ -16,7 +15,6 @@ pub fn inspect(lua: &Lua, t: LuaValue) -> LuaResult<String> {
         .call(t)
 }
 
-#[allow(dead_code)]
 /// Binding to `_G.print`.
 pub fn print<S: std::fmt::Display>(lua: &Lua, msg: S) -> LuaResult<()> {
     lua.globals().get::<_, LuaFunction>("print")?.call(msg.to_string())

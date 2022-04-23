@@ -13,7 +13,7 @@ pub use crate::{
     completion_source::{CompletionSource, Sources},
     cursor::Cursor,
     neovim::Neovim,
-    request::Request,
+    request::BridgeRequest,
     signal::Signal,
     valid_source::ValidSource,
 };

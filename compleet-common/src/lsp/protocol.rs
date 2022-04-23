@@ -1,24 +1,37 @@
-/// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionParams
+use serde::Serialize;
+
+/// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/
+
+type DocumentUri = String;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CompletionParams {
-    text_document: String,
-    position: Position,
-    context: Option<CompletionContext>,
+    pub text_document: TextDocumentIdentifier,
+    pub position: Position,
+    pub context: Option<CompletionContext>,
 }
 
-/// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position
-struct Position {
-    line: u32,
-    character: u32,
+#[derive(Debug, Serialize)]
+pub struct TextDocumentIdentifier {
+    pub uri: DocumentUri,
 }
 
-/// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionContext
-struct CompletionContext {
+#[derive(Debug, Serialize)]
+pub struct Position {
+    pub line: u32,
+    pub character: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionContext {
     trigger_kind: CompletionTriggerKind,
     trigger_character: Option<char>,
 }
 
-/// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionTriggerKind
-enum CompletionTriggerKind {
+#[derive(Debug, Serialize)]
+pub enum CompletionTriggerKind {
     Invoked = 1,
     TriggerCharacter = 2,
     TriggerForIncompleteCompletions = 3,

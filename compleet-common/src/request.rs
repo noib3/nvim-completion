@@ -1,45 +1,79 @@
 use std::sync::Arc;
 
 use bindings::{api, lsp};
-use mlua::{
-    prelude::{Lua, LuaFunction, LuaResult},
-    Table,
+use mlua::prelude::{
+    Lua,
+    LuaFunction,
+    LuaRegistryKey,
+    LuaResult,
+    LuaTable,
+    LuaValue,
 };
 use tokio::sync::oneshot;
 
-use super::lsp::LspClient;
+use super::lsp::{LspClient, LspHandlerSignature, LspMethod};
 use crate::bridge::LuaBridge;
+
+pub type FuncMut = Box<
+    dyn 'static
+        + Send
+        + for<'callback> FnMut(
+            &'callback Lua,
+            LspHandlerSignature<'callback>,
+        ) -> LuaResult<()>,
+>;
 
 pub type Responder<T> = oneshot::Sender<T>;
 
-#[derive(Debug)]
-pub enum Request {
-    /// Binding to `vim.api.nvim_get_current_buf`.
-    ApiGetCurrentBuf(Responder<u16>),
+// #[derive(Debug)]
+pub enum BridgeRequest {
+    ApiBufGetName {
+        bufnr: u16,
+        responder: Responder<String>,
+    },
 
-    /// Binding to `vim.lsp.buf_get_clients`.
-    LspBufGetClients(u16, Responder<Vec<LspClient>>),
+    ApiGetCurrentBuf {
+        responder: Responder<u16>,
+    },
+
+    LspBufGetClients {
+        bufnr: u16,
+        responder: Responder<Vec<LspClient>>,
+    },
+
+    LspClientRequest {
+        func_key: Arc<LuaRegistryKey>,
+        method: LspMethod,
+        handler: FuncMut,
+        bufnr: u16,
+        responder: Responder<u32>,
+    },
 }
 
-impl Request {
+impl BridgeRequest {
     /// Handles a request coming from ??
     pub fn handle(self, lua: &Lua) -> LuaResult<()> {
-        use Request::*;
+        use BridgeRequest::*;
 
         match self {
-            ApiGetCurrentBuf(resp) => {
-                let bufnr = api::get_current_buf(lua)?;
-                let _ = resp.send(bufnr);
+            ApiBufGetName { bufnr, responder } => {
+                let filepath = api::buf_get_name(lua, bufnr)?;
+                let _ = responder.send(filepath);
             },
 
-            LspBufGetClients(bufnr, resp) => {
+            ApiGetCurrentBuf { responder } => {
+                let bufnr = api::get_current_buf(lua)?;
+                let _ = responder.send(bufnr);
+            },
+
+            LspBufGetClients { bufnr, responder } => {
                 let client_tables = lsp::buf_get_clients(lua, bufnr)?
-                    .sequence_values::<Table>()
+                    .sequence_values::<LuaTable>()
                     .filter_map(|table_res| table_res.ok())
-                    .collect::<Vec<Table>>();
+                    .collect::<Vec<LuaTable>>();
 
                 if client_tables.is_empty() {
-                    let _ = resp.send(Vec::new());
+                    let _ = responder.send(Vec::new());
                     return Ok(());
                 }
 
@@ -57,7 +91,37 @@ impl Request {
                     ))
                 }
 
-                let _ = resp.send(clients);
+                let _ = responder.send(clients);
+            },
+
+            LspClientRequest {
+                func_key,
+                method,
+                handler,
+                bufnr,
+                responder,
+            } => {
+                let request = lua.registry_value::<LuaFunction>(&func_key)?;
+                let (method_name, params) = method.expand(lua)?;
+                let handler = lua.create_function_mut(handler)?;
+
+                let _ = match request.call((
+                    method_name,
+                    params,
+                    handler,
+                    bufnr,
+                ))? {
+                    // Request failed, i.e. client has shutdown.
+                    // TODO: return error message.
+                    (LuaValue::Boolean(_), LuaValue::Nil) => responder.send(0),
+
+                    // Request succeeded, a request id is returned.
+                    (LuaValue::Boolean(_), LuaValue::Integer(req_id)) => {
+                        responder.send(req_id as u32)
+                    },
+
+                    _ => unreachable!(),
+                };
             },
         }
 

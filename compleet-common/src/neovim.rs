@@ -1,60 +1,42 @@
-use mlua::prelude::{Lua, LuaResult};
-use tokio::sync::{
-    mpsc::{self, UnboundedSender},
-    oneshot::{self, Receiver},
-};
+use std::sync::Arc;
 
-use super::{lsp, Request, Signal};
+use mlua::prelude::{Lua, LuaResult};
+use tokio::sync::oneshot;
+
+use super::lsp;
+use crate::{bridge::LuaBridge, request::BridgeRequest};
 
 #[derive(Debug)]
 pub struct Neovim {
-    sender: UnboundedSender<Request>,
-    signal: Signal,
+    bridge: Arc<LuaBridge>,
 }
 
 impl Neovim {
     pub fn new(lua: &Lua) -> LuaResult<Self> {
-        let (sender, mut receiver) = mpsc::unbounded_channel::<Request>();
-
-        let callback = lua.create_function_mut(move |lua, ()| {
-            while let Ok(request) = receiver.try_recv() {
-                request.handle(lua)?;
-            }
-            Ok(())
-        })?;
-
-        let signal = Signal::new(lua, callback)?;
-
-        Ok(Self { sender, signal })
+        Ok(Self { bridge: Arc::new(LuaBridge::new(lua)?) })
     }
 
-    async fn send<T>(&self, request: Request, receiver: Receiver<T>) -> T {
-        self.sender
-            .send(request)
-            .expect("the Neovim receiver has been closed");
-
-        self.signal.trigger();
-
-        match receiver.await {
-            Ok(val) => val,
-            Err(_) => todo!("error handling"),
-        }
+    /// Binding to `vim.api.nvim_buf_get_name`.
+    pub async fn api_buf_get_name(&self, bufnr: u16) -> String {
+        let (responder, receiver) = oneshot::channel();
+        let request = BridgeRequest::ApiBufGetName { bufnr, responder };
+        self.bridge.send(request, receiver).await
     }
-}
 
-impl Neovim {
+    /// Binding to `vim.api.nvim_get_current_buf`.
     pub async fn api_get_current_buf(&self) -> u16 {
         let (responder, receiver) = oneshot::channel();
-        let request = Request::ApiGetCurrentBuf(responder);
-        self.send(request, receiver).await
+        let request = BridgeRequest::ApiGetCurrentBuf { responder };
+        self.bridge.send(request, receiver).await
     }
 
+    /// Binding to `vim.lsp.buf_get_clients`.
     pub async fn lsp_buf_get_clients(
         &self,
         bufnr: u16,
     ) -> Vec<lsp::LspClient> {
         let (responder, receiver) = oneshot::channel();
-        let request = Request::LspBufGetClients(bufnr, responder);
-        self.send(request, receiver).await
+        let request = BridgeRequest::LspBufGetClients { bufnr, responder };
+        self.bridge.send(request, receiver).await
     }
 }

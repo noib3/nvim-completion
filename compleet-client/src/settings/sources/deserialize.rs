@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use common::*;
 use serde::de::{Deserializer, MapAccess, Visitor};
-use sources::*;
+use sources::{lipsum, lsp};
 use tokio::sync::Mutex;
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>

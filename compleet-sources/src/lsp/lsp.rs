@@ -1,5 +1,12 @@
 use async_trait::async_trait;
-use common::{CompletionItem, CompletionSource, Completions, Cursor, Neovim};
+use common::{
+    lsp::{protocol::CompletionParams, LspMethod},
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+    Neovim,
+};
 
 use super::LspConfig;
 
@@ -23,15 +30,23 @@ impl CompletionSource for Lsp {
     }
 
     async fn complete(&self, nvim: &Neovim, cursor: &Cursor) -> Completions {
-        // // Simulate a slow source, this shouldn't block.
-        // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        let client = match nvim.lsp_buf_get_clients(0).await {
+            v if v.is_empty() => return Vec::new(),
+            v => v.into_iter().nth(0).unwrap(),
+        };
 
-        // TODO: send `textDocument/completion` request
-        // `:lua params = vim.lsp.util.make_position_params(0)`
-        // `:lua client.request('textDocument/completion', params,
-        // function(err,res,c)print(#res.items)end)`
+        let filepath = nvim.api_buf_get_name(0).await;
 
-        let attached = nvim.lsp_buf_get_clients(0).await;
+        let method = LspMethod::Completion(CompletionParams::new(
+            filepath,
+            cursor.row as u32,
+            cursor.bytes as u32,
+        ));
+
+        let results = match client.request(method, 0).await {
+            Ok(num) => num,
+            Err(_) => return Vec::new(),
+        };
 
         let word_pre = cursor.word_pre();
         if word_pre.is_empty() {
@@ -42,7 +57,7 @@ impl CompletionSource for Lsp {
         if test.starts_with(word_pre) && test != word_pre {
             vec![CompletionItem {
                 details: None,
-                format: format!(" {test} - {} ", attached.len(),),
+                format: format!(" {test} - {} ", results),
                 matched_bytes: vec![0..word_pre.len()],
                 matched_prefix: word_pre.len() as u16,
                 source: "Lsp",

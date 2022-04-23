@@ -13,7 +13,7 @@ version = "0.1"
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"
-features = ["luajit", "vendored", "macros"]
+features = ["luajit", "vendored", "macros", "serialize"]
 
 [dependencies.os_pipe]
 version = "1.0.1"
