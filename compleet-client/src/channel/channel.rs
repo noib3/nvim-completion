@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use common::{Completions, Cursor, Neovim, Signal, Sources};
+use bindings::opinionated::{Neovim, Signal};
 use mlua::prelude::{Lua, LuaResult};
 use parking_lot::Mutex;
+use sources::prelude::{Completions, Cursor, Sources};
 use tokio::{
     runtime::{Builder as RuntimeBuilder, Runtime},
     sync::mpsc::{self, UnboundedSender},

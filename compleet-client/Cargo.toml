@@ -9,9 +9,6 @@ crate-type = ["cdylib"]
 [dependencies.bindings]
 path = "../nvim-bindings"
 
-[dependencies.common]
-path = "../compleet-common"
-
 [dependencies.sources]
 path = "../compleet-sources"
 

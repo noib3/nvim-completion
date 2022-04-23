@@ -1,14 +1,11 @@
 use async_trait::async_trait;
-use common::{
+use bindings::opinionated::{
     lsp::{protocol::CompletionParams, LspMethod},
-    CompletionItem,
-    CompletionSource,
-    Completions,
-    Cursor,
     Neovim,
 };
 
 use super::LspConfig;
+use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
@@ -35,10 +32,8 @@ impl CompletionSource for Lsp {
             v => v.into_iter().nth(0).unwrap(),
         };
 
-        let filepath = nvim.api_buf_get_name(0).await;
-
         let method = LspMethod::Completion(CompletionParams::new(
-            filepath,
+            nvim.api_buf_get_name(0).await,
             cursor.row as u32,
             cursor.bytes as u32,
         ));

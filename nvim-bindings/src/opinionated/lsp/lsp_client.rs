@@ -4,10 +4,7 @@ use mlua::prelude::{LuaRegistryKey, LuaTable};
 use tokio::sync::oneshot;
 
 use super::{LspError, LspMethod, LspResult};
-use crate::{
-    bridge::LuaBridge,
-    request::{BridgeRequest, FuncMut},
-};
+use crate::opinionated::{BridgeRequest, FuncMut, LuaBridge};
 
 /// Acts as an abstraction over a Neovim Lsp client (see `:h vim.lsp.client`).
 #[derive(Debug)]

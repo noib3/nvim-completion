@@ -1,8 +1,8 @@
 use std::cmp;
 
 use bindings::api;
-use common::Completions;
 use mlua::prelude::{Lua, LuaResult};
+use sources::prelude::Completions;
 
 use super::floater::RelativeTo;
 use crate::{state::State, ui};

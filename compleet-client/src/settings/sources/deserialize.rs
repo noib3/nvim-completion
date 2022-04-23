@@ -1,8 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use common::*;
 use serde::de::{Deserializer, MapAccess, Visitor};
+use sources::prelude::*;
 use sources::{lipsum, lsp};
 use tokio::sync::Mutex;
 

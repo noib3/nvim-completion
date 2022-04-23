@@ -7,8 +7,8 @@ edition = "2021"
 [dependencies.async-trait]
 version = "0.1"
 
-[dependencies.common]
-path = "../compleet-common"
+[dependencies.bindings]
+path = "../nvim-bindings"
 
 [dependencies.serde]
 version = "1.0"

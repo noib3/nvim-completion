@@ -6,4 +6,16 @@ edition = "2021"
 # Rust bindings to Lua
 [dependencies.mlua]
 version = "0.7"
-features = ["luajit", "vendored", "serialize"]
+features = ["luajit", "vendored", "macros", "serialize"]
+
+[dependencies.os_pipe]
+version = "1.0.1"
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
+# Async runtime.
+[dependencies.tokio]
+version = "1.17.0"
+features = ["full"]
