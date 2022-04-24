@@ -44,7 +44,7 @@ impl Augroup {
                 if state.did_on_bytes {
                     state.did_on_bytes = false;
                 }
-                // If not we send a notification to the server to stop all
+                // If not we send a notification to the channel to stop all
                 // running tasks and cleanup the UI.
                 else {
                     state.channel.as_mut().unwrap().stop_tasks();

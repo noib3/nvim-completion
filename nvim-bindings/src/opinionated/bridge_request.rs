@@ -1,22 +1,17 @@
+use std::fmt;
 use std::sync::Arc;
 
-use mlua::prelude::{
-    Lua,
-    LuaFunction,
-    LuaRegistryKey,
-    LuaResult,
-    LuaTable,
-    LuaValue,
-};
+use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaTable};
 use tokio::sync::oneshot;
 
 use super::{
-    lsp::{LspClient, LspHandlerSignature, LspMethod},
+    lsp::{LspClient, LspError, LspHandlerSignature, LspMethod, LspResult},
     LuaBridge,
 };
 use crate::{api, lsp};
 
-pub type FuncMut = Box<
+// TODO: make the argument of the closure generic over `FromLuaMulti`?
+pub type LspHandler = Box<
     dyn 'static
         + Send
         + for<'callback> FnMut(
@@ -27,7 +22,6 @@ pub type FuncMut = Box<
 
 pub type Responder<T> = oneshot::Sender<T>;
 
-// #[derive(Debug)]
 pub enum BridgeRequest {
     ApiBufGetName {
         bufnr: u16,
@@ -44,12 +38,18 @@ pub enum BridgeRequest {
     },
 
     LspClientRequest {
-        func_key: Arc<LuaRegistryKey>,
+        req_key: Arc<LuaRegistryKey>,
         method: LspMethod,
-        handler: FuncMut,
+        handler: LspHandler,
         bufnr: u16,
-        responder: Responder<u32>,
+        responder: Responder<LspResult<u32>>,
     },
+}
+
+impl fmt::Debug for BridgeRequest {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("BridgeRequest")
+    }
 }
 
 impl BridgeRequest {
@@ -97,33 +97,30 @@ impl BridgeRequest {
             },
 
             LspClientRequest {
-                func_key,
+                req_key,
                 method,
                 handler,
                 bufnr,
                 responder,
             } => {
-                let request = lua.registry_value::<LuaFunction>(&func_key)?;
+                let request = lua.registry_value::<LuaFunction>(&req_key)?;
                 let (method_name, params) = method.expand(lua)?;
                 let handler = lua.create_function_mut(handler)?;
 
-                let _ = match request.call((
-                    method_name,
-                    params,
-                    handler,
-                    bufnr,
-                ))? {
-                    // Request failed, i.e. client has shutdown.
-                    // TODO: return error message.
-                    (LuaValue::Boolean(_), LuaValue::Nil) => responder.send(0),
+                let _ = responder.send(
+                    match request.call::<_, (bool, _)>((
+                        method_name,
+                        params,
+                        handler,
+                        bufnr,
+                    ))? {
+                        // Request failed, i.e. client has shutdown.
+                        (_false, None) => Err(LspError::ClientShutdown),
 
-                    // Request succeeded, a request id is returned.
-                    (LuaValue::Boolean(_), LuaValue::Integer(req_id)) => {
-                        responder.send(req_id as u32)
+                        // Request was sent, a request id is returned.
+                        (_true, Some(id)) => Ok(id),
                     },
-
-                    _ => unreachable!(),
-                };
+                );
             },
         }
 

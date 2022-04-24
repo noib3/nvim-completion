@@ -5,7 +5,13 @@ use super::{
     lorems::{LOREMS, LOREM_IPSUM},
     LipsumConfig,
 };
-use crate::prelude::{CompletionItem, CompletionSource, Completions, Cursor};
+use crate::prelude::{
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+    Result,
+};
 
 #[derive(Debug, Default)]
 pub struct Lipsum {
@@ -24,17 +30,21 @@ impl CompletionSource for Lipsum {
         true
     }
 
-    async fn complete(&self, _nvim: &Neovim, cursor: &Cursor) -> Completions {
+    async fn complete(
+        &self,
+        _nvim: &Neovim,
+        cursor: &Cursor,
+    ) -> Result<Completions> {
         // // Simulate a slow source, this shouldn't block.
         // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
         let word_pre = cursor.word_pre();
 
         if word_pre.is_empty() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
-        LOREMS
+        Ok(LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
             .map(|word| CompletionItem {
@@ -47,6 +57,6 @@ impl CompletionSource for Lipsum {
                 source: "Lipsum",
                 text: word.to_string(),
             })
-            .collect()
+            .collect())
     }
 }

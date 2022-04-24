@@ -10,6 +10,8 @@ impl CompletionParams {
     }
 }
 
+// TODO: have different path delimiter on Windows
+
 impl TextDocumentIdentifier {
     fn new(filepath: String) -> Self {
         Self { uri: format!("file://{filepath}") }

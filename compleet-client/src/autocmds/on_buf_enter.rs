@@ -22,7 +22,7 @@ pub fn on_buf_enter(
     //    number of buffers we'd like to ignore like netwr, startify, terminal,
     //    help, etc;
     //
-    // 3. the server doesn't have any source for this buffer.
+    // 3. there aren't any enabled sources for this buffer.
     if state.attached_buffers.contains(&buffer)
         || !buffer.get_option(lua, "modifiable")?
         || !state

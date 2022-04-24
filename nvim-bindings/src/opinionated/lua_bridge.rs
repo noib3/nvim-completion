@@ -36,11 +36,9 @@ impl LuaBridge {
         request: BridgeRequest,
         receiver: Receiver<T>,
     ) -> T {
-        let _ = self.sender.send(request);
-
-        // self.sender
-        //     .send(request)
-        //     .expect("the Neovim receiver has been closed");
+        self.sender
+            .send(request)
+            .expect("the bridge receiver has been closed");
 
         self.signal.trigger();
 

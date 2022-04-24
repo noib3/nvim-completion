@@ -3,19 +3,19 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 use bindings::opinionated::{Neovim, Signal};
 use mlua::prelude::{Lua, LuaResult};
 use parking_lot::Mutex;
-use sources::prelude::{Completions, Cursor, Sources};
+use sources::prelude::{Completions, Cursor, Result, Sources};
 use tokio::{
     runtime::{Builder as RuntimeBuilder, Runtime},
     sync::mpsc::{self, UnboundedSender},
     task::JoinHandle,
 };
 
-use crate::{state::State, ui};
+use crate::{state::State, ui, utils};
 
 /// TODO: docs
 #[derive(Debug)]
 struct Msg {
-    completions: Completions,
+    completions: Result<Completions>,
     changedtick: u32,
     num_sources: u8,
 }
@@ -59,29 +59,37 @@ impl Channel {
         let callback = lua.create_function_mut(move |lua, ()| {
             let changedtick = state.borrow().changedtick_last_seen;
 
-            // Pull all the messages sent to the receiver.
-            let mut messages = Vec::<Msg>::new();
-            while let Ok(msg) = receiver.try_recv() {
-                // Only add the ones whose changedtick matches the last one set
-                // in `super::on_bytes`.
-                if msg.changedtick == changedtick {
-                    messages.push(msg);
+            // TODO: do we need this?
+            let mut arrived = 0;
+            let mut num_sources = 0;
+
+            let mut completions = Vec::new();
+
+            // Go over all the messages sent to the receiver.
+            while let Ok(Msg {
+                completions: maybe_cmp,
+                changedtick: ct,
+                num_sources: num,
+            }) = receiver.try_recv()
+            {
+                // Only add the completions whose changedtick matches the last
+                // one set in `super::on_bytes`.
+                if ct == changedtick {
+                    // TODO: do we need this?
+                    arrived += 1;
+                    num_sources = num;
+
+                    match maybe_cmp {
+                        Ok(compl) => completions.extend(compl),
+                        Err(err) => utils::echoerr(lua, err)?,
+                    }
                 }
             }
 
             // If all the messages are old we can return early.
-            if messages.is_empty() {
+            if arrived == 0 {
                 return Ok(());
             }
-
-            // TODO: do we need this?
-            let arrived = messages.len() as u8;
-            let num_sources = messages[0].num_sources;
-
-            let completions = messages
-                .into_iter()
-                .flat_map(|msg| msg.completions)
-                .collect::<Completions>();
 
             // TODO: do we need this?
             let has_last = {

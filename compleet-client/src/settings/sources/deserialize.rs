@@ -2,8 +2,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use serde::de::{Deserializer, MapAccess, Visitor};
-use sources::prelude::*;
-use sources::{lipsum, lsp};
+use sources::prelude::{CompletionSource, Sources, ValidSource};
+use sources::*;
 use tokio::sync::Mutex;
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>

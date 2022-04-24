@@ -24,7 +24,8 @@ pub struct State {
     /// TODO: docs
     pub changedtick_last_update: u32,
 
-    /// The channel used to communicate with the server.
+    /// A channel used to communicate w/ the tokio threadpool where completion
+    /// results are computed.
     pub channel: Option<Channel>,
 
     /// The currently available completion items.

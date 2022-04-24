@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use mlua::prelude::{LuaRegistryKey, LuaTable};
+use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
 use tokio::sync::oneshot;
 
-use super::{LspError, LspMethod, LspResult};
-use crate::opinionated::{BridgeRequest, FuncMut, LuaBridge};
+use super::{protocol::ResponseError, LspError, LspMethod, LspResult};
+use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
 
 /// Acts as an abstraction over a Neovim Lsp client (see `:h vim.lsp.client`).
 #[derive(Debug)]
@@ -36,47 +36,47 @@ impl LspClient {
         let (tx, rx) = oneshot::channel::<LspResult<u32>>();
         let mut tx = Some(tx);
 
-        let callback: FuncMut = Box::new(
-            move |_lua, (maybe_err, maybe_result, _ctx): LspHandlerSignature| {
-                let tx = tx.take().expect("this only gets called once");
-
-                let _ = match maybe_result {
-                    Some(result) => {
-                        let num = result.get::<_, LuaTable>("items")?.len()?;
-                        tx.send(Ok(num as u32))
+        // This gets executed by Neovim when the response message arrives from
+        // the server.
+        let handler: LspHandler =
+            Box::new(move |lua, (maybe_err, maybe_result, _ctx)| {
+                let result = match maybe_result {
+                    Some(table) => {
+                        let num = table.get::<_, LuaTable>("items")?.len()?;
+                        Ok(num as u32)
                     },
 
                     None => {
-                        let infos = maybe_err
-                            .expect("no result so there's an error")
-                            .get::<_, String>("message")?;
+                        let error =
+                            lua.from_value::<ResponseError>(LuaValue::Table(
+                                maybe_err
+                                    .expect("no result so there's an error"),
+                            ))?;
 
-                        tx.send(Err(LspError::Any(infos)))
+                        Err(LspError::ResponseError(error))
                     },
                 };
 
+                let _ = tx
+                    .take()
+                    .expect("this only gets called once")
+                    .send(result);
+
                 Ok(())
-            },
-        );
+            });
 
         let (responder, receiver) = oneshot::channel();
 
         let request = BridgeRequest::LspClientRequest {
-            func_key: self.request_key.clone(),
+            req_key: self.request_key.clone(),
+            handler,
             method,
-            handler: callback,
             bufnr,
             responder,
         };
 
-        let _req_id = self.bridge.send(request, receiver).await;
+        let _request_id = self.bridge.send(request, receiver).await?;
 
-        match rx.await {
-            Err(_) => Err(LspError::Any("Receiver dropped".into())),
-
-            Ok(Err(_)) => Err(LspError::Any("Something".into())),
-
-            Ok(Ok(bool)) => Ok(bool),
-        }
+        rx.await?
     }
 }
