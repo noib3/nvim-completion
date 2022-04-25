@@ -9,7 +9,6 @@ use bindings::opinionated::{
 
 use super::LspConfig;
 use crate::prelude::{
-    CompletionItem,
     CompletionSource,
     Completions,
     Cursor,
@@ -67,12 +66,7 @@ impl CompletionSource for Lsp {
             .filter(|item| {
                 item.label.starts_with(word_pre) && item.label != word_pre
             })
-            .map(|item| {
-                let mut item: CompletionItem = item.into();
-                item.matched_bytes = vec![0..word_pre.len()];
-                item.matched_prefix = word_pre.len() as u16;
-                item
-            })
+            .map(|item| item.into())
             .collect::<Completions>())
     }
 }

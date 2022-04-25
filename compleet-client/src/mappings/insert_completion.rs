@@ -8,15 +8,16 @@ pub fn insert_completion(
     lua: &Lua,
     cursor: &Cursor,
     completion: &CompletionItem,
+    matched_bytes: usize,
 ) -> LuaResult<()> {
     let text_to_insert = get_text_to_insert(
-        completion.matched_prefix as usize,
+        matched_bytes,
         &cursor.line[cursor.bytes as usize..],
         &completion.text,
     );
 
-    let end_column = (cursor.bytes - completion.matched_prefix) as usize
-        + completion.text.len();
+    let end_column =
+        (cursor.bytes as usize - matched_bytes) + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
     // would trigger `channel::on_bytes`, which causes the RefCell wrapping

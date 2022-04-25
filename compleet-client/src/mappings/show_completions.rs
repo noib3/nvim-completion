@@ -10,7 +10,7 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
     if !menu.floater.is_open() && !state.completions.is_empty() {
         let (position, height, width) = match menu::find_position(
             lua,
-            &state.completions,
+            &mut state.completions,
             &menu.floater,
             state.settings.ui.menu.max_height,
         )? {
@@ -21,7 +21,8 @@ pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
         };
 
         menu.floater.open(lua, position, height, width)?;
-        menu.fill(lua, &state.completions)?;
+        menu.fill(lua, &mut state.completions)?;
+        menu.highlight(lua, &state.completions, state.matched_bytes)?;
     }
 
     Ok(())

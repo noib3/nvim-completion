@@ -38,8 +38,9 @@ impl CompletionHint {
         lua: &Lua,
         completion: &CompletionItem,
         cursor: &Cursor,
+        matched_bytes: usize,
     ) -> LuaResult<()> {
-        let text = &completion.text[(completion.matched_prefix as usize)..];
+        let text = &completion.text[matched_bytes..];
 
         let opts = lua.create_table_from([
             ("id", 1u8.to_lua(lua)?),

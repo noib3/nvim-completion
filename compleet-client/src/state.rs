@@ -7,7 +7,7 @@ use crate::{
     ui::{Buffer, Ui},
 };
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct State {
     /// The currently attached buffers.
     pub attached_buffers: Vec<Buffer>,
@@ -39,6 +39,9 @@ pub struct State {
 
     /// Whether the setup function has ever been called.
     pub did_setup: bool,
+
+    /// TODO: docs
+    pub matched_bytes: usize,
 
     /// The current settings.
     pub settings: Settings,

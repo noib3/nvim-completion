@@ -49,34 +49,44 @@ impl CompletionMenu {
 }
 
 impl CompletionMenu {
-    /// Fills the buffer with a list of lines.
-    pub fn fill(&self, lua: &Lua, completions: &Completions) -> LuaResult<()> {
+    /// Fills the buffer with a bunch of completions.
+    pub fn fill(
+        &self,
+        lua: &Lua,
+        completions: &mut Completions,
+    ) -> LuaResult<()> {
         let lines = completions
-            .iter()
-            .map(|completion| completion.format.clone())
+            .iter_mut()
+            .map(|completion| completion.format())
             .collect::<Vec<String>>();
 
-        api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)?;
+        api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
+    }
 
+    /// Highlights the completions.
+    pub fn highlight(
+        &self,
+        lua: &Lua,
+        completions: &Completions,
+        matched_bytes: usize,
+    ) -> LuaResult<()> {
         // Highlight the matching characters of every completion item.
         let mut id = 0u16;
         let opts = lua.create_table_with_capacity(0, 4)?;
         for (row, completion) in completions.iter().enumerate() {
-            for range in &completion.matched_bytes {
-                id += 1;
-                opts.set("id", id)?;
-                opts.set("end_row", row)?;
-                opts.set("end_col", range.end + 1)?;
-                opts.set("hl_group", ui::MENU_MATCHING)?;
-                api::buf_set_extmark(
-                    lua,
-                    self.bufnr,
-                    self.mc_nsid,
-                    row as u16,
-                    range.start as u16 + 1,
-                    opts.clone(),
-                )?;
-            }
+            id += 1;
+            let offset = completion.label_byte_offset();
+            opts.set("end_row", row)?;
+            opts.set("end_col", offset + matched_bytes)?;
+            opts.set("hl_group", ui::MENU_MATCHING)?;
+            api::buf_set_extmark(
+                lua,
+                self.bufnr,
+                self.mc_nsid,
+                row as u16,
+                offset.try_into().unwrap(),
+                opts.clone(),
+            )?;
         }
 
         Ok(())
@@ -86,12 +96,12 @@ impl CompletionMenu {
     pub fn insert(
         &self,
         lua: &Lua,
-        completions: &Completions,
+        completions: &mut Completions,
         index: i32,
     ) -> LuaResult<()> {
         let lines = completions
-            .iter()
-            .map(|completion| completion.format.clone())
+            .iter_mut()
+            .map(|completion| completion.format().clone())
             .collect::<Vec<String>>();
 
         api::buf_set_lines(lua, self.bufnr, index, index, false, lines)
@@ -133,7 +143,7 @@ impl CompletionMenu {
 /// current cursor position.
 pub fn find_position(
     lua: &Lua,
-    completions: &Completions,
+    completions: &mut Completions,
     floater: &Floater,
     max_height: Option<NonZeroUsize>,
 ) -> LuaResult<Option<(i32, i32, u16, u16)>> {
@@ -144,8 +154,8 @@ pub fn find_position(
     } as u16;
 
     let width = completions
-        .iter()
-        .map(|c| c.format.chars().count())
+        .iter_mut()
+        .map(|c| c.len())
         .max()
         .expect("There'a at least one completion") as u16;
 

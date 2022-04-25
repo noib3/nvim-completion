@@ -17,7 +17,18 @@ pub struct LspClient {
 
     // We have to store all functions through their registry key because
     // `mlua::Function`s are neither 'static nor Send.
+    /// The `mlua::RegistryKey` of the client's `request` function.
     request_key: Arc<LuaRegistryKey>,
+
+    /// The id allocated to the client.
+    pub id: u16,
+
+    /// Name of the client if specified, client id otherwise.
+    pub name: String,
+
+    // TODO: make this into an enum
+    /// The encoding used to communicate w/ the server.
+    pub offset_encoding: String,
 }
 
 /// The function signature of an Lsp handler as defined by the Neovim API (see
@@ -27,8 +38,20 @@ pub type LspHandlerSignature<'lua> =
 
 impl LspClient {
     /// TODO: docs
-    pub fn new(bridge: Arc<LuaBridge>, req_key: LuaRegistryKey) -> Self {
-        Self { bridge, request_key: Arc::new(req_key) }
+    pub fn new(
+        bridge: Arc<LuaBridge>,
+        req_key: LuaRegistryKey,
+        id: u16,
+        name: String,
+        offset_encoding: String,
+    ) -> Self {
+        Self {
+            bridge,
+            request_key: Arc::new(req_key),
+            id,
+            name,
+            offset_encoding,
+        }
     }
 
     /// Binding to `vim.lsp.client.request`.

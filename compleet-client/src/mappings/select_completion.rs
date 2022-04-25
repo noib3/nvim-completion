@@ -44,7 +44,12 @@ pub fn select_completion(
     // Update the completion hint.
     if state.settings.ui.hint.enable && state.cursor.is_at_eol() {
         match maybe {
-            Some(completion) => ui.hint.set(lua, completion, &state.cursor)?,
+            Some(completion) => ui.hint.set(
+                lua,
+                completion,
+                &state.cursor,
+                state.matched_bytes,
+            )?,
             None => ui.hint.erase(lua)?,
         }
     }

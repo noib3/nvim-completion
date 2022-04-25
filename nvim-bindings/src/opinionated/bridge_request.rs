@@ -86,10 +86,16 @@ impl BridgeRequest {
 
                 for table in client_tables {
                     let req = table.get::<_, LuaFunction>("request")?;
+                    let id = table.get("id")?;
+                    let name = table.get("name")?;
+                    let offset_encoding = table.get("offset_encoding")?;
 
                     clients.push(LspClient::new(
                         bridge.clone(),
                         lua.create_registry_value(req)?,
+                        id,
+                        name,
+                        offset_encoding,
                     ))
                 }
 

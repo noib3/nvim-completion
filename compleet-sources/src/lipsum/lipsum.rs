@@ -5,13 +5,8 @@ use super::{
     lorems::{LOREMS, LOREM_IPSUM},
     LipsumConfig,
 };
-use crate::prelude::{
-    CompletionItem,
-    CompletionSource,
-    Completions,
-    Cursor,
-    Result,
-};
+use crate::completion_item::CompletionItemBuilder;
+use crate::prelude::{CompletionSource, Completions, Cursor, Result};
 
 #[derive(Debug, Default)]
 pub struct Lipsum {
@@ -47,15 +42,8 @@ impl CompletionSource for Lipsum {
         Ok(LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
-            .map(|word| CompletionItem {
-                details: Some(
-                    LOREM_IPSUM.iter().map(|word| word.to_string()).collect(),
-                ),
-                format: format!(" {word} "),
-                matched_bytes: vec![0..word_pre.len()],
-                matched_prefix: word_pre.len() as u16,
-                source: "Lipsum",
-                text: word.to_string(),
+            .map(|word| {
+                CompletionItemBuilder::new(word).details(LOREM_IPSUM).build()
             })
             .collect())
     }

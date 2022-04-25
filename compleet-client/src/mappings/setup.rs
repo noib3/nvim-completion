@@ -17,7 +17,12 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
             state.ui.menu.selected_index.map(|i| &state.completions[i])
         };
         if let Some(completion) = maybe {
-            super::insert_completion(lua, &state.cursor, completion)?;
+            super::insert_completion(
+                lua,
+                &state.cursor,
+                completion,
+                state.matched_bytes,
+            )?;
         }
         Ok(())
     })?;

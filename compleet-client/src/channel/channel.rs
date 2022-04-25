@@ -13,7 +13,6 @@ use tokio::{
 use crate::{state::State, ui, utils};
 
 /// TODO: docs
-#[derive(Debug)]
 struct Msg {
     completions: Result<Completions>,
     changedtick: u32,
@@ -149,9 +148,12 @@ impl Channel {
                 let completions =
                     source.lock().await.complete(&nvim, &cursor).await;
 
-                sender
-                    .send(Msg { completions, changedtick, num_sources })
-                    .expect("the receiver has been closed");
+                let _ =
+                    sender.send(Msg { completions, changedtick, num_sources });
+
+                // sender
+                //     .send(Msg { completions, changedtick, num_sources })
+                //     .expect("the receiver has been closed");
 
                 // Signal Neovim that a source has sent its completions.
                 signal.trigger();

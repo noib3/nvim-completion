@@ -17,7 +17,7 @@ use crate::{state::State, ui};
 pub fn update(
     lua: &Lua,
     state: &mut State,
-    new: Completions,
+    mut new: Completions,
     changedtick: u32,
     has_last: bool,
 ) -> LuaResult<()> {
@@ -39,9 +39,10 @@ pub fn update(
 
     // Update the contents of the completion menu.
     if completions.is_empty() {
-        ui.menu.fill(lua, &new)?;
+        ui.menu.fill(lua, &mut new)?;
     } else {
-        ui.menu.insert(lua, &new, 0)?;
+        // Append new completions **after** the already present ones.
+        ui.menu.insert(lua, &mut new, -1)?;
     }
 
     // Extend the already present completions with the new ones.
@@ -57,7 +58,12 @@ pub fn update(
     // Update the completion hint.
     if settings.ui.hint.enable && state.cursor.is_at_eol() {
         let i = ui.menu.selected_index.unwrap_or(0);
-        ui.hint.set(lua, &completions[i], &state.cursor)?;
+        ui.hint.set(
+            lua,
+            &completions[i],
+            &state.cursor,
+            state.matched_bytes,
+        )?;
     }
 
     // TODO: respect `settings.menu.autoshow`.
@@ -65,7 +71,7 @@ pub fn update(
     // Try to position the completion menu.
     let (position, height, width) = match super::menu::find_position(
         lua,
-        &completions,
+        completions,
         &ui.menu.floater,
         settings.ui.menu.max_height,
     )? {
@@ -111,6 +117,8 @@ pub fn update(
     } else {
         ui.menu.floater.open(lua, position, height, width)?;
     }
+
+    ui.menu.highlight(lua, &completions, state.matched_bytes)?;
 
     state.changedtick_last_update = changedtick;
 

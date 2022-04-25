@@ -49,6 +49,8 @@ pub fn on_bytes(
     cursor.bytes =
         start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
 
+    state.matched_bytes = cursor.word_pre().len();
+
     state.completions.clear();
     // #[cfg(debug)]
     // {
