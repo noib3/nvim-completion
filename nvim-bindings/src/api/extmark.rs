@@ -14,7 +14,7 @@ pub fn buf_add_highlight(
     col_end: i32,
 ) -> LuaResult<i32> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_buf_add_highlight")?
+        .get::<_, LuaFunction>("nvim_buf_add_highlight")?
         .call::<_, i32>((bufnr, ns_id, hl_group, line, col_start, col_end))
 }
 
@@ -27,7 +27,7 @@ pub fn buf_clear_namespace(
     line_end: i32,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_buf_clear_namespace")?
+        .get::<_, LuaFunction>("nvim_buf_clear_namespace")?
         .call::<_, ()>((bufnr, ns_id, line_start, line_end))
 }
 
@@ -41,13 +41,11 @@ pub fn buf_set_extmark(
     opts: Table,
 ) -> LuaResult<u16> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_buf_set_extmark")?
+        .get::<_, LuaFunction>("nvim_buf_set_extmark")?
         .call((bufnr, ns_id, row, col, opts))
 }
 
 /// Binding to `vim.api.nvim_create_namespace`.
 pub fn create_namespace(lua: &Lua, name: &'static str) -> LuaResult<u16> {
-    super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_create_namespace")?
-        .call(name)
+    super::api(lua)?.get::<_, LuaFunction>("nvim_create_namespace")?.call(name)
 }

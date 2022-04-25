@@ -12,7 +12,7 @@ pub fn buf_attach(
     send_buffer: bool,
     opts: Table,
 ) -> LuaResult<bool> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_attach")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_attach")?.call((
         bufnr,
         send_buffer,
         opts,
@@ -22,9 +22,7 @@ pub fn buf_attach(
 #[allow(dead_code)]
 /// Binding to `vim.api.nvim_buf_call`.
 pub fn buf_call(lua: &Lua, bufnr: u16, fun: LuaFunction) -> LuaResult<()> {
-    super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_buf_call")?
-        .call((bufnr, fun))
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_call")?.call((bufnr, fun))
 }
 
 /// Binding to `vim.api.nvim_buf_get_lines`.
@@ -35,7 +33,7 @@ pub fn buf_get_lines(
     end: i32,
     strict_indexing: bool,
 ) -> LuaResult<Vec<String>> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_get_lines")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_get_lines")?.call((
         bufnr,
         start,
         end,
@@ -45,7 +43,7 @@ pub fn buf_get_lines(
 
 /// Binding to `vim.api.nvim_buf_get_name`.
 pub fn buf_get_name(lua: &Lua, bufnr: u16) -> LuaResult<String> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_get_name")?.call(bufnr)
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_get_name")?.call(bufnr)
 }
 
 /// Binding to `vim.api.nvim_buf_get_option`.
@@ -55,7 +53,7 @@ pub fn buf_get_option<'lua, V: FromLua<'lua>>(
     name: &str,
 ) -> LuaResult<V> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_buf_get_option")?
+        .get::<_, LuaFunction>("nvim_buf_get_option")?
         .call((bufnr, name))
 }
 
@@ -68,7 +66,7 @@ pub fn buf_set_lines(
     strict_indexing: bool,
     replacement: Vec<String>,
 ) -> LuaResult<()> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_set_lines")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_set_lines")?.call((
         bufnr,
         start,
         end,
@@ -87,7 +85,7 @@ pub fn buf_set_text(
     end_col: u16,
     replacement: Vec<String>,
 ) -> LuaResult<()> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_buf_set_text")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_buf_set_text")?.call((
         bufnr,
         start_row,
         start_col,

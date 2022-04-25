@@ -3,7 +3,12 @@ use std::sync::Arc;
 use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
 use tokio::sync::oneshot;
 
-use super::{protocol::ResponseError, LspError, LspMethod, LspResult};
+use super::{
+    protocol::{CompletionResponse, ResponseError},
+    LspError,
+    LspMethod,
+    LspResult,
+};
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
 
 /// Acts as an abstraction over a Neovim Lsp client (see `:h vim.lsp.client`).
@@ -32,8 +37,8 @@ impl LspClient {
         &self,
         method: LspMethod,
         bufnr: u16,
-    ) -> LspResult<u32> {
-        let (tx, rx) = oneshot::channel::<LspResult<u32>>();
+    ) -> LspResult<CompletionResponse> {
+        let (tx, rx) = oneshot::channel::<LspResult<CompletionResponse>>();
         let mut tx = Some(tx);
 
         // This gets executed by Neovim when the response message arrives from
@@ -42,19 +47,36 @@ impl LspClient {
             Box::new(move |lua, (maybe_err, maybe_result, _ctx)| {
                 let result = match maybe_result {
                     Some(table) => {
-                        let num = table.get::<_, LuaTable>("items")?.len()?;
-                        Ok(num as u32)
+                        // TODO: why doesn't this work?
+                        // Ok(lua.from_value::<CompletionResponse>(
+                        //     LuaValue::Table(table),
+                        // )?)
+
+                        use super::protocol::{
+                            CompletionItem,
+                            CompletionList,
+                        };
+
+                        Ok(match table.get::<_, bool>("isIncomplete") {
+                            Ok(_) => CompletionResponse::CompletionList(
+                                lua.from_value::<CompletionList>(
+                                    LuaValue::Table(table),
+                                )?,
+                            ),
+
+                            Err(_) => CompletionResponse::CompletionItems(
+                                lua.from_value::<Vec<CompletionItem>>(
+                                    LuaValue::Table(table),
+                                )?,
+                            ),
+                        })
                     },
 
-                    None => {
-                        let error =
-                            lua.from_value::<ResponseError>(LuaValue::Table(
-                                maybe_err
-                                    .expect("no result so there's an error"),
-                            ))?;
-
-                        Err(LspError::ResponseError(error))
-                    },
+                    None => Err(LspError::ResponseError(
+                        lua.from_value::<ResponseError>(LuaValue::Table(
+                            maybe_err.expect("no result so there's an error"),
+                        ))?,
+                    )),
                 };
 
                 let _ = tx

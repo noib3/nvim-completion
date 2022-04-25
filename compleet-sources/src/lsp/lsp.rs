@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 use bindings::opinionated::{
-    lsp::{protocol::CompletionParams, LspMethod},
+    lsp::{
+        protocol::{CompletionParams, CompletionResponse},
+        LspMethod,
+    },
     Neovim,
 };
 
@@ -48,7 +51,10 @@ impl CompletionSource for Lsp {
             cursor.bytes as u32,
         ));
 
-        let results = client.request(method, 0).await?;
+        let num = match client.request(method, 0).await? {
+            CompletionResponse::CompletionList(list) => list.items.len(),
+            CompletionResponse::CompletionItems(items) => items.len(),
+        };
 
         let word_pre = cursor.word_pre();
         if word_pre.is_empty() {
@@ -59,7 +65,7 @@ impl CompletionSource for Lsp {
         if test.starts_with(word_pre) && test != word_pre {
             Ok(vec![CompletionItem {
                 details: None,
-                format: format!(" {test} - {} ", results),
+                format: format!(" {test} - {} ", num),
                 matched_bytes: vec![0..word_pre.len()],
                 matched_prefix: word_pre.len() as u16,
                 source: "Lsp",

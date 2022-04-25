@@ -13,14 +13,14 @@ pub fn create_user_command(
     opts: Table,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_create_user_command")?
+        .get::<_, LuaFunction>("nvim_create_user_command")?
         .call((name, command, opts))
 }
 
 /// Binding to `vim.api.nvim_create_buf`.
 pub fn create_buf(lua: &Lua, listed: bool, scratch: bool) -> LuaResult<u16> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_create_buf")?
+        .get::<_, LuaFunction>("nvim_create_buf")?
         .call((listed, scratch))
 }
 
@@ -38,7 +38,7 @@ pub fn echo(
         })
         .collect::<Vec<Vec<String>>>();
 
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_echo")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_echo")?.call((
         chunks,
         history,
         Vec::<u8>::new(),
@@ -47,21 +47,19 @@ pub fn echo(
 
 /// Binding to `vim.api.nvim_get_current_buf`
 pub fn get_current_buf(lua: &Lua) -> LuaResult<u16> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_get_current_buf")?.call(())
+    super::api(lua)?.get::<_, LuaFunction>("nvim_get_current_buf")?.call(())
 }
 
 #[allow(dead_code)]
 /// Binding to `vim.api.nvim_get_current_line`
 pub fn get_current_line(lua: &Lua) -> LuaResult<String> {
-    super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_get_current_line")?
-        .call(())
+    super::api(lua)?.get::<_, LuaFunction>("nvim_get_current_line")?.call(())
 }
 
 /// Binding to `vim.api.nvim_get_mode`
 pub fn get_mode(lua: &Lua) -> LuaResult<(String, bool)> {
     let t = super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_get_mode")?
+        .get::<_, LuaFunction>("nvim_get_mode")?
         .call::<_, Table>(())?;
 
     Ok((t.get("mode")?, t.get("blocking")?))
@@ -72,7 +70,7 @@ pub fn get_option<'lua, V: FromLua<'lua>>(
     lua: &'lua Lua,
     name: &str,
 ) -> LuaResult<V> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_get_option")?.call(name)
+    super::api(lua)?.get::<_, LuaFunction>("nvim_get_option")?.call(name)
 }
 
 #[allow(dead_code)]
@@ -94,7 +92,7 @@ pub fn notify<S: AsRef<str>>(
     msg: S,
     level: super::LogLevel,
 ) -> LuaResult<()> {
-    super::api(lua)?.get::<&str, LuaFunction>("nvim_notify")?.call((
+    super::api(lua)?.get::<_, LuaFunction>("nvim_notify")?.call((
         msg.as_ref(),
         level as u8,
         Vec::<u8>::new(),
@@ -116,7 +114,7 @@ pub fn replace_termcodes(
     special: bool,
 ) -> LuaResult<std::ffi::CString> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_replace_termcodes")?
+        .get::<_, LuaFunction>("nvim_replace_termcodes")?
         .call((str, from_part, do_lt, special))
 }
 
@@ -128,7 +126,7 @@ pub fn set_hl(
     opts: Table,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_set_hl")?
+        .get::<_, LuaFunction>("nvim_set_hl")?
         .call((ns_id, name, opts))
 }
 
@@ -141,6 +139,6 @@ pub fn set_keymap(
     opts: Table,
 ) -> LuaResult<()> {
     super::api(lua)?
-        .get::<&str, LuaFunction>("nvim_set_keymap")?
+        .get::<_, LuaFunction>("nvim_set_keymap")?
         .call((mode, lhs, rhs, opts))
 }
