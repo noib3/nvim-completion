@@ -45,7 +45,7 @@ pub struct ResponseError {
     pub message: String,
 }
 
-#[derive(Debug, Deserialize_repr)]
+#[derive(Debug, Deserialize_repr, PartialEq)]
 #[repr(i32)]
 pub enum ErrorCode {
     // Defined by JSON RPC.
@@ -216,17 +216,17 @@ pub enum LspAny {
     Null,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionList {
+    pub is_incomplete: bool,
+    pub items: Vec<CompletionItem>,
+}
+
 // This enum is **not** part of the official Lsp protocol.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum CompletionResponse {
     CompletionList(CompletionList),
     CompletionItems(Vec<CompletionItem>),
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CompletionList {
-    pub is_incomplete: bool,
-    pub items: Vec<CompletionItem>,
 }

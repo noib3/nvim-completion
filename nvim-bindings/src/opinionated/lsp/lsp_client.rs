@@ -4,8 +4,7 @@ use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
 use tokio::sync::oneshot;
 
 use super::{
-    protocol::{CompletionResponse, ResponseError},
-    LspError,
+    protocol::{CompletionResponse, ErrorCode, ResponseError},
     LspMethod,
     LspResult,
 };
@@ -72,11 +71,20 @@ impl LspClient {
                         })
                     },
 
-                    None => Err(LspError::ResponseError(
-                        lua.from_value::<ResponseError>(LuaValue::Table(
-                            maybe_err.expect("no result so there's an error"),
-                        ))?,
-                    )),
+                    None => {
+                        let err =
+                            lua.from_value::<ResponseError>(LuaValue::Table(
+                                maybe_err
+                                    .expect("no result so there's an error"),
+                            ))?;
+
+                        // Ignore `ContentModified` errors.
+                        if err.code == ErrorCode::ContentModified {
+                            Ok(CompletionResponse::CompletionItems(Vec::new()))
+                        } else {
+                            Err(err.into())
+                        }
+                    },
                 };
 
                 let _ = tx

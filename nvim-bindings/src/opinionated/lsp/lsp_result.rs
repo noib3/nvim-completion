@@ -27,6 +27,12 @@ pub enum LspError {
     Lua(LuaError),
 }
 
+impl From<ResponseError> for LspError {
+    fn from(err: ResponseError) -> Self {
+        Self::ResponseError(err)
+    }
+}
+
 impl From<RecvError> for LspError {
     fn from(err: RecvError) -> Self {
         Self::ReceiverError(err)

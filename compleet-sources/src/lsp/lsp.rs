@@ -18,12 +18,12 @@ use crate::prelude::{
 
 #[derive(Debug, Default)]
 pub struct Lsp {
-    config: LspConfig,
+    _config: LspConfig,
 }
 
 impl From<LspConfig> for Lsp {
-    fn from(config: LspConfig) -> Self {
-        Self { config, ..Default::default() }
+    fn from(_config: LspConfig) -> Self {
+        Self { _config, ..Default::default() }
     }
 }
 
@@ -51,28 +51,28 @@ impl CompletionSource for Lsp {
             cursor.bytes as u32,
         ));
 
-        let num = match client.request(method, 0).await? {
-            CompletionResponse::CompletionList(list) => list.items.len(),
-            CompletionResponse::CompletionItems(items) => items.len(),
+        let items = match client.request(method, 0).await? {
+            CompletionResponse::CompletionList(list) => list.items,
+            CompletionResponse::CompletionItems(items) => items,
         };
 
         let word_pre = cursor.word_pre();
+
         if word_pre.is_empty() {
             return Ok(Vec::new());
         }
 
-        let test = &self.config.test;
-        if test.starts_with(word_pre) && test != word_pre {
-            Ok(vec![CompletionItem {
-                details: None,
-                format: format!(" {test} - {} ", num),
-                matched_bytes: vec![0..word_pre.len()],
-                matched_prefix: word_pre.len() as u16,
-                source: "Lsp",
-                text: test.clone(),
-            }])
-        } else {
-            Ok(Vec::new())
-        }
+        Ok(items
+            .into_iter()
+            .filter(|item| {
+                item.label.starts_with(word_pre) && item.label != word_pre
+            })
+            .map(|item| {
+                let mut item: CompletionItem = item.into();
+                item.matched_bytes = vec![0..word_pre.len()];
+                item.matched_prefix = word_pre.len() as u16;
+                item
+            })
+            .collect::<Completions>())
     }
 }
