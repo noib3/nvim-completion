@@ -70,11 +70,11 @@ impl CompletionMenu {
         completions: &Completions,
         matched_bytes: usize,
     ) -> LuaResult<()> {
-        // Highlight the matching characters of every completion item.
-        let mut id = 0u16;
         let opts = lua.create_table_with_capacity(0, 4)?;
+
+        // TODO: Refactor, mix the base highlight w/ the matched bytes one.
         for (row, completion) in completions.iter().enumerate() {
-            id += 1;
+            // Highlight the matching characters of every completion item.
             let offset = completion.label_byte_offset();
             opts.set("end_row", row)?;
             opts.set("end_col", offset + matched_bytes)?;
@@ -87,6 +87,20 @@ impl CompletionMenu {
                 offset.try_into().unwrap(),
                 opts.clone(),
             )?;
+        }
+
+        for (row, completion) in completions.iter().enumerate() {
+            for (hl_group, range) in completion.hl_ranges() {
+                api::buf_add_highlight(
+                    lua,
+                    self.bufnr,
+                    -1,
+                    hl_group.to_string(),
+                    row as u32,
+                    range.start as u32,
+                    range.end as i32,
+                )?;
+            }
         }
 
         Ok(())

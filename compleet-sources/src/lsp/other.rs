@@ -3,6 +3,7 @@ use bindings::opinionated::lsp::protocol::{
     CompletionItemKind,
 };
 
+use super::hlgroups::kind;
 use crate::{completion_item::CompletionItemBuilder, prelude::CompletionItem};
 
 impl From<LspCompletionItem> for CompletionItem {
@@ -11,35 +12,36 @@ impl From<LspCompletionItem> for CompletionItem {
 
         if let Some(kind) = lsp_item.kind {
             use CompletionItemKind::*;
-            let icon = match kind {
-                Text => '',
-                Method => '',
-                Function => '',
-                Constructor => '',
-                Field => 'ﰠ',
-                Variable => '',
-                Class => 'ﴯ',
-                Interface => '',
-                Module => '',
-                Property => 'ﰠ',
-                Unit => '塞',
-                Value => '',
-                Enum => '',
-                Keyword => '',
-                Snippet => '',
-                Color => '',
-                File => '',
-                Reference => '',
-                Folder => '',
-                EnumMember => '',
-                Constant => '',
-                Struct => 'פּ',
-                Event => '',
-                Operator => '',
-                TypeParameter => ' ',
+
+            let (icon, hl_group) = match kind {
+                Text => ('', kind::TEXT),
+                Method => ('', kind::METHOD),
+                Function => ('', kind::FUNCTION),
+                Constructor => ('', kind::CONSTRUCTOR),
+                Field => ('ﰠ', kind::FIELD),
+                Variable => ('', kind::VARIABLE),
+                Class => ('ﴯ', kind::CLASS),
+                Interface => ('', kind::INTERFACE),
+                Module => ('', kind::MODULE),
+                Property => ('ﰠ', kind::PROPERTY),
+                Unit => ('塞', kind::UNIT),
+                Value => ('', kind::VALUE),
+                Enum => ('', kind::ENUM),
+                Keyword => ('', kind::KEYWORD),
+                Snippet => ('', kind::SNIPPET),
+                Color => ('', kind::COLOR),
+                File => ('', kind::FILE),
+                Reference => ('', kind::REFERENCE),
+                Folder => ('', kind::FOLDER),
+                EnumMember => ('', kind::ENUM_MEMBER),
+                Constant => ('', kind::CONSTANT),
+                Struct => ('פּ', kind::STRUCT),
+                Event => ('', kind::EVENT),
+                Operator => ('', kind::OPERATOR),
+                TypeParameter => (' ', kind::TYPE_PARAMETER),
             };
 
-            builder = builder.icon(icon);
+            builder = builder.icon(icon, Some(hl_group));
         }
 
         if let Some(details) = lsp_item.detail {

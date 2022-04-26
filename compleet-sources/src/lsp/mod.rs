@@ -1,4 +1,5 @@
 mod config;
+mod hlgroups;
 mod lsp;
 mod other;
 

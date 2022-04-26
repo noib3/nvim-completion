@@ -80,7 +80,7 @@ impl Channel {
 
                     match maybe_cmp {
                         Ok(compl) => completions.extend(compl),
-                        Err(err) => utils::echoerr(lua, err)?,
+                        Err(err) => utils::echowar(lua, err)?,
                     }
                 }
             }
@@ -115,6 +115,14 @@ impl Channel {
             .enable_all()
             .build()
             .expect("couldn't create tokio runtime");
+
+        runtime.block_on(async {
+            for source in &sources {
+                if let Err(_) = source.lock().await.setup(lua) {
+                    todo!("error handling");
+                }
+            }
+        });
 
         Ok(Channel {
             signal: Arc::new(Signal::new(lua, callback)?),

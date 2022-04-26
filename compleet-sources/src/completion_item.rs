@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use mlua::prelude::{Lua, LuaResult};
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -28,6 +30,10 @@ pub struct CompletionItem {
     /// into the buffer.
     pub post_insert_callback: Option<PostInsertCallback>,
 
+    /// A vector of `(hl_group, byte_range)` tuples where all bytes in
+    /// `byte_range` are highlighted in the `hl_group` highlight group.
+    hl_ranges: Vec<(&'static str, Range<usize>)>,
+
     /// The formatted completion item as shown in the completion menu.
     format: Option<String>,
 
@@ -45,6 +51,10 @@ impl CompletionItem {
             Some(icon) => 2 + icon.len(),
             None => 1,
         }
+    }
+
+    pub fn hl_ranges(&self) -> &'_ [(&'static str, Range<usize>)] {
+        &self.hl_ranges
     }
 
     // We take a `&mut self` to memoize the result.
@@ -75,6 +85,7 @@ pub struct CompletionItemBuilder {
     icon: Option<String>,
     details: Option<String>,
     post_insert_callback: Option<PostInsertCallback>,
+    hl_ranges: Vec<(&'static str, Range<usize>)>,
 }
 
 impl CompletionItemBuilder {
@@ -82,8 +93,14 @@ impl CompletionItemBuilder {
         Self { text: text.as_ref().to_string(), ..Default::default() }
     }
 
-    pub fn icon(mut self, icon: char) -> Self {
-        self.icon = Some(icon.to_string());
+    pub fn icon(mut self, icon: char, hl_group: Option<&'static str>) -> Self {
+        let icon = icon.to_string();
+
+        if let Some(hl_group) = hl_group {
+            self.hl_ranges.push((hl_group, (1..1 + icon.len())))
+        }
+
+        self.icon = Some(icon);
         self
     }
 
@@ -103,6 +120,7 @@ impl CompletionItemBuilder {
             icon,
             details,
             post_insert_callback,
+            hl_ranges,
         } = self;
 
         let details = details.map(|str| {
@@ -114,6 +132,7 @@ impl CompletionItemBuilder {
             icon,
             details,
             post_insert_callback,
+            hl_ranges,
             ..Default::default()
         }
     }

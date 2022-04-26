@@ -6,14 +6,10 @@ use bindings::opinionated::{
     },
     Neovim,
 };
+use mlua::prelude::{Lua, LuaResult};
 
-use super::LspConfig;
-use crate::prelude::{
-    CompletionSource,
-    Completions,
-    Cursor,
-    Result,
-};
+use super::{hlgroups, LspConfig};
+use crate::prelude::{CompletionSource, Completions, Cursor, Result};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
@@ -28,6 +24,10 @@ impl From<LspConfig> for Lsp {
 
 #[async_trait]
 impl CompletionSource for Lsp {
+    fn setup(&mut self, lua: &Lua) -> LuaResult<()> {
+        hlgroups::setup(lua)
+    }
+
     async fn attach(&mut self, _nvim: &Neovim, _bufnr: u16) -> bool {
         // TODO: check if buffer has any LSPs available.
         // vim.lsp.buf_is_attached
