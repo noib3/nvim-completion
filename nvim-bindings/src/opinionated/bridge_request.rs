@@ -34,6 +34,7 @@ pub enum BridgeRequest {
 
     LspBufGetClients {
         bufnr: u16,
+        bridge: Arc<LuaBridge>,
         responder: Responder<Vec<LspClient>>,
     },
 
@@ -68,7 +69,7 @@ impl BridgeRequest {
                 let _ = responder.send(bufnr);
             },
 
-            LspBufGetClients { bufnr, responder } => {
+            LspBufGetClients { bufnr, bridge, responder } => {
                 let client_tables = lsp::buf_get_clients(lua, bufnr)?
                     .sequence_values::<LuaTable>()
                     .filter_map(|table_res| table_res.ok())
@@ -78,8 +79,6 @@ impl BridgeRequest {
                     let _ = responder.send(Vec::new());
                     return Ok(());
                 }
-
-                let bridge = Arc::new(LuaBridge::new(lua)?);
 
                 let mut clients =
                     Vec::<LspClient>::with_capacity(client_tables.len());

@@ -35,7 +35,11 @@ impl Neovim {
         bufnr: u16,
     ) -> Vec<lsp::LspClient> {
         let (responder, receiver) = oneshot::channel();
-        let request = BridgeRequest::LspBufGetClients { bufnr, responder };
+        let request = BridgeRequest::LspBufGetClients {
+            bridge: self.bridge.clone(),
+            bufnr,
+            responder,
+        };
         self.bridge.send(request, receiver).await
     }
 }
