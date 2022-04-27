@@ -69,6 +69,18 @@ impl CompletionItem {
         })
     }
 
+    /// TODO: docs
+    pub fn highlight_label(
+        &mut self,
+        ranges: Vec<(&'static str, Range<usize>)>,
+    ) {
+        for (group, Range { start, end }) in ranges {
+            let offset = self.label_byte_offset();
+            let (start, end) = (start + offset, end + offset);
+            self.hl_ranges.push((group, start..end));
+        }
+    }
+
     // We take a `&mut self` to memoize the result.
     pub fn len(&mut self) -> usize {
         self.len.unwrap_or({

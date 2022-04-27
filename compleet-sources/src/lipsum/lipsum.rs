@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use bindings::opinionated::Neovim;
+use mlua::prelude::{Lua, LuaResult};
 
 use super::{
     lorems::{LOREMS, LOREM_IPSUM},
@@ -21,14 +22,15 @@ impl From<LipsumConfig> for Lipsum {
 
 #[async_trait]
 impl CompletionSource for Lipsum {
-    async fn attach(&mut self, _nvim: &Neovim, _bufnr: u16) -> bool {
-        true
+    fn attach(&mut self, _lua: &Lua, _bufnr: u16) -> LuaResult<bool> {
+        Ok(true)
     }
 
     async fn complete(
         &self,
         _nvim: &Neovim,
         cursor: &Cursor,
+        _bufnr: u16,
     ) -> Result<Completions> {
         // // Simulate a slow source, this shouldn't block.
         // tokio::time::sleep(std::time::Duration::from_secs(2)).await;

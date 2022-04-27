@@ -14,7 +14,7 @@ impl From<LspCompletionItem> for CompletionItem {
             use CompletionItemKind::*;
 
             let (icon, hl_group) = match kind {
-                Text => ('', kind::TEXT),
+                Text => ('', kind::TEXT),
                 Method => ('', kind::METHOD),
                 Function => ('', kind::FUNCTION),
                 Constructor => ('', kind::CONSTRUCTOR),
@@ -22,7 +22,7 @@ impl From<LspCompletionItem> for CompletionItem {
                 Variable => ('', kind::VARIABLE),
                 Class => ('ﴯ', kind::CLASS),
                 Interface => ('', kind::INTERFACE),
-                Module => ('', kind::MODULE),
+                Module => ('', kind::MODULE),
                 Property => ('ﰠ', kind::PROPERTY),
                 Unit => ('塞', kind::UNIT),
                 Value => ('', kind::VALUE),
@@ -38,7 +38,7 @@ impl From<LspCompletionItem> for CompletionItem {
                 Struct => ('פּ', kind::STRUCT),
                 Event => ('', kind::EVENT),
                 Operator => ('', kind::OPERATOR),
-                TypeParameter => (' ', kind::TYPE_PARAMETER),
+                TypeParameter => ('', kind::TYPE_PARAMETER),
             };
 
             builder = builder.icon(icon, Some(hl_group));

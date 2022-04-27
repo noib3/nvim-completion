@@ -144,6 +144,7 @@ impl Channel {
         &mut self,
         cursor: Arc<Cursor>,
         changedtick: u32,
+        bufnr: u16,
     ) {
         let num_sources = u8::try_from(self.sources.len()).unwrap();
         for source in &self.sources {
@@ -154,7 +155,7 @@ impl Channel {
             let signal = self.signal.clone();
             self.handles.push(self.runtime.spawn(async move {
                 let completions =
-                    source.lock().await.complete(&nvim, &cursor).await;
+                    source.lock().await.complete(&nvim, &cursor, bufnr).await;
 
                 let _ =
                     sender.send(Msg { completions, changedtick, num_sources });
@@ -170,29 +171,42 @@ impl Channel {
     }
 
     /// TODO: docs
-    pub fn should_attach(&mut self, bufnr: u16) -> bool {
-        let handles = self
+    // pub fn should_attach(&mut self, bufnr: u16) -> bool {
+    pub fn should_attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
+        // let handles = self
+        //     .sources
+        //     .iter()
+        //     .map(|source| {
+        //         let source = source.clone();
+        //         let nvim = self.nvim.clone();
+        //         self.runtime.spawn(async move {
+        //             source.lock().await.attach(&nvim, bufnr).await
+        //         })
+        //     })
+        //     .collect::<Vec<JoinHandle<bool>>>();
+
+        // let mut results = Vec::<bool>::with_capacity(self.sources.len());
+
+        // self.runtime.block_on(async {
+        //     for handle in handles {
+        //         if let Ok(has_attached) = handle.await {
+        //             results.push(has_attached);
+        //         }
+        //     }
+        // });
+
+        // results.into_iter().any(|has_attached| has_attached)
+
+        let results = self
             .sources
             .iter()
-            .map(|source| {
+            .flat_map(|source| {
                 let source = source.clone();
-                let nvim = self.nvim.clone();
-                self.runtime.spawn(async move {
-                    source.lock().await.attach(&nvim, bufnr).await
-                })
+                self.runtime
+                    .block_on(async { source.lock().await.attach(lua, bufnr) })
             })
-            .collect::<Vec<JoinHandle<bool>>>();
+            .collect::<Vec<bool>>();
 
-        let mut results = Vec::<bool>::with_capacity(self.sources.len());
-
-        self.runtime.block_on(async {
-            for handle in handles {
-                if let Ok(has_attached) = handle.await {
-                    results.push(has_attached);
-                }
-            }
-        });
-
-        results.into_iter().any(|has_attached| has_attached)
+        Ok(results.into_iter().any(|has_attached| has_attached))
     }
 }

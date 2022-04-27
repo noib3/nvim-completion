@@ -37,79 +37,79 @@ pub fn setup(lua: &Lua) -> LuaResult<()> {
     // Don't override existing definitions.
     opts.set("default", true)?;
 
-    opts.set("link", "TSText")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::TEXT, opts.clone())?;
 
-    opts.set("link", "TSMethod")?;
+    opts.set("link", "TSFunction")?;
     api::set_hl(lua, 0, kind::METHOD, opts.clone())?;
 
     opts.set("link", "TSFunction")?;
     api::set_hl(lua, 0, kind::FUNCTION, opts.clone())?;
 
-    opts.set("link", "TSConstructor")?;
+    opts.set("link", "TSFunction")?;
     api::set_hl(lua, 0, kind::CONSTRUCTOR, opts.clone())?;
 
-    opts.set("link", "TSField")?;
+    opts.set("link", "TSConstructor")?;
     api::set_hl(lua, 0, kind::FIELD, opts.clone())?;
 
-    opts.set("link", "TSVariable")?;
+    opts.set("link", "TSConstructor")?;
     api::set_hl(lua, 0, kind::VARIABLE, opts.clone())?;
 
-    opts.set("link", "TSType")?;
+    opts.set("link", "TSParameter")?;
     api::set_hl(lua, 0, kind::CLASS, opts.clone())?;
 
-    opts.set("link", "TSType")?;
+    opts.set("link", "TSConstructor")?;
     api::set_hl(lua, 0, kind::INTERFACE, opts.clone())?;
 
-    opts.set("link", "TSNamespace")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::MODULE, opts.clone())?;
 
-    opts.set("link", "TSProperty")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::PROPERTY, opts.clone())?;
 
     opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::UNIT, opts.clone())?;
 
-    opts.set("link", "TSVariable")?;
+    opts.set("link", "TSParameter")?;
     api::set_hl(lua, 0, kind::VALUE, opts.clone())?;
 
-    opts.set("link", "TSType")?;
+    opts.set("link", "TSParameter")?;
     api::set_hl(lua, 0, kind::ENUM, opts.clone())?;
 
-    opts.set("link", "TSKeyword")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::KEYWORD, opts.clone())?;
 
-    opts.set("link", "TSStringSpecial")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::SNIPPET, opts.clone())?;
 
-    opts.set("link", "TSConstant")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::COLOR, opts.clone())?;
 
-    opts.set("link", "TSInclude")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::FILE, opts.clone())?;
 
-    opts.set("link", "TSCharacter")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::REFERENCE, opts.clone())?;
 
-    opts.set("link", "TSInclude")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::FOLDER, opts.clone())?;
 
-    opts.set("link", "TSField")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::ENUM_MEMBER, opts.clone())?;
 
-    opts.set("link", "TSContant")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::CONSTANT, opts.clone())?;
 
-    opts.set("link", "TSType")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::STRUCT, opts.clone())?;
 
-    opts.set("link", "TSProperty")?;
+    opts.set("link", "TSParameter")?;
     api::set_hl(lua, 0, kind::EVENT, opts.clone())?;
 
-    opts.set("link", "TSOperator")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::OPERATOR, opts.clone())?;
 
-    opts.set("link", "TSType")?;
+    opts.set("link", "TSNone")?;
     api::set_hl(lua, 0, kind::TYPE_PARAMETER, opts.clone())?;
 
     Ok(())

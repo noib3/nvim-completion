@@ -73,7 +73,7 @@ pub fn on_bytes(
     let cursor = std::sync::Arc::new(cursor.clone());
 
     channel.stop_tasks();
-    channel.fetch_completions(cursor, changedtick);
+    channel.fetch_completions(cursor, changedtick, bufnr);
 
     Ok(None)
 }

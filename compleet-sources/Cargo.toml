@@ -25,3 +25,12 @@ features = ["full"]
 
 [dependencies.unicode-segmentation]
 version = "1.9.0"
+
+[dependencies.tree-sitter]
+version = "0.20.6"
+
+[dependencies.tree-sitter-highlight]
+version = "0.20.1"
+
+[dependencies.tree-sitter-rust]
+version = "0.20.1"

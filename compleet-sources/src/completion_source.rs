@@ -16,13 +16,16 @@ pub trait CompletionSource: Debug + Send + Sync {
         Ok(())
     }
 
-    /// Decides whether to attach the source to a buffer.
-    async fn attach(&mut self, nvim: &Neovim, bufnr: u16) -> bool;
+    /// Called the first time a buffer is opened, return `true` if the source
+    /// should attach to the buffer.
+    // async fn attach(&mut self, nvim: &Neovim, bufnr: u16) -> bool;
+    fn attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool>;
 
     /// Returns the completion results.
     async fn complete(
         &self,
         nvim: &Neovim,
         cursor: &Cursor,
+        bufnr: u16,
     ) -> Result<Completions>;
 }
