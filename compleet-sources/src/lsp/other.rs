@@ -62,7 +62,8 @@ impl From<LspCompletionItem> for CompletionItem {
         }
 
         if let Some(details) = lsp_item.detail {
-            builder = builder.details(details);
+            // TODO: detect filetype
+            builder = builder.details(details).details_ft("rust".into());
         }
 
         builder.build()

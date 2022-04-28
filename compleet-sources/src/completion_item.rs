@@ -23,8 +23,8 @@ pub struct CompletionItem {
     /// An icon representing the type of completion.
     pub icon: Option<String>,
 
-    /// The text shown in the details window as a vector of strings.
-    pub details: Option<Vec<String>>,
+    /// TODO: docs
+    pub details: Option<Details>,
 
     /// A callback to be executed **after** the completion has been inserted
     /// into the buffer.
@@ -41,6 +41,15 @@ pub struct CompletionItem {
     /// completion item (i.e. a more accurate notion of "string length" than
     /// both `string.len()` and `string.chars().count()`).
     len: Option<usize>,
+}
+
+#[derive(Default)]
+pub struct Details {
+    /// The text shown in the details window as a vector of strings.
+    pub text: Vec<String>,
+
+    /// The filetype of the buffer used to display the text.
+    pub filetype: Option<String>,
 }
 
 impl CompletionItem {
@@ -95,7 +104,7 @@ impl CompletionItem {
 pub struct CompletionItemBuilder {
     text: String,
     icon: Option<String>,
-    details: Option<String>,
+    details: Option<Details>,
     post_insert_callback: Option<PostInsertCallback>,
     hl_ranges: Vec<(&'static str, Range<usize>)>,
 }
@@ -117,7 +126,29 @@ impl CompletionItemBuilder {
     }
 
     pub fn details<D: AsRef<str>>(mut self, details: D) -> Self {
-        self.details = Some(details.as_ref().to_string());
+        let text = details
+            .as_ref()
+            .split("\n")
+            .map(|line| line.into())
+            .collect::<Vec<String>>();
+
+        if let Some(d) = &mut self.details {
+            d.text = text
+        } else {
+            self.details = Some(Details { text, ..Default::default() });
+        }
+
+        self
+    }
+
+    pub fn details_ft(mut self, ft: String) -> Self {
+        if let Some(d) = &mut self.details {
+            d.filetype = Some(ft)
+        } else {
+            self.details =
+                Some(Details { filetype: Some(ft), ..Default::default() });
+        }
+
         self
     }
 
@@ -134,10 +165,6 @@ impl CompletionItemBuilder {
             post_insert_callback,
             hl_ranges,
         } = self;
-
-        let details = details.map(|str| {
-            str.split("\n").map(|line| line.into()).collect::<Vec<String>>()
-        });
 
         CompletionItem {
             text,

@@ -50,34 +50,34 @@ impl CompletionDetails {
         menu: &Floater,
         force_reopen: bool,
     ) -> LuaResult<()> {
-        // If there's not a new completion or the completion has no details to
-        // display we simply close the floater and return.
-        if completion.and_then(|c| c.details.as_ref()).is_none() {
-            self.floater.close(lua)?;
-            return Ok(());
-        }
-
-        // The lines to fill the buffer with.
-        let lines: &[String] = completion
-            .expect("Already checked `None` variant")
-            .details
-            .as_ref()
-            .expect("Already checked `None` variant");
+        let details = match completion.and_then(|c| c.details.as_ref()) {
+            Some(details) => details,
+            None => {
+                // If there's not a new completion or the completion has no
+                // details to display we simply close the floater and return.
+                self.floater.close(lua)?;
+                return Ok(());
+            },
+        };
 
         // The window id of the completion menu's floating window.
-        let menu_winid = menu.id.expect("The menu is open");
+        let menu_winid = menu.id.expect("the menu is open");
 
-        let (row, col, height, width) =
-            match self::find_position(lua, lines, menu, &self.floater)? {
-                Some(tuple) => tuple,
+        let (row, col, height, width) = match self::find_position(
+            lua,
+            &details.text,
+            menu,
+            &self.floater,
+        )? {
+            Some(tuple) => tuple,
 
-                // If we couldn't find a way to position the new details window
-                // we close the current one and return.
-                None => {
-                    self.floater.close(lua)?;
-                    return Ok(());
-                },
-            };
+            // If we couldn't find a way to position the new details window
+            // we close the current one and return.
+            None => {
+                self.floater.close(lua)?;
+                return Ok(());
+            },
+        };
 
         let position = RelativeTo::Floater(menu_winid, row, col);
 
@@ -98,8 +98,13 @@ impl CompletionDetails {
             self.floater.open(lua, position, height, width)?;
         }
 
+        // Set the buffer filetype.
+        if let Some(ft) = &details.filetype {
+            api::buf_set_option(lua, self.bufnr, "filetype", ft.to_string())?;
+        }
+
         // Lastly, fill the buffer with the new lines.
-        self.fill(lua, lines.to_vec())?;
+        self.fill(lua, details.text.to_vec())?;
 
         Ok(())
     }

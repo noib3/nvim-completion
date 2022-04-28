@@ -3,6 +3,7 @@ use mlua::{
     FromLua,
     Lua,
     Table,
+    ToLua,
 };
 
 /// Binding to `vim.api.nvim_buf_attach`.
@@ -73,6 +74,18 @@ pub fn buf_set_lines(
         strict_indexing,
         replacement,
     ))
+}
+
+/// Binding to `vim.api.nvim_win_set_option`
+pub fn buf_set_option<'lua, V: ToLua<'lua>>(
+    lua: &'lua Lua,
+    bufnr: u16,
+    name: &str,
+    value: V,
+) -> LuaResult<()> {
+    super::api(lua)?
+        .get::<_, LuaFunction>("nvim_buf_set_option")?
+        .call((bufnr, name, value))
 }
 
 /// Binding to `vim.api.nvim_buf_set_text`.
