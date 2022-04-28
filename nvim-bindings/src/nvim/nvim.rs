@@ -1,6 +1,7 @@
 use mlua::{
-    prelude::{Lua, LuaFunction, LuaResult, LuaValue},
+    prelude::{Lua, LuaFunction, LuaResult},
     Table,
+    ToLua,
 };
 
 fn nvim(lua: &Lua) -> LuaResult<Table> {
@@ -8,11 +9,14 @@ fn nvim(lua: &Lua) -> LuaResult<Table> {
 }
 
 /// Binding to `vim.inspect`.
-pub fn inspect(lua: &Lua, t: LuaValue) -> LuaResult<String> {
+pub fn inspect<'lua, V: ToLua<'lua>>(
+    lua: &'lua Lua,
+    v: V,
+) -> LuaResult<String> {
     self::nvim(lua)?
         .get::<_, Table>("inspect")?
         .get::<_, LuaFunction>("inspect")?
-        .call(t)
+        .call(v.to_lua(lua)?)
 }
 
 /// Binding to `_G.print`.

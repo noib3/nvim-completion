@@ -74,7 +74,6 @@ pub struct CompletionItem {
     pub kind: Option<CompletionItemKind>,
     pub tags: Option<Vec<CompletionItemTag>>,
     pub detail: Option<String>,
-    #[serde(flatten)]
     pub documentation: Option<CompletionItemDocumentation>,
     pub preselect: Option<bool>,
     pub deprecated: Option<bool>,
@@ -83,7 +82,6 @@ pub struct CompletionItem {
     pub insert_text: Option<String>,
     pub insert_text_format: Option<InsertTextFormat>,
     pub insert_text_mode: Option<InsertTextMode>,
-    #[serde(flatten)]
     pub text_edit: Option<CompletionItemTextEdit>,
     pub additional_text_edits: Option<Vec<TextEdit>>,
     pub commit_characters: Option<Vec<char>>,

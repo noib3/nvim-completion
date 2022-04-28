@@ -19,7 +19,7 @@ pub struct CompletionMenu {
     pub floater: Floater,
 
     /// TODO: docs
-    mc_nsid: u16,
+    nsid: u16,
 
     /// The index of the currently selected completion item, or `None` if no
     /// completion is selected.
@@ -42,7 +42,7 @@ impl CompletionMenu {
                     ("Search", "None"),
                 ],
             )?,
-            mc_nsid: api::create_namespace(lua, "compleet_matched_chars")?,
+            nsid: api::create_namespace(lua, "compleet/menu")?,
             selected_index: None,
         })
     }
@@ -70,35 +70,39 @@ impl CompletionMenu {
         completions: &Completions,
         matched_bytes: usize,
     ) -> LuaResult<()> {
-        let opts = lua.create_table_with_capacity(0, 4)?;
+        let mc_opts = lua.create_table_with_capacity(0, 4)?;
+        mc_opts.set("hl_group", ui::MENU_MATCHING)?;
+        mc_opts.set("priority", 101)?;
 
-        // TODO: Refactor, mix the base highlight w/ the matched bytes one.
+        let hl_opts = lua.create_table_with_capacity(0, 4)?;
+        hl_opts.set("priority", 100)?;
+
         for (row, completion) in completions.iter().enumerate() {
             // Highlight the matching characters of every completion item.
             let offset = completion.label_byte_offset();
-            opts.set("end_row", row)?;
-            opts.set("end_col", offset + matched_bytes)?;
-            opts.set("hl_group", ui::MENU_MATCHING)?;
+            mc_opts.set("end_row", row)?;
+            mc_opts.set("end_col", offset + matched_bytes)?;
             api::buf_set_extmark(
                 lua,
                 self.bufnr,
-                self.mc_nsid,
+                self.nsid,
                 row as u16,
-                offset.try_into().unwrap(),
-                opts.clone(),
+                offset as u16,
+                mc_opts.clone(),
             )?;
-        }
 
-        for (row, completion) in completions.iter().enumerate() {
+            // Set the highlight groups of the completion item.
             for (hl_group, range) in completion.hl_ranges() {
-                api::buf_add_highlight(
+                hl_opts.set("end_row", row)?;
+                hl_opts.set("end_col", range.end)?;
+                hl_opts.set("hl_group", hl_group.to_string())?;
+                api::buf_set_extmark(
                     lua,
                     self.bufnr,
-                    -1,
-                    hl_group.to_string(),
-                    row as u32,
-                    range.start as u32,
-                    range.end as i32,
+                    self.nsid,
+                    row as u16,
+                    range.start as u16,
+                    hl_opts.clone(),
                 )?;
             }
         }

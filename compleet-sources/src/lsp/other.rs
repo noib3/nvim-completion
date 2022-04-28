@@ -1,6 +1,7 @@
 use bindings::opinionated::lsp::protocol::{
     CompletionItem as LspCompletionItem,
     CompletionItemKind,
+    CompletionItemTextEdit,
 };
 
 use super::hlgroups::kind;
@@ -8,7 +9,23 @@ use crate::{completion_item::CompletionItemBuilder, prelude::CompletionItem};
 
 impl From<LspCompletionItem> for CompletionItem {
     fn from(lsp_item: LspCompletionItem) -> CompletionItem {
-        let mut builder = CompletionItemBuilder::new(lsp_item.label);
+        // if lsp_item.label.starts_with("self") {
+        //     println!("{:?}", lsp_item);
+        // }
+
+        let text = match lsp_item.text_edit {
+            Some(edit) => {
+                use CompletionItemTextEdit::*;
+                match edit {
+                    TextEdit(e) => e.new_text,
+                    InsertReplaceEdit(e) => e.new_text,
+                }
+            },
+
+            None => lsp_item.insert_text.unwrap_or(lsp_item.label),
+        };
+
+        let mut builder = CompletionItemBuilder::new(text);
 
         if let Some(kind) = lsp_item.kind {
             use CompletionItemKind::*;

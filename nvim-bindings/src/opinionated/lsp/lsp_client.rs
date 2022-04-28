@@ -69,6 +69,23 @@ impl LspClient {
             Box::new(move |lua, (maybe_err, maybe_result, _ctx)| {
                 let result = match maybe_result {
                     Some(table) => {
+                        // for res in table
+                        //     .clone()
+                        //     .get::<_, LuaTable>("items")?
+                        //     .sequence_values::<LuaTable>()
+                        // {
+                        //     if res
+                        //         .clone()?
+                        //         .get::<_, String>("label")?
+                        //         .starts_with("self")
+                        //     {
+                        //         crate::nvim::print(
+                        //             lua,
+                        //             crate::nvim::inspect(lua, res?)?,
+                        //         )?;
+                        //     }
+                        // }
+
                         // TODO: why doesn't this work?
                         // Ok(lua.from_value::<CompletionResponse>(
                         //     LuaValue::Table(table),
