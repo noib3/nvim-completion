@@ -1,7 +1,7 @@
+use bindings::opinionated::Buffer;
 use mlua::prelude::{Lua, LuaResult};
 
 use crate::ui;
-use crate::ui::Buffer;
 use crate::utils;
 use crate::State;
 
@@ -13,14 +13,7 @@ pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     }
 
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    // Move all the buffer numbers from the `attached_buffers` vector to
-    // `buffers_to_be_detached`.
-    state.buffers_to_be_detached.extend::<Vec<u16>>(
-        state.attached_buffers.iter().map(|b| b.number).collect(),
-    );
-
-    // Clear the vector of attached buffers.
-    state.attached_buffers.clear();
+    state.detach_all_buffers();
 
     // Delete the augroup containing all the autocommands.
     state.augroup.unset(lua)?;
@@ -41,19 +34,15 @@ pub fn detach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
 pub fn detach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let current = Buffer::get_current(lua)?;
 
-    if !state.attached_buffers.contains(&current) {
+    if !state.is_buffer_attached(&current) {
         utils::echoerr(lua, "Completion is already off in this buffer")?;
         return Ok(());
     }
 
-    // Remove the buffer from `attached_buffers` and schedule it to be
-    // detached.
-    state.attached_buffers.retain(|b| b != &current);
-    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    state.buffers_to_be_detached.push(current.number);
+    state.detach_buffer(&current);
 
     // Delete all the buffer-local autocommands on this buffer.
-    state.augroup.clear_local(lua, &current)?;
+    state.augroup.clear_local(lua, current.bufnr)?;
 
     ui::cleanup(lua, &mut state.ui)?;
 

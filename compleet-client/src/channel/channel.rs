@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use bindings::opinionated::{Neovim, Signal};
+use bindings::opinionated::{Buffer, Neovim, Signal};
 use mlua::prelude::{Lua, LuaResult};
 use parking_lot::Mutex;
 use sources::prelude::{Completions, Cursor, Result, Sources};
@@ -144,18 +144,22 @@ impl Channel {
         &mut self,
         cursor: Arc<Cursor>,
         changedtick: u32,
-        bufnr: u16,
+        buffer: Arc<Buffer>,
     ) {
         let num_sources = u8::try_from(self.sources.len()).unwrap();
         for source in &self.sources {
             let source = source.clone();
             let cursor = cursor.clone();
+            let buffer = buffer.clone();
             let nvim = self.nvim.clone();
             let sender = self.sender.clone();
             let signal = self.signal.clone();
             self.handles.push(self.runtime.spawn(async move {
-                let completions =
-                    source.lock().await.complete(&nvim, &cursor, bufnr).await;
+                let completions = source
+                    .lock()
+                    .await
+                    .complete(&nvim, &cursor, &buffer)
+                    .await;
 
                 let _ =
                     sender.send(Msg { completions, changedtick, num_sources });
@@ -172,7 +176,11 @@ impl Channel {
 
     /// TODO: docs
     // pub fn should_attach(&mut self, bufnr: u16) -> bool {
-    pub fn should_attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
+    pub fn should_attach(
+        &mut self,
+        lua: &Lua,
+        buffer: &Buffer,
+    ) -> LuaResult<bool> {
         // let handles = self
         //     .sources
         //     .iter()
@@ -202,8 +210,9 @@ impl Channel {
             .iter()
             .flat_map(|source| {
                 let source = source.clone();
-                self.runtime
-                    .block_on(async { source.lock().await.attach(lua, bufnr) })
+                self.runtime.block_on(async {
+                    source.lock().await.attach(lua, buffer)
+                })
             })
             .collect::<Vec<bool>>();
 

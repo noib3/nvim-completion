@@ -5,7 +5,13 @@ use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaTable};
 use tokio::sync::oneshot;
 
 use super::{
-    lsp::{LspClient, LspError, LspHandlerSignature, LspMethod, LspResult},
+    lsp::{
+        protocol::CompletionParams,
+        LspClient,
+        LspError,
+        LspHandlerSignature,
+        LspResult,
+    },
     LuaBridge,
 };
 use crate::{api, lsp};
@@ -38,9 +44,9 @@ pub enum BridgeRequest {
         responder: Responder<Vec<LspClient>>,
     },
 
-    LspClientRequest {
+    LspClientRequestCompletions {
         req_key: Arc<LuaRegistryKey>,
-        method: LspMethod,
+        params: CompletionParams,
         handler: LspHandler,
         bufnr: u16,
         responder: Responder<LspResult<u32>>,
@@ -101,20 +107,19 @@ impl BridgeRequest {
                 let _ = responder.send(clients);
             },
 
-            LspClientRequest {
+            LspClientRequestCompletions {
                 req_key,
-                method,
+                params,
                 handler,
                 bufnr,
                 responder,
             } => {
                 let request = lua.registry_value::<LuaFunction>(&req_key)?;
-                let (method_name, params) = method.expand(lua)?;
                 let handler = lua.create_function_mut(handler)?;
 
                 let _ = responder.send(
                     match request.call::<_, (bool, _)>((
-                        method_name,
+                        "textDocument/completion".to_string(),
                         params,
                         handler,
                         bufnr,

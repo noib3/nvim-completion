@@ -1,8 +1,8 @@
 mod config;
-mod hlgroups;
+mod constants;
 mod lsp;
 mod other;
-mod treesitter;
+mod setup;
 
 pub use config::LspConfig;
 pub use lsp::Lsp;

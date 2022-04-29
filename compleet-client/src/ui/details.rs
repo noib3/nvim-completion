@@ -99,12 +99,15 @@ impl CompletionDetails {
         }
 
         // Set the buffer filetype.
-        if let Some(ft) = &details.filetype {
-            api::buf_set_option(lua, self.bufnr, "filetype", ft.to_string())?;
-        }
+        api::buf_set_option(
+            lua,
+            self.bufnr,
+            "filetype",
+            details.filetype.clone(),
+        )?;
 
         // Lastly, fill the buffer with the new lines.
-        self.fill(lua, details.text.to_vec())?;
+        self.fill(lua, details.text.clone())?;
 
         Ok(())
     }

@@ -1,19 +1,22 @@
 use bindings::opinionated::lsp::protocol::{
     CompletionItem as LspCompletionItem,
+    CompletionItemDocumentation,
     CompletionItemKind,
     CompletionItemTextEdit,
+    MarkupKind,
 };
 
-use super::hlgroups::kind;
-use crate::{completion_item::CompletionItemBuilder, prelude::CompletionItem};
+use super::constants::{hlgroup, icon};
+use crate::prelude::CompletionItem;
 
-impl From<LspCompletionItem> for CompletionItem {
-    fn from(lsp_item: LspCompletionItem) -> CompletionItem {
-        // if lsp_item.label.starts_with("self") {
-        //     println!("{:?}", lsp_item);
-        // }
+impl CompletionItem {
+    pub fn from_lsp(
+        lsp_item: LspCompletionItem,
+        language: &str,
+    ) -> CompletionItem {
+        let mut completion = CompletionItem::default();
 
-        let text = match lsp_item.text_edit {
+        completion.text = match lsp_item.text_edit {
             Some(edit) => {
                 use CompletionItemTextEdit::*;
                 match edit {
@@ -25,47 +28,63 @@ impl From<LspCompletionItem> for CompletionItem {
             None => lsp_item.insert_text.unwrap_or(lsp_item.label),
         };
 
-        let mut builder = CompletionItemBuilder::new(text);
-
         if let Some(kind) = lsp_item.kind {
             use CompletionItemKind::*;
 
             let (icon, hl_group) = match kind {
-                Text => ('', kind::TEXT),
-                Method => ('', kind::METHOD),
-                Function => ('', kind::FUNCTION),
-                Constructor => ('', kind::CONSTRUCTOR),
-                Field => ('ﰠ', kind::FIELD),
-                Variable => ('', kind::VARIABLE),
-                Class => ('ﴯ', kind::CLASS),
-                Interface => ('', kind::INTERFACE),
-                Module => ('', kind::MODULE),
-                Property => ('ﰠ', kind::PROPERTY),
-                Unit => ('塞', kind::UNIT),
-                Value => ('', kind::VALUE),
-                Enum => ('', kind::ENUM),
-                Keyword => ('', kind::KEYWORD),
-                Snippet => ('', kind::SNIPPET),
-                Color => ('', kind::COLOR),
-                File => ('', kind::FILE),
-                Reference => ('', kind::REFERENCE),
-                Folder => ('', kind::FOLDER),
-                EnumMember => ('', kind::ENUM_MEMBER),
-                Constant => ('', kind::CONSTANT),
-                Struct => ('פּ', kind::STRUCT),
-                Event => ('', kind::EVENT),
-                Operator => ('', kind::OPERATOR),
-                TypeParameter => ('', kind::TYPE_PARAMETER),
+                Text => (icon::TEXT, hlgroup::TEXT),
+                Method => (icon::METHOD, hlgroup::METHOD),
+                Function => (icon::FUNCTION, hlgroup::FUNCTION),
+                Constructor => (icon::CONSTRUCTOR, hlgroup::CONSTRUCTOR),
+                Field => (icon::FIELD, hlgroup::FIELD),
+                Variable => (icon::VARIABLE, hlgroup::VARIABLE),
+                Class => (icon::CLASS, hlgroup::CLASS),
+                Interface => (icon::INTERFACE, hlgroup::INTERFACE),
+                Module => (icon::MODULE, hlgroup::MODULE),
+                Property => (icon::PROPERTY, hlgroup::PROPERTY),
+                Unit => (icon::UNIT, hlgroup::UNIT),
+                Value => (icon::VALUE, hlgroup::VALUE),
+                Enum => (icon::ENUM, hlgroup::ENUM),
+                Keyword => (icon::KEYWORD, hlgroup::KEYWORD),
+                Snippet => (icon::SNIPPET, hlgroup::SNIPPET),
+                Color => (icon::COLOR, hlgroup::COLOR),
+                File => (icon::FILE, hlgroup::FILE),
+                Reference => (icon::REFERENCE, hlgroup::REFERENCE),
+                Folder => (icon::FOLDER, hlgroup::FOLDER),
+                EnumMember => (icon::ENUM_MEMBER, hlgroup::ENUM_MEMBER),
+                Constant => (icon::CONSTANT, hlgroup::CONSTANT),
+                Struct => (icon::STRUCT, hlgroup::STRUCT),
+                Event => (icon::EVENT, hlgroup::EVENT),
+                Operator => (icon::OPERATOR, hlgroup::OPERATOR),
+                TypeParameter => {
+                    (icon::TYPE_PARAMETER, hlgroup::TYPE_PARAMETER)
+                },
             };
 
-            builder = builder.icon(icon, Some(hl_group));
+            completion.icon = Some(icon.to_string());
+            completion.highlight_icon(hl_group);
         }
 
-        if let Some(details) = lsp_item.detail {
-            // TODO: detect filetype
-            builder = builder.details(details).details_ft("rust".into());
+        let (details, filetype) = if let Some(docs) = lsp_item.documentation {
+            use CompletionItemDocumentation::*;
+            match docs {
+                String(str) => (Some(str), ""),
+                MarkupContent(mkup) => (
+                    Some(mkup.value),
+                    match mkup.kind {
+                        MarkupKind::PlainText => "text",
+                        MarkupKind::Markdown => "markdown",
+                    },
+                ),
+            }
+        } else {
+            (lsp_item.detail, language)
+        };
+
+        if let Some(det) = details {
+            completion.set_details(det, filetype.into());
         }
 
-        builder.build()
+        completion
     }
 }

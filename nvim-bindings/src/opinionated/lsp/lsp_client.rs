@@ -4,8 +4,7 @@ use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
 use tokio::sync::oneshot;
 
 use super::{
-    protocol::{CompletionResponse, ErrorCode, ResponseError},
-    LspMethod,
+    protocol::{CompletionResponse, ErrorCode, ResponseError, CompletionParams},
     LspResult,
 };
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
@@ -54,10 +53,10 @@ impl LspClient {
         }
     }
 
-    /// Binding to `vim.lsp.client.request`.
-    pub async fn request(
+    /// Binding to `vim.lsp.client.request` specialized for completions.
+    pub async fn request_completions(
         &self,
-        method: LspMethod,
+        params: CompletionParams,
         bufnr: u16,
     ) -> LspResult<CompletionResponse> {
         let (tx, rx) = oneshot::channel::<LspResult<CompletionResponse>>();
@@ -67,64 +66,58 @@ impl LspClient {
         // the server.
         let handler: LspHandler =
             Box::new(move |lua, (maybe_err, maybe_result, _ctx)| {
-                let result = match maybe_result {
-                    Some(table) => {
-                        // for res in table
-                        //     .clone()
-                        //     .get::<_, LuaTable>("items")?
-                        //     .sequence_values::<LuaTable>()
-                        // {
-                        //     if res
-                        //         .clone()?
-                        //         .get::<_, String>("label")?
-                        //         .starts_with("self")
-                        //     {
-                        //         crate::nvim::print(
-                        //             lua,
-                        //             crate::nvim::inspect(lua, res?)?,
-                        //         )?;
-                        //     }
-                        // }
+                let result = if let Some(table) = maybe_result {
+                    // for res in table
+                    //     .clone()
+                    //     .get::<_, LuaTable>("items")?
+                    //     .sequence_values::<LuaTable>()
+                    // {
+                    //     if res
+                    //         .clone()?
+                    //         .get::<_, String>("label")?
+                    //         .starts_with("self")
+                    //     {
+                    //         crate::nvim::print(
+                    //             lua,
+                    //             crate::nvim::inspect(lua, res?)?,
+                    //         )?;
+                    //     }
+                    // }
 
-                        // TODO: why doesn't this work?
-                        // Ok(lua.from_value::<CompletionResponse>(
-                        //     LuaValue::Table(table),
-                        // )?)
+                    // TODO: why doesn't this work?
+                    // Ok(lua.from_value::<CompletionResponse>(
+                    //     LuaValue::Table(table),
+                    // )?)
 
-                        use super::protocol::{
-                            CompletionItem,
-                            CompletionList,
-                        };
+                    use super::protocol::{
+                        CompletionItem,
+                        CompletionList,
+                    };
 
-                        Ok(match table.get::<_, bool>("isIncomplete") {
-                            Ok(_) => CompletionResponse::CompletionList(
-                                lua.from_value::<CompletionList>(
-                                    LuaValue::Table(table),
-                                )?,
-                            ),
+                    Ok(match table.get::<_, bool>("isIncomplete") {
+                        Ok(_) => CompletionResponse::CompletionList(
+                            lua.from_value::<CompletionList>(
+                                LuaValue::Table(table),
+                            )?,
+                        ),
 
-                            Err(_) => CompletionResponse::CompletionItems(
-                                lua.from_value::<Vec<CompletionItem>>(
-                                    LuaValue::Table(table),
-                                )?,
-                            ),
-                        })
-                    },
+                        Err(_) => CompletionResponse::CompletionItems(
+                            lua.from_value::<Vec<CompletionItem>>(
+                                LuaValue::Table(table),
+                            )?,
+                        ),
+                    })
+                } else {
+                    let err = lua.from_value::<ResponseError>(LuaValue::Table(
+                        maybe_err.expect("no result so there's an error"),
+                    ))?;
 
-                    None => {
-                        let err =
-                            lua.from_value::<ResponseError>(LuaValue::Table(
-                                maybe_err
-                                    .expect("no result so there's an error"),
-                            ))?;
-
-                        // Ignore `ContentModified` errors.
-                        if err.code == ErrorCode::ContentModified {
-                            Ok(CompletionResponse::CompletionItems(Vec::new()))
-                        } else {
-                            Err(err.into())
-                        }
-                    },
+                    // Ignore `ContentModified` errors.
+                    if err.code == ErrorCode::ContentModified {
+                        Ok(CompletionResponse::CompletionItems(Vec::new()))
+                    } else {
+                        Err(err.into())
+                    }
                 };
 
                 let _ = tx
@@ -137,10 +130,10 @@ impl LspClient {
 
         let (responder, receiver) = oneshot::channel();
 
-        let request = BridgeRequest::LspClientRequest {
+        let request = BridgeRequest::LspClientRequestCompletions {
             req_key: self.request_key.clone(),
             handler,
-            method,
+            params,
             bufnr,
             responder,
         };

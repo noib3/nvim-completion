@@ -21,8 +21,10 @@ pub fn setup(lua: &Lua) -> LuaResult<()> {
 
     // Used to highlight the characters where a completion item matches the
     // current completion prefix.
-    opts.set("link", "Statement")?;
+    opts.set("link", mlua::Value::Nil)?;
+    opts.set("bold", 1)?;
     api::set_hl(lua, 0, ui::MENU_MATCHING, opts.clone())?;
+    opts.set("bold", mlua::Value::Nil)?;
 
     // Used to highlight the border of the completion menu.
     opts.set("link", "FloatBorder")?;

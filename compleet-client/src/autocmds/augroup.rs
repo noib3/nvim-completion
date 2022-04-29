@@ -3,12 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use bindings::api;
 use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::{
-    channel,
-    constants::AUGROUP_NAME,
-    state::State,
-    ui::{self, Buffer},
-};
+use crate::{channel, constants::AUGROUP_NAME, state::State, ui};
 
 #[derive(Debug, Default)]
 pub struct Augroup {
@@ -125,11 +120,8 @@ impl Augroup {
 
 impl Augroup {
     /// TODO: docs
-    pub fn clear_local(&self, lua: &Lua, buffer: &Buffer) -> LuaResult<()> {
-        api::clear_autocmds(
-            lua,
-            lua.create_table_from([("buffer", buffer.number)])?,
-        )
+    pub fn clear_local(&self, lua: &Lua, bufnr: u16) -> LuaResult<()> {
+        api::clear_autocmds(lua, lua.create_table_from([("buffer", bufnr)])?)
     }
 
     /// TODO: docs
@@ -170,7 +162,7 @@ impl Augroup {
     pub fn set_local(
         &self,
         lua: &Lua,
-        buffer: &Buffer,
+        bufnr: u16,
         events: Vec<(&'static str, LuaFunction)>,
     ) -> LuaResult<()> {
         let id = self.id.expect("augroup is set");
@@ -179,7 +171,7 @@ impl Augroup {
             let opts = lua.create_table_from([
                 ("group", LuaValue::Integer(id as i64)),
                 ("callback", LuaValue::Function(callback)),
-                ("buffer", LuaValue::Integer(buffer.number as i64)),
+                ("buffer", LuaValue::Integer(bufnr as i64)),
             ])?;
 
             api::create_autocmd(lua, vec![event], opts)?;

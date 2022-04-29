@@ -3,6 +3,8 @@ use mlua::{prelude::LuaResult, Lua};
 
 use crate::state::State;
 
+// TODO: refactor
+
 /// Executed every time a byte or a group of bytes in an attached buffer is
 /// modified.
 pub fn on_bytes(
@@ -21,8 +23,7 @@ pub fn on_bytes(
     // If this buffer is queued to be detached we return `true`, as explained
     // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
     // function but it seems to have been removed.
-    if state.buffers_to_be_detached.contains(&bufnr) {
-        state.buffers_to_be_detached.retain(|&b| b != bufnr);
+    if state.should_detach(bufnr) {
         return Ok(Some(true));
     }
 
@@ -70,10 +71,15 @@ pub fn on_bytes(
     state.did_on_bytes = true;
 
     let channel = state.channel.as_mut().expect("channel already created");
+
+    // TODO: don't clone
     let cursor = std::sync::Arc::new(cursor.clone());
 
+    let buffer =
+        state.attached_buffers.get(&bufnr).map(|buf| buf.clone()).unwrap();
+
     channel.stop_tasks();
-    channel.fetch_completions(cursor, changedtick, bufnr);
+    channel.fetch_completions(cursor, changedtick, buffer);
 
     Ok(None)
 }

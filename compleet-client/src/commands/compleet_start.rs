@@ -1,14 +1,14 @@
-use bindings::{api, nvim};
+use bindings::{api, nvim, opinionated::Buffer};
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::{ui::Buffer, utils, State};
+use crate::{utils, State};
 
 /// Attaches `nvim-compleet` to all the buffers.
 pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     if state.augroup.is_set() {
         let current = Buffer::get_current(lua)?;
         // If the current buffer is not attached we try to attach it.
-        if !state.attached_buffers.contains(&current) {
+        if !state.is_buffer_attached(&current) {
             self::attach_current(lua, state)?;
         }
         // If it is we echo an error message.
@@ -19,7 +19,7 @@ pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
     }
 
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    state.buffers_to_be_detached.clear();
+    state.cancel_detach_all();
 
     // Set the augroup.
     state.augroup.set(lua)?;
@@ -41,16 +41,13 @@ pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
 pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     let current = Buffer::get_current(lua)?;
 
-    if state.attached_buffers.contains(&current) {
+    if state.is_buffer_attached(&current) {
         utils::echoerr(lua, "Completion is already on in this buffer")?;
         return Ok(());
     }
 
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    // If this buffer was queued to be detached from buffer update events (the
-    // ones setup by `nvim_buf_attach`, not autocommands) now it no longer
-    // needs to.
-    state.buffers_to_be_detached.retain(|&b| b != current.number);
+    state.cancel_detach_buffer(&current);
 
     // Set the the augroup if it wasn't already set.
     if !state.augroup.is_set() {
@@ -66,7 +63,7 @@ pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     )?;
 
     // TODO: only display this if we've successfully attached to the buffer.
-    utils::echoinfo(lua, format!("Started completion in buffer {current}"))?;
+    utils::echoinfo(lua, format!("Started completion in buffer '{current}'"))?;
 
     Ok(())
 }

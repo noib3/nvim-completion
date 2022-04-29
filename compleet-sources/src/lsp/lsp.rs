@@ -1,26 +1,29 @@
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
-use bindings::{
-    api,
-    opinionated::{
-        lsp::{
-            protocol::{CompletionParams, CompletionResponse},
-            LspMethod,
-        },
-        Neovim,
-    },
+use bindings::opinionated::{
+    lsp::protocol::{CompletionParams, CompletionResponse},
+    Buffer,
+    Neovim,
 };
 use mlua::prelude::{Lua, LuaResult};
+use tree_sitter_highlight::Highlighter;
 
-use super::{hlgroups, treesitter, LspConfig};
-use crate::prelude::{CompletionSource, Completions, Cursor, Result};
+use super::{setup, LspConfig};
+use crate::prelude::{
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+    Result,
+};
+use crate::treesitter::{self, TSConfig};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
     config: LspConfig,
-    bufnr_to_thingy: HashMap<u16, Arc<treesitter::Thingy>>,
-    filetype_to_thingy: HashMap<String, Arc<treesitter::Thingy>>,
+    bufnr_to_ts_config: HashMap<u16, Arc<TSConfig>>,
+    filetype_to_ts_config: HashMap<String, Arc<TSConfig>>,
 }
 
 impl From<LspConfig> for Lsp {
@@ -32,10 +35,10 @@ impl From<LspConfig> for Lsp {
 #[async_trait]
 impl CompletionSource for Lsp {
     fn setup(&mut self, lua: &Lua) -> LuaResult<()> {
-        hlgroups::setup(lua)
+        setup::hlgroups(lua)
     }
 
-    fn attach(&mut self, lua: &Lua, bufnr: u16) -> LuaResult<bool> {
+    fn attach(&mut self, lua: &Lua, buffer: &Buffer) -> LuaResult<bool> {
         // TODO: check if buffer has any LSPs available.
         // vim.lsp.buf_is_attached
 
@@ -43,23 +46,22 @@ impl CompletionSource for Lsp {
             return Ok(true);
         }
 
-        let filetype = api::buf_get_option::<String>(lua, bufnr, "filetype")?;
-
-        if &filetype == "rust" {
-            // Get the `Thingy` for the given filetype if it already exists, or
-            // create and cache a new one if it doesn't.
-            let thingy = match self.filetype_to_thingy.get(&filetype) {
-                Some(thingy) => thingy.clone(),
-
-                None => {
-                    let thingy =
-                        Arc::new(treesitter::Thingy::new(lua, &filetype)?);
-                    self.filetype_to_thingy.insert(filetype, thingy.clone());
-                    thingy
-                },
+        let filetype = &buffer.filetype;
+        if treesitter::is_supported(filetype) {
+            // Get the `TSConfig` for the given filetype if it already exists,
+            // or create and cache a new one if it doesn't.
+            let config = if let Some(config) =
+                self.filetype_to_ts_config.get(filetype)
+            {
+                config.clone()
+            } else {
+                let config = Arc::new(TSConfig::new(lua, filetype)?);
+                self.filetype_to_ts_config
+                    .insert(filetype.clone(), config.clone());
+                config
             };
 
-            self.bufnr_to_thingy.insert(bufnr, thingy);
+            self.bufnr_to_ts_config.insert(buffer.bufnr, config);
         }
 
         Ok(true)
@@ -69,39 +71,20 @@ impl CompletionSource for Lsp {
         &self,
         nvim: &Neovim,
         cursor: &Cursor,
-        bufnr: u16,
+        buffer: &Buffer,
     ) -> Result<Completions> {
-        // Get the query
-        // :lua query = vim.treesitter.query.get_query("rust",
-        // "highlights").query
-
-        // Get the parser
-        // :lua parser = vim.treesitter.get_string_parser("&mut Diocane",
-        // "rust", {})
-
-        // Get the tree
-        // :lua tree = parser:parse()
-
-        // Get the root node
-        // :lua root = tree[1]:root()
-
-        // Get the iterator
-        // :lua iter = root:_rawquery(query, false, 0, 1)
-
-        // call the iterator
-
         let client = match nvim.lsp_buf_get_clients(0).await {
             v if v.is_empty() => return Ok(Vec::new()),
             v => v.into_iter().nth(0).unwrap(),
         };
 
-        let method = LspMethod::Completion(CompletionParams::new(
-            nvim.api_buf_get_name(0).await,
+        let params = CompletionParams::new(
+            buffer.filepath.clone(),
             cursor.row as u32,
             cursor.bytes as u32,
-        ));
+        );
 
-        let items = match client.request(method, 0).await? {
+        let items = match client.request_completions(params, 0).await? {
             CompletionResponse::CompletionList(list) => list.items,
             CompletionResponse::CompletionItems(items) => items,
         };
@@ -112,20 +95,29 @@ impl CompletionSource for Lsp {
             return Ok(Vec::new());
         }
 
-        let mut completions = items
+        let mut highlighter = Highlighter::new();
+
+        let completions = items
             .into_iter()
-            .filter(|item| {
-                item.label.starts_with(word_pre) && item.label != word_pre
+            .filter(|lsp_item| {
+                lsp_item.label.starts_with(word_pre)
+                    && lsp_item.label != word_pre
             })
-            .map(|item| item.into())
+            .map(|lsp_item| {
+                let mut comp =
+                    CompletionItem::from_lsp(lsp_item, &buffer.filetype);
+
+                // Highlight the text of the completion w/ treesitter if the
+                // buffer has a `TSConfig` object for it.
+                if let Some(c) = self.bufnr_to_ts_config.get(&buffer.bufnr) {
+                    comp.ts_highlight_text(&mut highlighter, c);
+                }
+
+                comp
+            })
             .collect::<Completions>();
 
-        if let Some(thingy) = self.bufnr_to_thingy.get(&bufnr) {
-            completions.iter_mut().for_each(|c| {
-                let hl = thingy.highlight(&c.text);
-                c.highlight_label(hl);
-            });
-        }
+        // ,
 
         Ok(completions)
     }

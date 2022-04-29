@@ -49,7 +49,7 @@ impl CompletionMenu {
 }
 
 impl CompletionMenu {
-    /// Fills the buffer with a bunch of completions.
+    /// Fills the buffer with a list of completions.
     pub fn fill(
         &self,
         lua: &Lua,
@@ -61,6 +61,8 @@ impl CompletionMenu {
             .collect::<Vec<String>>();
 
         api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
+
+        // buffer.set_lines(lua, LineSelect::All, lines)
     }
 
     /// Highlights the completions.
@@ -79,7 +81,7 @@ impl CompletionMenu {
 
         for (row, completion) in completions.iter().enumerate() {
             // Highlight the matching characters of every completion item.
-            let offset = completion.label_byte_offset();
+            let offset = completion.text_byte_offset();
             mc_opts.set("end_row", row)?;
             mc_opts.set("end_col", offset + matched_bytes)?;
             api::buf_set_extmark(
@@ -92,7 +94,7 @@ impl CompletionMenu {
             )?;
 
             // Set the highlight groups of the completion item.
-            for (hl_group, range) in completion.hl_ranges() {
+            for (range, hl_group) in completion.hl_ranges() {
                 hl_opts.set("end_row", row)?;
                 hl_opts.set("end_col", range.end)?;
                 hl_opts.set("hl_group", hl_group.to_string())?;
@@ -123,6 +125,8 @@ impl CompletionMenu {
             .collect::<Vec<String>>();
 
         api::buf_set_lines(lua, self.bufnr, index, index, false, lines)
+
+        // buffer.set_lines(lua, LineSelect::Single(index), lines)
     }
 
     /// Selects a new completion. Should only be called if the completion menu

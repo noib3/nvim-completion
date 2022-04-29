@@ -1,13 +1,18 @@
 use async_trait::async_trait;
-use bindings::opinionated::Neovim;
+use bindings::opinionated::{Buffer, Neovim};
 use mlua::prelude::{Lua, LuaResult};
 
 use super::{
     lorems::{LOREMS, LOREM_IPSUM},
     LipsumConfig,
 };
-use crate::completion_item::CompletionItemBuilder;
-use crate::prelude::{CompletionSource, Completions, Cursor, Result};
+use crate::prelude::{
+    CompletionItem,
+    CompletionSource,
+    Completions,
+    Cursor,
+    Result,
+};
 
 #[derive(Debug, Default)]
 pub struct Lipsum {
@@ -22,15 +27,15 @@ impl From<LipsumConfig> for Lipsum {
 
 #[async_trait]
 impl CompletionSource for Lipsum {
-    fn attach(&mut self, _lua: &Lua, _bufnr: u16) -> LuaResult<bool> {
+    fn attach(&mut self, _: &Lua, _: &Buffer) -> LuaResult<bool> {
         Ok(true)
     }
 
     async fn complete(
         &self,
-        _nvim: &Neovim,
+        _: &Neovim,
         cursor: &Cursor,
-        _bufnr: u16,
+        _: &Buffer,
     ) -> Result<Completions> {
         // // Simulate a slow source, this shouldn't block.
         // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -44,8 +49,10 @@ impl CompletionSource for Lipsum {
         Ok(LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
-            .map(|word| {
-                CompletionItemBuilder::new(word).details(LOREM_IPSUM).build()
+            .map(|&word| {
+                let mut item = CompletionItem::from(word);
+                item.set_details(LOREM_IPSUM, "");
+                item
             })
             .collect())
     }

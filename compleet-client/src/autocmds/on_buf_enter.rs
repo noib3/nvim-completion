@@ -1,7 +1,7 @@
+use bindings::opinionated::Buffer;
 use mlua::prelude::{Lua, LuaFunction, LuaResult};
 
 use crate::state::State;
-use crate::ui::Buffer;
 use crate::utils;
 
 /// Called on every `BufEnter` event.
@@ -23,33 +23,32 @@ pub fn on_buf_enter(
     //    help, etc;
     //
     // 3. there aren't any enabled sources for this buffer.
-    if state.attached_buffers.contains(&buffer)
+    if state.is_buffer_attached(&buffer)
         || !buffer.get_option(lua, "modifiable")?
         || !state
             .channel
             .as_mut()
             .expect("channel already created")
-            // .should_attach(buffer.number)
-            .should_attach(lua, buffer.number)?
+            .should_attach(lua, &buffer)?
     {
         return Ok(());
     }
 
-    if !buffer.attach(lua, on_bytes)? {
+    if !buffer.on_bytes(lua, on_bytes)? {
         // Echo an error if for some reason we couldn't attach to the buffer.
         utils::echoerr(lua, "Couldn't attach to buffer")?;
     } else {
         // Add two buffer-local autocommands on this buffer.
         state.augroup.set_local(
             lua,
-            &buffer,
+            buffer.bufnr,
             vec![
                 ("CursorMovedI", on_cursor_moved_i),
                 ("InsertLeave", on_insert_leave),
             ],
         )?;
 
-        state.attached_buffers.push(buffer);
+        state.attach_buffer(buffer);
     };
 
     Ok(())
