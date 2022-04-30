@@ -14,7 +14,7 @@ pub enum LineSelect {
 }
 
 /// TODO: docs
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Buffer {
     pub bufnr: u16,
     // pub filepath: PathBuf,

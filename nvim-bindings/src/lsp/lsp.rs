@@ -11,3 +11,11 @@ fn lsp(lua: &Lua) -> LuaResult<Table> {
 pub fn buf_get_clients(lua: &Lua, bufnr: u16) -> LuaResult<Table> {
     self::lsp(lua)?.get::<_, LuaFunction>("buf_get_clients")?.call(bufnr)
 }
+
+/// Binding to `vim.lsp.protocol.make_client_capabilities`.
+pub fn make_client_capabilities(lua: &Lua) -> LuaResult<Table> {
+    self::lsp(lua)?
+        .get::<_, Table>("protocol")?
+        .get::<_, LuaFunction>("make_client_capabilities")?
+        .call(())
+}

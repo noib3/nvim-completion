@@ -13,13 +13,45 @@ mod utils;
 
 use std::{cell::RefCell, rc::Rc};
 
+use bindings::lsp;
 use mlua::{prelude::LuaResult, Lua, Table};
 
-use crate::state::State;
+use crate::{settings::Settings, state::State};
+
+fn lsp_client_capabilities<'lua>(
+    lua: &'lua Lua,
+    _settings: &Settings,
+) -> LuaResult<Table<'lua>> {
+    let capabilities = lsp::make_client_capabilities(lua)?;
+
+    let completion = capabilities
+        .get::<_, Table>("textDocument")?
+        .get::<_, Table>("completion")?;
+
+    completion.set("dynamicRegistration", true)?;
+    completion.set("contextSupport", true)?;
+
+    let completion_item = completion.get::<_, Table>("completionItem")?;
+
+    // TODO: check if lsp has any snippets engines enabled before setting this
+    // to true.
+    completion_item.set("snippetSupport", true)?;
+
+    completion_item.set("deprecatedSupport", true)?;
+    completion_item.set("insertReplaceSupport", true)?;
+    completion_item.set("labelDetailsSupport", true)?;
+
+    Ok(capabilities)
+}
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    let state = Rc::new(RefCell::new(State::default()));
+    let state = Rc::<RefCell<State>>::default();
+
+    let cloned = state.clone();
+    let lsp_client_capabilities = lua.create_function(move |lua, ()| {
+        self::lsp_client_capabilities(lua, &cloned.borrow().settings)
+    })?;
 
     let cloned = state.clone();
     let has_completions = lua.create_function(move |_lua, ()| {
@@ -48,6 +80,7 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
     })?;
 
     lua.create_table_from([
+        ("lsp_client_capabilities", lsp_client_capabilities),
         ("has_completions", has_completions),
         ("is_completion_selected", is_completion_selected),
         ("is_hint_visible", is_hint_visible),
