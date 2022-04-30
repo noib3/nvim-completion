@@ -35,7 +35,7 @@ fn lsp_client_capabilities<'lua>(
 
     // TODO: check if lsp has any snippets engines enabled before setting this
     // to true.
-    completion_item.set("snippetSupport", true)?;
+    completion_item.set("snippetSupport", false)?;
 
     completion_item.set("deprecatedSupport", true)?;
     completion_item.set("insertReplaceSupport", true)?;
