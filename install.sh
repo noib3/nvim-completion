@@ -19,7 +19,8 @@ cargo_build() {
     return 1
   fi
   profile=$([ $PROFILE == debug ] && echo "" || echo --release)
-  cargo build $profile &>/dev/null
+  # Nightly is needed to compile (rustup toolchain install nightly) until https://github.com/rust-lang/rust/issues/79524 is merged.
+  cargo +nightly build $profile &>/dev/null
   return 0
 }
 
