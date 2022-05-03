@@ -7,6 +7,9 @@ edition = "2021"
 [dependencies.async-trait]
 version = "0.1"
 
+[dependencies.treesitter-highlighter]
+path = "../treesitter-highlighter"
+
 [dependencies.bindings]
 path = "../nvim-bindings"
 
@@ -26,11 +29,5 @@ features = ["full"]
 [dependencies.unicode-segmentation]
 version = "1.9.0"
 
-[dependencies.tree-sitter]
-version = "0.20.6"
-
 [dependencies.tree-sitter-highlight]
-version = "0.20.1"
-
-[dependencies.tree-sitter-rust]
 version = "0.20.1"

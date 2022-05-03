@@ -1,4 +1,4 @@
-pub const LOREM_IPSUM: &str = "
+pub(super) const LOREM_IPSUM: &str = "
 Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit,
 vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida
 mauris. Nam arcu libero, nonummy eget, consectetuer id, vulputate a, magna.
@@ -8,13 +8,13 @@ metus rhoncus sem. Nulla et lectus vestibulum urna fringilla ultrices.
 Phasellus eu tellus sit amet tortor gravida placerat. Integer sapien est
 iaculis in, pretium quis, viverra ac, nunc. Praesent eget sem vel leo ultrices
 bibendum. Aenean faucibus. Morbi dolor nulla, malesuada eu, pulvinar at, \
-                               mollis
+                                      mollis
 ac, nulla. Curabitur auctor semper nulla. Donec varius orci eget risus. Duis
 nibh mi, congue eu, accumsan eleifend, sagittis quis, diam. Duis eget orci sit
 amet orci dignissim
 ";
 
-pub const LOREMS: &[&str] = &[
+pub(super) const LOREMS: &[&str] = &[
     "Aenean",
     "Cras",
     "Curabitur",

@@ -4,6 +4,7 @@ members = [
   "compleet-client",
   "compleet-sources",
   "nvim-bindings",
+  "treesitter-highlighter",
 ]
 
 # Sacrifice compilation speed for runtime performance.

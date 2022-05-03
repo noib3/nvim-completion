@@ -4,7 +4,12 @@ use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
 use tokio::sync::oneshot;
 
 use super::{
-    protocol::{CompletionResponse, ErrorCode, ResponseError, CompletionParams},
+    protocol::{
+        CompletionParams,
+        CompletionResponse,
+        ErrorCode,
+        ResponseError,
+    },
     LspResult,
 };
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
@@ -89,10 +94,7 @@ impl LspClient {
                     //     LuaValue::Table(table),
                     // )?)
 
-                    use super::protocol::{
-                        CompletionItem,
-                        CompletionList,
-                    };
+                    use super::protocol::{CompletionItem, CompletionList};
 
                     Ok(match table.get::<_, bool>("isIncomplete") {
                         Ok(_) => CompletionResponse::CompletionList(
@@ -108,9 +110,10 @@ impl LspClient {
                         ),
                     })
                 } else {
-                    let err = lua.from_value::<ResponseError>(LuaValue::Table(
-                        maybe_err.expect("no result so there's an error"),
-                    ))?;
+                    let err =
+                        lua.from_value::<ResponseError>(LuaValue::Table(
+                            maybe_err.expect("no result so there's an error"),
+                        ))?;
 
                     // Ignore `ContentModified` errors.
                     if err.code == ErrorCode::ContentModified {

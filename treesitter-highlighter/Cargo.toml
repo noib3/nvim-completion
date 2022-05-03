@@ -1,0 +1,20 @@
+[package]
+name = "treesitter-highlighter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tree-sitter = "0.20.6"
+tree-sitter-highlight = "0.20.1"
+
+tree-sitter-c = "0.20.1"
+tree-sitter-c-sharp = "0.19.1"
+tree-sitter-dart = { git = "https://github.com/UserNobody14/tree-sitter-dart" }
+tree-sitter-javascript = "0.20.0"
+tree-sitter-kotlin = "0.2.11"
+tree-sitter-lua = "0.0.10"
+tree-sitter-python = "0.19.1"
+tree-sitter-rust = "0.20.1"
+tree-sitter-scheme = { git = "https://github.com/6cdh/tree-sitter-scheme" }
+tree-sitter-solidity = "0.0.3"
+tree-sitter-typescript = "0.20.1"

@@ -1,4 +1,3 @@
-#![feature(iter_intersperse)]
 mod autocmds;
 mod channel;
 mod commands;

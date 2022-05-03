@@ -1,5 +1,6 @@
 /lua
 /target
-/Makefile
 /TODO.md
-/neovim
+
+/treesitter-highlighter/src/generated.rs
+/treesitter-highlighter/src/queries

@@ -1,10 +1,7 @@
 use std::ops::Range;
 
 use mlua::prelude::{Lua, LuaResult};
-use tree_sitter_highlight::Highlighter;
 use unicode_segmentation::UnicodeSegmentation;
-
-use crate::treesitter::TSConfig;
 
 // TODO: make this more similar to
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionItem.
@@ -112,15 +109,6 @@ impl CompletionItem {
         }
     }
 
-    /// Highlights the completion's text using a treesitter config.
-    pub fn ts_highlight_text(
-        &mut self,
-        highlighter: &mut Highlighter,
-        config: &TSConfig,
-    ) {
-        self.highlight_text(config.highlight(highlighter, &self.text))
-    }
-
     /// The length in grapheme clusters of the completion's formatted string.
     pub fn len(&mut self) -> usize {
         let len = self.format().graphemes(true).count();
@@ -131,8 +119,8 @@ impl CompletionItem {
     pub fn set_details<S: Into<String>>(&mut self, details: S, ft: S) {
         let text = details
             .into()
-            .split("\n")
-            .map(|line| line.into())
+            .lines()
+            .map(|line| line.to_owned())
             .collect::<Vec<String>>();
 
         self.details =

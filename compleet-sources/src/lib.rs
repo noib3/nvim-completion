@@ -5,7 +5,6 @@ mod completion_item;
 mod completion_source;
 mod cursor;
 mod error;
-mod treesitter;
 mod valid_source;
 
 pub mod prelude {

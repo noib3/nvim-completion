@@ -7,7 +7,8 @@ use bindings::opinionated::{
     Neovim,
 };
 use mlua::prelude::{Lua, LuaResult};
-use tree_sitter_highlight::Highlighter;
+use tree_sitter_highlight::Highlighter as OGHighlighter;
+use treesitter_highlighter::Highlighter;
 
 use super::{setup, LspConfig};
 use crate::prelude::{
@@ -17,13 +18,13 @@ use crate::prelude::{
     Cursor,
     Result,
 };
-use crate::treesitter::{self, TSConfig};
+// use crate::treesitter::{self, TSConfig};
 
 #[derive(Debug, Default)]
 pub struct Lsp {
     config: LspConfig,
-    bufnr_to_ts_config: HashMap<u16, Arc<TSConfig>>,
-    filetype_to_ts_config: HashMap<String, Arc<TSConfig>>,
+    buf_to_highlighter: HashMap<u16, Arc<Highlighter>>,
+    ft_to_highlighter: HashMap<String, Arc<Highlighter>>,
 }
 
 impl From<LspConfig> for Lsp {
@@ -38,7 +39,7 @@ impl CompletionSource for Lsp {
         setup::hlgroups(lua)
     }
 
-    fn attach(&mut self, lua: &Lua, buffer: &Buffer) -> LuaResult<bool> {
+    fn attach(&mut self, _lua: &Lua, buffer: &Buffer) -> LuaResult<bool> {
         // TODO: check if buffer has any LSPs available.
         // vim.lsp.buf_is_attached
 
@@ -46,22 +47,13 @@ impl CompletionSource for Lsp {
             return Ok(true);
         }
 
-        let filetype = &buffer.filetype;
-        if treesitter::is_supported(filetype) {
-            // Get the `TSConfig` for the given filetype if it already exists,
-            // or create and cache a new one if it doesn't.
-            let config = if let Some(config) =
-                self.filetype_to_ts_config.get(filetype)
-            {
-                config.clone()
-            } else {
-                let config = Arc::new(TSConfig::new(lua, filetype)?);
-                self.filetype_to_ts_config
-                    .insert(filetype.clone(), config.clone());
-                config
-            };
-
-            self.bufnr_to_ts_config.insert(buffer.bufnr, config);
+        let ft = &buffer.filetype;
+        if let Some(highlighter) = self.ft_to_highlighter.get(ft) {
+            self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
+        } else if let Some(hl) = Highlighter::from_filetype(ft) {
+            let highlighter = Arc::new(hl);
+            self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
+            self.ft_to_highlighter.insert(ft.to_owned(), highlighter);
         }
 
         Ok(true)
@@ -95,7 +87,7 @@ impl CompletionSource for Lsp {
             return Ok(Vec::new());
         }
 
-        let mut highlighter = Highlighter::new();
+        let mut hl = OGHighlighter::new();
 
         let completions = items
             .into_iter()
@@ -107,10 +99,8 @@ impl CompletionSource for Lsp {
                 let mut comp =
                     CompletionItem::from_lsp(lsp_item, &buffer.filetype);
 
-                // Highlight the text of the completion w/ treesitter if the
-                // buffer has a `TSConfig` object for it.
-                if let Some(c) = self.bufnr_to_ts_config.get(&buffer.bufnr) {
-                    comp.ts_highlight_text(&mut highlighter, c);
+                if let Some(h) = self.buf_to_highlighter.get(&buffer.bufnr) {
+                    comp.highlight_text(h.highlight(&mut hl, &comp.text));
                 }
 
                 comp

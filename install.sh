@@ -25,19 +25,22 @@ cargo_build() {
 }
 
 copy_stuff() {
-  mkdir -p $PRJ_ROOT/lua/deps
-
+  # TODO: extension is `.so` on linux, `.dylib` on macOS and `.dll` on Windows
   library_extension=$(\
     [ -f $PRJ_ROOT/target/$PROFILE/libcompleet_client.so ] \
       && echo so \
       || echo dylib \
   )
 
-  # Place the compiled library and its dependencies where Neovim can find them.
+  # Place the compiled library where Neovim can find it.
+  mkdir -p $PRJ_ROOT/lua
   cp \
     "$PRJ_ROOT/target/$PROFILE/libcompleet_client.$library_extension" \
     $PRJ_ROOT/lua/compleet.so
 
+  # I'm not sure if copying all of the compiled library's dependencies is
+  # actually needed.
+  mkdir -p $PRJ_ROOT/lua/deps
   cp $PRJ_ROOT/target/$PROFILE/deps/*.rlib $PRJ_ROOT/lua/deps
 }
 
