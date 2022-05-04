@@ -53,7 +53,7 @@ impl CompletionHint {
             0,
             self.nsid,
             cursor.row,
-            cursor.bytes,
+            cursor.bytes.try_into().unwrap(),
             opts,
         )?;
 

@@ -1,17 +1,23 @@
 use std::sync::Arc;
 
-use mlua::prelude::{LuaRegistryKey, LuaSerdeExt, LuaTable, LuaValue};
+use mlua::prelude::{
+    Lua,
+    LuaFunction,
+    LuaRegistryKey,
+    LuaResult,
+    LuaSerdeExt,
+    LuaTable,
+    LuaValue,
+};
 use tokio::sync::oneshot;
 
-use super::{
-    protocol::{
-        CompletionParams,
-        CompletionResponse,
-        ErrorCode,
-        ResponseError,
-    },
-    LspResult,
-};
+use super::protocol::CompletionItem;
+use super::protocol::CompletionList;
+use super::protocol::CompletionParams;
+use super::protocol::CompletionResponse;
+use super::protocol::PositionEncodingKind;
+use super::protocol::ResponseError;
+use super::LspResult;
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
 
 /// Acts as an abstraction over a Neovim Lsp client (see `:h vim.lsp.client`).
@@ -32,7 +38,7 @@ pub struct LspClient {
 
     // TODO: make this into an enum
     /// The encoding used to communicate w/ the server.
-    pub offset_encoding: String,
+    pub offset_encoding: PositionEncodingKind,
 }
 
 /// The function signature of an Lsp handler as defined by the Neovim API (see
@@ -43,19 +49,19 @@ pub type LspHandlerSignature<'lua> =
 impl LspClient {
     /// TODO: docs
     pub fn new(
+        lua: &Lua,
         bridge: Arc<LuaBridge>,
-        req_key: LuaRegistryKey,
-        id: u16,
-        name: String,
-        offset_encoding: String,
-    ) -> Self {
-        Self {
+        table: LuaTable,
+    ) -> LuaResult<Self> {
+        Ok(Self {
             bridge,
-            request_key: Arc::new(req_key),
-            id,
-            name,
-            offset_encoding,
-        }
+            request_key: Arc::new(lua.create_registry_value(
+                table.get::<_, LuaFunction>("request")?,
+            )?),
+            id: table.get("id")?,
+            name: table.get("name")?,
+            offset_encoding: lua.from_value(table.get("offset_encoding")?)?,
+        })
     }
 
     /// Binding to `vim.lsp.client.request` specialized for completions.
@@ -69,67 +75,35 @@ impl LspClient {
 
         // This gets executed by Neovim when the response message arrives from
         // the server.
-        let handler: LspHandler =
-            Box::new(move |lua, (maybe_err, maybe_result, _ctx)| {
-                let result = if let Some(table) = maybe_result {
-                    // for res in table
-                    //     .clone()
-                    //     .get::<_, LuaTable>("items")?
-                    //     .sequence_values::<LuaTable>()
-                    // {
-                    //     if res
-                    //         .clone()?
-                    //         .get::<_, String>("label")?
-                    //         .starts_with("self")
-                    //     {
-                    //         crate::nvim::print(
-                    //             lua,
-                    //             crate::nvim::inspect(lua, res?)?,
-                    //         )?;
-                    //     }
-                    // }
+        let handler: LspHandler = Box::new(move |lua, (err, result, _ctx)| {
+            let result = match result {
+                // If the `isIncomplete` key is present deserialize the result
+                // table as a `CompletionList`.
+                Some(t) if t.get::<_, bool>("isIncomplete").is_ok() => {
+                    let val = LuaValue::Table(t);
+                    let list = lua.from_value::<CompletionList>(val)?;
+                    Ok(CompletionResponse::CompletionList(list))
+                },
 
-                    // TODO: why doesn't this work?
-                    // Ok(lua.from_value::<CompletionResponse>(
-                    //     LuaValue::Table(table),
-                    // )?)
+                // If it isn't deserialize it as a `CompletionItem[]`.
+                Some(t) => {
+                    let val = LuaValue::Table(t);
+                    let items = lua.from_value::<Vec<CompletionItem>>(val)?;
+                    Ok(CompletionResponse::CompletionItems(items))
+                },
 
-                    use super::protocol::{CompletionItem, CompletionList};
+                None => {
+                    let val = LuaValue::Table(err.expect("no result => err"));
+                    let error = lua.from_value::<ResponseError>(val)?;
+                    Err(error.into())
+                },
+            };
 
-                    Ok(match table.get::<_, bool>("isIncomplete") {
-                        Ok(_) => CompletionResponse::CompletionList(
-                            lua.from_value::<CompletionList>(
-                                LuaValue::Table(table),
-                            )?,
-                        ),
+            let _ =
+                tx.take().expect("this only gets called once").send(result);
 
-                        Err(_) => CompletionResponse::CompletionItems(
-                            lua.from_value::<Vec<CompletionItem>>(
-                                LuaValue::Table(table),
-                            )?,
-                        ),
-                    })
-                } else {
-                    let err =
-                        lua.from_value::<ResponseError>(LuaValue::Table(
-                            maybe_err.expect("no result so there's an error"),
-                        ))?;
-
-                    // Ignore `ContentModified` errors.
-                    if err.code == ErrorCode::ContentModified {
-                        Ok(CompletionResponse::CompletionItems(Vec::new()))
-                    } else {
-                        Err(err.into())
-                    }
-                };
-
-                let _ = tx
-                    .take()
-                    .expect("this only gets called once")
-                    .send(result);
-
-                Ok(())
-            });
+            Ok(())
+        });
 
         let (responder, receiver) = oneshot::channel();
 

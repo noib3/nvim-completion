@@ -25,7 +25,7 @@ pub fn echoinfo<M: Display>(lua: &Lua, msg: M) -> LuaResult<()> {
 fn echo(lua: &Lua, msg: String, hl_group_tag: &'static str) -> LuaResult<()> {
     let msg_chunks = to_highlighted_chunks(
         msg,
-        vec![(b'`', messages::OPTION_PATH), (b'"', messages::MSG_FIELD)],
+        vec![('`', messages::OPTION_PATH), ('"', messages::MSG_FIELD)],
     );
 
     let chunks = [
@@ -42,17 +42,17 @@ fn echo(lua: &Lua, msg: String, hl_group_tag: &'static str) -> LuaResult<()> {
 /// Pretty simplistic but gets the job done.
 fn to_highlighted_chunks(
     msg: String,
-    separators: Vec<(u8, &'static str)>,
+    separators: Vec<(char, &'static str)>,
 ) -> Vec<(String, Option<&'static str>)> {
-    let map = separators.into_iter().collect::<HashMap<u8, &'static str>>();
+    let map = separators.into_iter().collect::<HashMap<char, &'static str>>();
 
     let mut start = 0;
     let mut current_hl = None;
     let mut chunks = Vec::new();
 
-    for (i, byte) in msg.bytes().enumerate() {
-        // Interesting things only happen when the current byte is a separator.
-        if let Some(&hl_group) = map.get(&byte) {
+    for (i, char) in msg.chars().enumerate() {
+        // Interesting things only happen when the current character is a separator.
+        if let Some(&hl_group) = map.get(&char) {
             match current_hl {
                 None => {
                     chunks.push((msg[start..=i].into(), None));
@@ -107,7 +107,7 @@ mod tests {
                 ("foo".into(), Some("Bar")),
                 ("'".into(), None),
             ],
-            to_highlighted_chunks("'foo'".into(), vec![(b'\'', "Bar")])
+            to_highlighted_chunks("'foo'".into(), vec![('\'', "Bar")])
         );
     }
 
@@ -115,7 +115,7 @@ mod tests {
     fn not_closed() {
         assert_eq!(
             vec![("'".into(), None), ("foo".into(), None)],
-            to_highlighted_chunks("'foo".into(), vec![(b'\'', "Bar")])
+            to_highlighted_chunks("'foo".into(), vec![('\'', "Bar")])
         );
     }
 
@@ -123,7 +123,7 @@ mod tests {
     fn dangling() {
         assert_eq!(
             vec![("foo'".into(), None)],
-            to_highlighted_chunks("foo'".into(), vec![(b'\'', "Bar")])
+            to_highlighted_chunks("foo'".into(), vec![('\'', "Bar")])
         );
     }
 
@@ -139,7 +139,7 @@ mod tests {
             ],
             to_highlighted_chunks(
                 "this 'is' a `test`".into(),
-                vec![(b'\'', "Foo"), (b'`', "Bar")]
+                vec![('\'', "Foo"), ('`', "Bar")]
             )
         );
     }
@@ -154,7 +154,7 @@ mod tests {
             ],
             to_highlighted_chunks(
                 "this 'is `a` test'".into(),
-                vec![(b'\'', "Foo"), (b'`', "Bar")]
+                vec![('\'', "Foo"), ('`', "Bar")]
             )
         );
     }
@@ -169,7 +169,7 @@ mod tests {
             ],
             to_highlighted_chunks(
                 "this 'is `a' test`".into(),
-                vec![(b'\'', "Foo"), (b'`', "Bar")]
+                vec![('\'', "Foo"), ('`', "Bar")]
             )
         );
     }

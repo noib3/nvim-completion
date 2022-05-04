@@ -10,11 +10,13 @@ use tree_sitter_highlight::{
 use crate::constants::{HIGHLIGHT_NAMES, TS_HLGROUPS};
 use crate::generated::config_from_filetype;
 
-pub struct Highlighter(HighlightConfiguration);
+pub struct Highlighter {
+    config: HighlightConfiguration,
+}
 
 impl fmt::Debug for Highlighter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Highlighter({:?})", self.0.language)
+        write!(f, "Highlighter({:?})", self.config.language)
     }
 }
 
@@ -22,7 +24,7 @@ impl Highlighter {
     pub fn from_filetype(ft: &str) -> Option<Self> {
         config_from_filetype(ft).map(|mut config| {
             config.configure(HIGHLIGHT_NAMES);
-            Self(config)
+            Self { config }
         })
     }
 }
@@ -35,7 +37,7 @@ impl Highlighter {
         text: &str,
     ) -> Vec<(Range<usize>, &'static str)> {
         let mut events = highlighter
-            .highlight(&self.0, text.as_bytes(), None, |_| None)
+            .highlight(&self.config, text.as_bytes(), None, |_| None)
             .unwrap();
 
         let size = events.size_hint();

@@ -76,33 +76,13 @@ impl BridgeRequest {
             },
 
             LspBufGetClients { bufnr, bridge, responder } => {
-                let client_tables = lsp::buf_get_clients(lua, bufnr)?
+                let clients = lsp::buf_get_clients(lua, bufnr)?
                     .sequence_values::<LuaTable>()
                     .filter_map(|table_res| table_res.ok())
-                    .collect::<Vec<LuaTable>>();
-
-                if client_tables.is_empty() {
-                    let _ = responder.send(Vec::new());
-                    return Ok(());
-                }
-
-                let mut clients =
-                    Vec::<LspClient>::with_capacity(client_tables.len());
-
-                for table in client_tables {
-                    let req = table.get::<_, LuaFunction>("request")?;
-                    let id = table.get("id")?;
-                    let name = table.get("name")?;
-                    let offset_encoding = table.get("offset_encoding")?;
-
-                    clients.push(LspClient::new(
-                        bridge.clone(),
-                        lua.create_registry_value(req)?,
-                        id,
-                        name,
-                        offset_encoding,
-                    ))
-                }
+                    .flat_map(|table| {
+                        LspClient::new(lua, bridge.clone(), table)
+                    })
+                    .collect::<Vec<LspClient>>();
 
                 let _ = responder.send(clients);
             },

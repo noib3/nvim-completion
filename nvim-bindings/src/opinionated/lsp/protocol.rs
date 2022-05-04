@@ -3,14 +3,21 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/
 
-type DocumentUri = String;
+pub type DocumentUri = String;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionParams {
+    #[serde(flatten)]
+    pub text_document_position_params: TextDocumentPositionParams,
+    pub context: Option<CompletionContext>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentPositionParams {
     pub text_document: TextDocumentIdentifier,
     pub position: Position,
-    pub context: Option<CompletionContext>,
 }
 
 #[derive(Debug, Serialize)]
@@ -227,4 +234,16 @@ pub struct CompletionList {
 pub enum CompletionResponse {
     CompletionList(CompletionList),
     CompletionItems(Vec<CompletionItem>),
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum PositionEncodingKind {
+    #[serde(rename = "utf-8")]
+    Utf8,
+
+    #[serde(rename = "utf-16")]
+    Utf16,
+
+    #[serde(rename = "utf-32")]
+    Utf32,
 }

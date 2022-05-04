@@ -67,7 +67,7 @@ fn main() -> io::Result<()> {
     let out_dir = Path::new("src");
 
     // Generate the treesitter query files for every filetype.
-    for lang in SUPPORTED_FILETYPES.into_iter().map(|&ft| to_lang(ft)) {
+    for lang in SUPPORTED_FILETYPES.iter().map(|&ft| to_lang(ft)) {
         let dir = out_dir.join("queries").join(lang);
         fs::create_dir_all(&dir)?;
 
@@ -82,7 +82,7 @@ fn main() -> io::Result<()> {
 
     let match_arms = SUPPORTED_FILETYPES
         .iter()
-        .map(|ft| {
+        .map(|&ft| {
             let lang = to_lang(ft);
             format!(
                 r#"

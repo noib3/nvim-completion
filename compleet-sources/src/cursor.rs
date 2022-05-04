@@ -1,7 +1,7 @@
 #[derive(Debug, Default, Clone)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.
-    pub bytes: u16,
+    pub bytes: usize,
 
     /// The text in the row the cursor is currently on.
     pub line: String,
@@ -13,7 +13,7 @@ pub struct Cursor {
 impl Cursor {
     /// Whether the cursor is at the end of the line.
     pub fn is_at_eol(&self) -> bool {
-        self.bytes as usize == self.line.len()
+        self.bytes == self.line.len()
     }
 
     /// Whether the cursor is at the start of the line.
@@ -24,7 +24,7 @@ impl Cursor {
     /// The number of bytes between the cursor and the first whitespace
     /// character before it.
     fn non_whitespace_bytes_pre(&self) -> usize {
-        self.line[..self.bytes as usize]
+        self.line[..self.bytes]
             .bytes()
             .rev()
             .take_while(|&byte| !byte.is_ascii_whitespace())
@@ -34,7 +34,7 @@ impl Cursor {
     /// The number of bytes between the cursor and the first whitespace
     /// character after it.
     fn _non_whitespace_bytes_post(&self) -> usize {
-        self.line[self.bytes as usize..]
+        self.line[self.bytes..]
             .bytes()
             .take_while(|&byte| !byte.is_ascii_whitespace())
             .count()
@@ -43,20 +43,18 @@ impl Cursor {
     /// The current word the cursor is embedded in, where a word is considered
     /// a collection of non-whitespace bytes.
     pub fn _word(&self) -> &'_ str {
-        &self.line[self.bytes as usize - self.non_whitespace_bytes_pre()
-            ..self.bytes as usize + self._non_whitespace_bytes_post()]
+        &self.line[self.bytes - self.non_whitespace_bytes_pre()
+            ..self.bytes + self._non_whitespace_bytes_post()]
     }
 
     /// The part of the word the cursor is on that's before the cursor.
     pub fn word_pre(&self) -> &'_ str {
-        &self.line[self.bytes as usize - self.non_whitespace_bytes_pre()
-            ..self.bytes as usize]
+        &self.line[self.bytes - self.non_whitespace_bytes_pre()..self.bytes]
     }
 
     /// The part of the word the cursor is on that's after the cursor.
     pub fn _word_post(&self) -> &'_ str {
-        &self.line[self.bytes as usize
-            ..self.bytes as usize + self._non_whitespace_bytes_post()]
+        &self.line[self.bytes..self.bytes + self._non_whitespace_bytes_post()]
     }
 }
 

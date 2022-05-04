@@ -26,8 +26,16 @@ features = ["derive"]
 version = "1.17.0"
 features = ["full"]
 
+[dependencies.tree-sitter-highlight]
+version = "0.20.1"
+
 [dependencies.unicode-segmentation]
 version = "1.9.0"
 
-[dependencies.tree-sitter-highlight]
-version = "0.20.1"
+# Used to get URIs from filepaths.
+[dependencies.url]
+version = "2.2.2"
+
+# For UTF-32 encoded strings.
+[dependencies.widestring]
+version = "0.5.1"

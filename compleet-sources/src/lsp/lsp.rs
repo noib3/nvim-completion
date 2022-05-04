@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use bindings::opinionated::{
-    lsp::protocol::{CompletionParams, CompletionResponse},
+    lsp::protocol::CompletionResponse,
     Buffer,
     Neovim,
 };
@@ -70,10 +70,10 @@ impl CompletionSource for Lsp {
             v => v.into_iter().nth(0).unwrap(),
         };
 
-        let params = CompletionParams::new(
-            buffer.filepath.clone(),
-            cursor.row as u32,
-            cursor.bytes as u32,
+        let params = super::make_completion_params(
+            buffer,
+            cursor,
+            client.offset_encoding,
         );
 
         let items = match client.request_completions(params, 0).await? {
@@ -106,8 +106,6 @@ impl CompletionSource for Lsp {
                 comp
             })
             .collect::<Completions>();
-
-        // ,
 
         Ok(completions)
     }

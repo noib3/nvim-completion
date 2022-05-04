@@ -47,8 +47,9 @@ pub fn on_bytes(
 
     cursor.row = start_row;
     cursor.line = get_current_line(lua, cursor.row)?;
-    cursor.bytes =
-        start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
+    cursor.bytes = (start_col
+        + if bytes_deleted != 0 { 0 } else { bytes_added })
+        as usize;
 
     state.matched_bytes = cursor.word_pre().len();
 

@@ -34,7 +34,6 @@ impl Buffer {
     /// Returns the current buffer.
     pub fn get_current(lua: &Lua) -> LuaResult<Self> {
         let bufnr = api::get_current_buf(lua)?;
-        // let filepath = PathBuf::from(api::buf_get_name(lua, bufnr)?);
         let filepath = api::buf_get_name(lua, bufnr)?;
         let filetype = api::buf_get_option::<String>(lua, bufnr, "filetype")?;
 
