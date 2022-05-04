@@ -27,6 +27,12 @@ pub fn on_bytes(
         return Ok(Some(true));
     }
 
+    // Skip this iteration, resetting `ignore_next_on_bytes` to `false`.
+    if state.ignore_next_on_bytes {
+        state.ignore_next_on_bytes = false;
+        return Ok(None);
+    }
+
     // We only care about insert mode events.
     if api::get_mode(lua)?.0 != "i" {
         return Ok(None);

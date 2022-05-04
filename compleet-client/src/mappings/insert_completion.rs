@@ -12,12 +12,11 @@ pub fn insert_completion(
 ) -> LuaResult<()> {
     let text_to_insert = get_text_to_insert(
         matched_bytes,
-        &cursor.line[cursor.bytes as usize..],
+        &cursor.line[cursor.bytes..],
         &completion.text,
     );
 
-    let end_column =
-        (cursor.bytes as usize - matched_bytes) + completion.text.len();
+    let end_column = (cursor.bytes - matched_bytes) + completion.text.len();
 
     // NOTE: Inserting the completion in the buffer right at this point
     // would trigger `channel::on_bytes`, which causes the RefCell wrapping
@@ -30,10 +29,9 @@ pub fn insert_completion(
     let insert_completion = lua
         .create_function(move |lua, (row, col, text): (u16, u16, String)| {
             api::buf_set_text(lua, 0, row, col, row, col, vec![text])?;
-            api::win_set_cursor(lua, 0, row + 1, end_column as u16)?;
-            Ok(())
+            api::win_set_cursor(lua, 0, row + 1, end_column as u16)
         })?
-        .bind((cursor.row, cursor.bytes, text_to_insert.to_string()))?;
+        .bind((cursor.row, cursor.bytes, text_to_insert.to_owned()))?;
 
     nvim::schedule(lua, insert_completion)?;
 

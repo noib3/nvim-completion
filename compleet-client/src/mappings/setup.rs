@@ -10,12 +10,14 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
     // depending on the value of `first`.
     let cloned = state.clone();
     let insert_completion = lua.create_function(move |lua, first| {
-        let state = cloned.borrow();
+        let mut state = cloned.borrow_mut();
+
         let maybe = if first {
             state.completions.get(0)
         } else {
             state.ui.menu.selected_index.map(|i| &state.completions[i])
         };
+
         if let Some(completion) = maybe {
             super::insert_completion(
                 lua,
@@ -24,6 +26,16 @@ pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
                 state.matched_bytes,
             )?;
         }
+
+        // If the `completion.after_inserting` option is set to `false` we
+        // skip the next call to `on_bytes` so that completions are not
+        // recomputed.
+        if !state.settings.completion.after_inserting {
+            state.ignore_next_on_bytes = true;
+        }
+
+        state.completions.clear();
+
         Ok(())
     })?;
 

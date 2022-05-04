@@ -36,6 +36,9 @@ pub struct State {
     /// Set to `true` right after `on_bytes` gets called.
     pub did_on_bytes: bool,
 
+    /// TODO: docs.
+    pub ignore_next_on_bytes: bool,
+
     /// Whether the setup function has ever been called.
     pub did_setup: bool,
 

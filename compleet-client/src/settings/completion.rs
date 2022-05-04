@@ -4,10 +4,11 @@ use serde::Deserialize;
 #[serde(deny_unknown_fields)]
 pub struct CompletionSettings {
     pub while_deleting: bool,
+    pub after_inserting: bool,
 }
 
 impl Default for CompletionSettings {
     fn default() -> Self {
-        CompletionSettings { while_deleting: false }
+        CompletionSettings { while_deleting: false, after_inserting: true }
     }
 }
