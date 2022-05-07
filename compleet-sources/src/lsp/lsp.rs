@@ -1,85 +1,107 @@
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
-use bindings::opinionated::{
-    lsp::protocol::CompletionResponse,
-    Buffer,
-    Neovim,
+use bindings::opinionated::lsp::protocol::{
+    CompletionItem as LspCompletionItem,
+    CompletionResponse,
 };
-use mlua::prelude::{Lua, LuaResult};
-use tree_sitter_highlight::Highlighter as OGHighlighter;
+use bindings::opinionated::{lsp::LspClient, Buffer, Neovim};
+use futures::future;
+use mlua::Lua;
 use treesitter_highlighter::Highlighter;
 
 use super::{setup, LspConfig};
-use crate::prelude::{
-    CompletionItem,
-    CompletionSource,
-    Completions,
-    Cursor,
-    Result,
-};
-// use crate::treesitter::{self, TSConfig};
+use crate::completion_source::{CompletionSource, ShouldAttach};
+use crate::prelude::{CompletionItem, Completions, Cursor};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Lsp {
-    config: LspConfig,
-    buf_to_highlighter: HashMap<u16, Arc<Highlighter>>,
-    ft_to_highlighter: HashMap<String, Arc<Highlighter>>,
-}
+    pub config: LspConfig,
 
-impl From<LspConfig> for Lsp {
-    fn from(config: LspConfig) -> Self {
-        Self { config, ..Default::default() }
-    }
+    /// The Lsp clients attached to a buffer.
+    pub _clients: HashMap<u16, Vec<LspClient>>,
+
+    /// Maps buffer numbers to tree-sitter highlighters.
+    pub buf_to_highlighter: HashMap<u16, Highlighter>,
+    // /// Maps Neovim filetypes to tree-sitter highlighters.
+    // pub ft_to_highlighter: HashMap<String, Highlighter>,
 }
 
 #[async_trait]
 impl CompletionSource for Lsp {
-    fn setup(&mut self, lua: &Lua) -> LuaResult<()> {
-        setup::hlgroups(lua)
+    fn setup(&mut self, lua: &Lua) -> crate::Result<()> {
+        Ok(setup::hlgroups(lua)?)
     }
 
-    fn attach(&mut self, _lua: &Lua, buffer: &Buffer) -> LuaResult<bool> {
+    fn on_buf_enter(
+        &mut self,
+        _lua: &Lua,
+        buffer: &Buffer,
+    ) -> crate::Result<ShouldAttach> {
         // TODO: check if buffer has any LSPs available.
-        // vim.lsp.buf_is_attached
 
         if !self.config.highlight_completions {
             return Ok(true);
         }
 
         let ft = &buffer.filetype;
-        if let Some(highlighter) = self.ft_to_highlighter.get(ft) {
-            self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
-        } else if let Some(hl) = Highlighter::from_filetype(ft) {
-            let highlighter = Arc::new(hl);
-            self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
-            self.ft_to_highlighter.insert(ft.to_owned(), highlighter);
+
+        if let Some(hl) = Highlighter::from_filetype(ft) {
+            self.buf_to_highlighter.insert(buffer.bufnr, hl);
         }
+
+        // // If we already have a highlighter cached for this filetype we can
+        // // just clone it.
+        // if let Some(highlighter) = self.ft_to_highlighter.get(ft) {
+        //     self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
+        // }
+        // // If we don't we check if this filetype can be highlighted. If it can
+        // // we also cache the returned highlighter for this filetype.
+        // else if let Some(hl) = Highlighter::from_filetype(ft) {
+        //     let highlighter = Arc::new(hl);
+
+        //     self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
+        //     self.ft_to_highlighter.insert(ft.to_owned(), highlighter);
+        // }
 
         Ok(true)
     }
 
     async fn complete(
-        &self,
+        &mut self,
         nvim: &Neovim,
         cursor: &Cursor,
         buffer: &Buffer,
-    ) -> Result<Completions> {
-        let client = match nvim.lsp_buf_get_clients(0).await {
-            v if v.is_empty() => return Ok(Vec::new()),
-            v => v.into_iter().nth(0).unwrap(),
-        };
+    ) -> crate::Result<Completions> {
+        // let clients = self.clients.get(&buffer.bufnr).unwrap();
+        let clients = nvim.lsp_buf_get_clients(buffer.bufnr).await;
 
-        let params = super::make_completion_params(
-            buffer,
-            cursor,
-            client.offset_encoding,
-        );
+        if clients.is_empty() {
+            return Ok(Vec::new());
+        }
 
-        let items = match client.request_completions(params, 0).await? {
-            CompletionResponse::CompletionList(list) => list.items,
-            CompletionResponse::CompletionItems(items) => items,
-        };
+        let requests = clients.iter().map(|client| {
+            let params = super::make_completion_params(
+                buffer,
+                cursor,
+                client.offset_encoding,
+            );
+            client.request_completions(params, buffer.bufnr)
+        });
+
+        let items = future::join_all(requests)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .flat_map(|response| match response {
+                CompletionResponse::CompletionList(list) => list.items,
+                CompletionResponse::CompletionItems(items) => items,
+            })
+            .collect::<Vec<LspCompletionItem>>();
+
+        if items.is_empty() {
+            return Ok(Vec::new());
+        }
 
         let word_pre = cursor.word_pre();
 
@@ -87,23 +109,19 @@ impl CompletionSource for Lsp {
             return Ok(Vec::new());
         }
 
-        let mut hl = OGHighlighter::new();
-
         let completions = items
             .into_iter()
-            .filter(|lsp_item| {
-                lsp_item.label.starts_with(word_pre)
-                    && lsp_item.label != word_pre
+            .filter(|item| {
+                item.label.starts_with(word_pre) && item.label != word_pre
             })
-            .map(|lsp_item| {
-                let mut comp =
-                    CompletionItem::from_lsp(lsp_item, &buffer.filetype);
-
-                if let Some(h) = self.buf_to_highlighter.get(&buffer.bufnr) {
-                    comp.highlight_text(h.highlight(&mut hl, &comp.text));
-                }
-
-                comp
+            .map(|item| {
+                CompletionItem::from_lsp_item(
+                    item,
+                    &buffer.filetype,
+                    self.buf_to_highlighter
+                        .get_mut(&buffer.bufnr)
+                        // .map(|hl| Arc::make_mut(hl)),
+                )
             })
             .collect::<Completions>();
 

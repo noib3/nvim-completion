@@ -57,7 +57,7 @@ impl CompletionMenu {
     ) -> LuaResult<()> {
         let lines = completions
             .iter_mut()
-            .map(|completion| completion.format())
+            .map(|completion| completion.format().to_owned())
             .collect::<Vec<String>>();
 
         api::buf_set_lines(lua, self.bufnr, 0, -1, false, lines)
@@ -81,7 +81,7 @@ impl CompletionMenu {
 
         for (row, completion) in completions.iter().enumerate() {
             // Highlight the matching characters of every completion item.
-            let offset = completion.text_byte_offset();
+            let offset = completion.label_byte_offset();
             mc_opts.set("end_row", row)?;
             mc_opts.set("end_col", offset + matched_bytes)?;
             api::buf_set_extmark(
@@ -94,16 +94,16 @@ impl CompletionMenu {
             )?;
 
             // Set the highlight groups of the completion item.
-            for (range, hl_group) in completion.hl_ranges() {
+            for range in completion.highlight_ranges() {
                 hl_opts.set("end_row", row)?;
-                hl_opts.set("end_col", range.end)?;
-                hl_opts.set("hl_group", hl_group.to_string())?;
+                hl_opts.set("end_col", range.bytes.end)?;
+                hl_opts.set("hl_group", range.group)?;
                 api::buf_set_extmark(
                     lua,
                     self.bufnr,
                     self.nsid,
                     row as u16,
-                    range.start as u16,
+                    range.bytes.start as u16,
                     hl_opts.clone(),
                 )?;
             }
@@ -121,7 +121,7 @@ impl CompletionMenu {
     ) -> LuaResult<()> {
         let lines = completions
             .iter_mut()
-            .map(|completion| completion.format().clone())
+            .map(|completion| completion.format().to_owned())
             .collect::<Vec<String>>();
 
         api::buf_set_lines(lua, self.bufnr, index, index, false, lines)

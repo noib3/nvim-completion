@@ -8,4 +8,3 @@ reorder_impl_items = true
 unstable_features = true
 use_field_init_shorthand = true
 use_small_heuristics = "Max"
-wrap_comments = true

@@ -1,10 +1,10 @@
-mod completion_params;
 mod config;
 mod constants;
+mod from_lsp_item;
 mod lsp;
-mod other;
+mod make_completion_params;
 mod setup;
 
-use completion_params::make_completion_params;
 pub use config::LspConfig;
 pub use lsp::Lsp;
+use make_completion_params::make_completion_params;

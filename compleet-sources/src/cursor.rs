@@ -1,3 +1,5 @@
+/// TODO: refactor
+
 #[derive(Debug, Default, Clone)]
 pub struct Cursor {
     /// The number of bytes between the start of the line and the cursor.

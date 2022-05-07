@@ -7,8 +7,8 @@ use tokio::sync::oneshot;
 use super::{
     lsp::{
         protocol::CompletionParams,
+        Error,
         LspClient,
-        LspError,
         LspHandlerSignature,
         LspResult,
     },
@@ -105,7 +105,7 @@ impl BridgeRequest {
                         bufnr,
                     ))? {
                         // Request failed, i.e. client has shutdown.
-                        (_false, None) => Err(LspError::ClientShutdown),
+                        (_false, None) => Err(Error::ClientShutdown),
 
                         // Request was sent, a request id is returned.
                         (_true, Some(id)) => Ok(id),

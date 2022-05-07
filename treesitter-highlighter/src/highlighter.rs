@@ -1,4 +1,4 @@
-use std::{fmt, ops::Range};
+use std::{clone, fmt};
 
 use tree_sitter_highlight::{
     Highlight,
@@ -12,6 +12,15 @@ use crate::generated::config_from_filetype;
 
 pub struct Highlighter {
     config: HighlightConfiguration,
+    highlighter: OGHighlighter,
+}
+
+// A dummy implementation of `Clone` just to satisfy the trait bounds of
+// `Arc::make_mut`.
+impl clone::Clone for Highlighter {
+    fn clone(&self) -> Self {
+        Self::from_filetype("").expect("this should never get cloned!")
+    }
 }
 
 impl fmt::Debug for Highlighter {
@@ -22,21 +31,20 @@ impl fmt::Debug for Highlighter {
 
 impl Highlighter {
     pub fn from_filetype(ft: &str) -> Option<Self> {
-        config_from_filetype(ft).map(|mut config| {
-            config.configure(HIGHLIGHT_NAMES);
-            Self { config }
-        })
+        let mut config = config_from_filetype(ft)?;
+        config.configure(HIGHLIGHT_NAMES);
+        Some(Self { config, highlighter: OGHighlighter::new() })
     }
 }
 
 impl Highlighter {
     /// TODO: docs
     pub fn highlight(
-        &self,
-        highlighter: &mut OGHighlighter,
+        &mut self,
         text: &str,
-    ) -> Vec<(Range<usize>, &'static str)> {
-        let mut events = highlighter
+    ) -> Vec<(std::ops::Range<usize>, &'static str)> {
+        let mut events = self
+            .highlighter
             .highlight(&self.config, text.as_bytes(), None, |_| None)
             .unwrap();
 
@@ -46,6 +54,8 @@ impl Highlighter {
 
         use HighlightEvent::*;
         while let Some(Ok(event)) = events.next() {
+            // TODO: this is wrong, you could have a final `HighlightStart`
+            // event w/o a following `Source`.
             match event {
                 HighlightStart(Highlight(i)) => hl = TS_HLGROUPS[i],
                 Source { start, end } => (st, en) = (start, end),
@@ -56,3 +66,5 @@ impl Highlighter {
         ranges
     }
 }
+
+// TODO: add tests!

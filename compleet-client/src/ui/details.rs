@@ -99,12 +99,7 @@ impl CompletionDetails {
         }
 
         // Set the buffer filetype.
-        api::buf_set_option(
-            lua,
-            self.bufnr,
-            "filetype",
-            details.filetype.clone(),
-        )?;
+        api::buf_set_option(lua, self.bufnr, "filetype", details.ft.clone())?;
 
         // Lastly, fill the buffer with the new lines.
         self.fill(lua, details.text.clone())?;

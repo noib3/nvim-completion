@@ -10,24 +10,14 @@ version = "0.1"
 [dependencies.treesitter-highlighter]
 path = "../treesitter-highlighter"
 
-[dependencies.bindings]
-path = "../nvim-bindings"
-
 [dependencies.mlua]
 version = "0.7"
 features = ["luajit", "vendored"]
-
-[dependencies.serde]
-version = "1.0"
-features = ["derive"]
 
 # Async runtime.
 [dependencies.tokio]
 version = "1.17.0"
 features = ["full"]
-
-[dependencies.tree-sitter-highlight]
-version = "0.20.1"
 
 [dependencies.unicode-segmentation]
 version = "1.9.0"
@@ -39,3 +29,8 @@ version = "2.2.2"
 # For UTF-32 encoded strings.
 [dependencies.widestring]
 version = "0.5.1"
+
+[dependencies]
+futures = "0.3"
+bindings = { path = "../nvim-bindings" }
+serde = { version = "1.0", features = ["derive"] }

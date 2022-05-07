@@ -1,12 +1,18 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LipsumConfig {
     pub enable: bool,
 }
 
 impl Default for LipsumConfig {
     fn default() -> Self {
-        LipsumConfig { enable: false }
+        Self { enable: false }
+    }
+}
+
+impl From<LipsumConfig> for super::Lipsum {
+    fn from(config: LipsumConfig) -> Self {
+        Self { _config: config, ..Default::default() }
     }
 }

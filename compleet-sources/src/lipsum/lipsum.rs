@@ -1,42 +1,34 @@
 use async_trait::async_trait;
 use bindings::opinionated::{Buffer, Neovim};
-use mlua::prelude::{Lua, LuaResult};
+use mlua::Lua;
 
-use super::{
-    lorems::{LOREMS, LOREM_IPSUM},
-    LipsumConfig,
-};
-use crate::prelude::{
-    CompletionItem,
-    CompletionSource,
-    Completions,
-    Cursor,
-    Result,
-};
+use super::lorems::{LOREMS, LOREM_IPSUM};
+use super::LipsumConfig;
+use crate::completion_item::{CompletionItemBuilder, Completions};
+use crate::completion_source::{CompletionSource, ShouldAttach};
+use crate::cursor::Cursor;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Lipsum {
-    _config: LipsumConfig,
-}
-
-impl From<LipsumConfig> for Lipsum {
-    fn from(_config: LipsumConfig) -> Self {
-        Self { _config, ..Default::default() }
-    }
+    pub _config: LipsumConfig,
 }
 
 #[async_trait]
 impl CompletionSource for Lipsum {
-    fn attach(&mut self, _: &Lua, _: &Buffer) -> LuaResult<bool> {
+    fn on_buf_enter(
+        &mut self,
+        _: &Lua,
+        _: &Buffer,
+    ) -> crate::Result<ShouldAttach> {
         Ok(true)
     }
 
     async fn complete(
-        &self,
+        &mut self,
         _: &Neovim,
         cursor: &Cursor,
         _: &Buffer,
-    ) -> Result<Completions> {
+    ) -> crate::Result<Completions> {
         // // Simulate a slow source, this shouldn't block.
         // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
@@ -49,10 +41,10 @@ impl CompletionSource for Lipsum {
         Ok(LOREMS
             .iter()
             .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
-            .map(|&word| {
-                let mut item = CompletionItem::from(word);
-                item.set_details(LOREM_IPSUM, "");
-                item
+            .map(|&lorem| {
+                CompletionItemBuilder::new(lorem)
+                    .details_text(LOREM_IPSUM)
+                    .build()
             })
             .collect())
     }

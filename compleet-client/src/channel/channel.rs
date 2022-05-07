@@ -211,7 +211,7 @@ impl Channel {
             .flat_map(|source| {
                 let source = source.clone();
                 self.runtime.block_on(async {
-                    source.lock().await.attach(lua, buffer)
+                    source.lock().await.on_buf_enter(lua, buffer)
                 })
             })
             .collect::<Vec<bool>>();

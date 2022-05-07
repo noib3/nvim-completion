@@ -5,12 +5,12 @@ use tokio::sync::oneshot::error::RecvError;
 
 use super::protocol::ResponseError;
 
-pub type LspResult<T> = std::result::Result<T, LspError>;
+pub type LspResult<T> = std::result::Result<T, Error>;
 
 /// Any error that can occur when interacting with a Neovim Lsp client (see `:h
 /// vim.lsp.client`).
 #[derive(Debug)]
-pub enum LspError {
+pub enum Error {
     /// A call to the `request` function of a client returned `false`. This
     /// means the client has shutdown and all successive calls will return
     /// `false` as well. See `:h vim.lsp.client` for details.
@@ -27,27 +27,27 @@ pub enum LspError {
     Lua(LuaError),
 }
 
-impl From<ResponseError> for LspError {
+impl From<ResponseError> for Error {
     fn from(err: ResponseError) -> Self {
         Self::ResponseError(err)
     }
 }
 
-impl From<RecvError> for LspError {
+impl From<RecvError> for Error {
     fn from(err: RecvError) -> Self {
         Self::ReceiverError(err)
     }
 }
 
-impl From<LuaError> for LspError {
+impl From<LuaError> for Error {
     fn from(err: LuaError) -> Self {
         Self::Lua(err)
     }
 }
 
-impl fmt::Display for LspError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use LspError::*;
+        use Error::*;
 
         match self {
             ClientShutdown => write!(f, "An Lsp client shut down"),
@@ -66,9 +66,9 @@ impl fmt::Display for LspError {
     }
 }
 
-impl error::Error for LspError {
+impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        use LspError::*;
+        use Error::*;
 
         match self {
             ClientShutdown | ResponseError(_) => None,

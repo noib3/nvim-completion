@@ -11,17 +11,19 @@ use mlua::prelude::{
 };
 use tokio::sync::oneshot;
 
-use super::protocol::CompletionItem;
-use super::protocol::CompletionList;
-use super::protocol::CompletionParams;
-use super::protocol::CompletionResponse;
-use super::protocol::PositionEncodingKind;
-use super::protocol::ResponseError;
+use super::protocol::{
+    CompletionItem,
+    CompletionList,
+    CompletionParams,
+    CompletionResponse,
+    PositionEncodingKind,
+    ResponseError,
+};
 use super::LspResult;
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
 
 /// Acts as an abstraction over a Neovim Lsp client (see `:h vim.lsp.client`).
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LspClient {
     bridge: Arc<LuaBridge>,
 
@@ -92,11 +94,17 @@ impl LspClient {
                     Ok(CompletionResponse::CompletionItems(items))
                 },
 
-                None => {
+                // If there's no result then the `err` table *should* be
+                // populated..
+                None if err.is_some() => {
                     let val = LuaValue::Table(err.expect("no result => err"));
                     let error = lua.from_value::<ResponseError>(val)?;
                     Err(error.into())
                 },
+
+                // ..but apparently sometimes you get neither a `result` nor an
+                // `err`.
+                _ => todo!(),
             };
 
             let _ =
