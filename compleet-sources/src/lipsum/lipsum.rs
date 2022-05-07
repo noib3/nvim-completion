@@ -26,21 +26,14 @@ impl CompletionSource for Lipsum {
     async fn complete(
         &mut self,
         _: &Neovim,
-        cursor: &Cursor,
+        _: &Cursor,
         _: &Buffer,
     ) -> crate::Result<Completions> {
         // // Simulate a slow source, this shouldn't block.
         // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        let word_pre = cursor.word_pre();
-
-        if word_pre.is_empty() {
-            return Ok(Vec::new());
-        }
-
         Ok(LOREMS
             .iter()
-            .filter(|&&word| word.starts_with(word_pre) && word != word_pre)
             .map(|&lorem| {
                 CompletionItemBuilder::new(lorem)
                     .details_text(LOREM_IPSUM)

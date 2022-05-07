@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use async_trait::async_trait;
 use bindings::opinionated::lsp::protocol::{
@@ -23,8 +23,6 @@ pub struct Lsp {
 
     /// Maps buffer numbers to tree-sitter highlighters.
     pub buf_to_highlighter: HashMap<u16, Highlighter>,
-    // /// Maps Neovim filetypes to tree-sitter highlighters.
-    // pub ft_to_highlighter: HashMap<String, Highlighter>,
 }
 
 #[async_trait]
@@ -49,20 +47,6 @@ impl CompletionSource for Lsp {
         if let Some(hl) = Highlighter::from_filetype(ft) {
             self.buf_to_highlighter.insert(buffer.bufnr, hl);
         }
-
-        // // If we already have a highlighter cached for this filetype we can
-        // // just clone it.
-        // if let Some(highlighter) = self.ft_to_highlighter.get(ft) {
-        //     self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
-        // }
-        // // If we don't we check if this filetype can be highlighted. If it can
-        // // we also cache the returned highlighter for this filetype.
-        // else if let Some(hl) = Highlighter::from_filetype(ft) {
-        //     let highlighter = Arc::new(hl);
-
-        //     self.buf_to_highlighter.insert(buffer.bufnr, highlighter.clone());
-        //     self.ft_to_highlighter.insert(ft.to_owned(), highlighter);
-        // }
 
         Ok(true)
     }
@@ -103,28 +87,15 @@ impl CompletionSource for Lsp {
             return Ok(Vec::new());
         }
 
-        let word_pre = cursor.word_pre();
-
-        if word_pre.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        let completions = items
+        Ok(items
             .into_iter()
-            .filter(|item| {
-                item.label.starts_with(word_pre) && item.label != word_pre
-            })
             .map(|item| {
                 CompletionItem::from_lsp_item(
                     item,
                     &buffer.filetype,
-                    self.buf_to_highlighter
-                        .get_mut(&buffer.bufnr)
-                        // .map(|hl| Arc::make_mut(hl)),
+                    self.buf_to_highlighter.get_mut(&buffer.bufnr),
                 )
             })
-            .collect::<Completions>();
-
-        Ok(completions)
+            .collect())
     }
 }

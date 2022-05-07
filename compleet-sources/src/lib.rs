@@ -1,7 +1,6 @@
 pub mod lipsum;
 pub mod lsp;
 
-// mod completion_builder;
 mod completion_item;
 mod completion_source;
 mod cursor;
