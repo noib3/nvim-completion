@@ -40,7 +40,9 @@ impl CompletionHint {
         cursor: &Cursor,
         matched_bytes: usize,
     ) -> LuaResult<()> {
-        let text = &completion.text[matched_bytes..];
+        // TODO: use completion.text instead. In the case of a multiline string
+        // only show the hint if the user is on the last line of the document.
+        let text = &completion.label[matched_bytes..];
 
         let opts = lua.create_table_from([
             ("id", 1u8.to_lua(lua)?),

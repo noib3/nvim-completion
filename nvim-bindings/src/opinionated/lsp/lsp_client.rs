@@ -81,7 +81,7 @@ impl LspClient {
             let result = match result {
                 // If the `isIncomplete` key is present deserialize the result
                 // table as a `CompletionList`.
-                Some(t) if t.get::<_, bool>("isIncomplete").is_ok() => {
+                Some(t) if t.contains_key("isIncomplete")? => {
                     let val = LuaValue::Table(t);
                     let list = lua.from_value::<CompletionList>(val)?;
                     Ok(CompletionResponse::CompletionList(list))
