@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use bindings::opinionated::lsp::protocol::{
-    CompletionItem as LspCompletionItem,
-    CompletionResponse,
-};
+use bindings::opinionated::lsp::protocol::CompletionResponse;
 use bindings::opinionated::{lsp::LspClient, Buffer, Neovim};
 use futures::future;
 use mlua::Lua;
@@ -70,10 +67,11 @@ impl CompletionSource for Lsp {
                 cursor,
                 client.offset_encoding,
             );
+
             client.request_completions(params, buffer.bufnr)
         });
 
-        let items = future::join_all(requests)
+        Ok(future::join_all(requests)
             .await
             .into_iter()
             .filter_map(Result::ok)
@@ -81,17 +79,9 @@ impl CompletionSource for Lsp {
                 CompletionResponse::CompletionList(list) => list.items,
                 CompletionResponse::CompletionItems(items) => items,
             })
-            .collect::<Vec<LspCompletionItem>>();
-
-        if items.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        Ok(items
-            .into_iter()
-            .map(|item| {
+            .map(|lsp_item| {
                 CompletionItem::from_lsp_item(
-                    item,
+                    lsp_item,
                     &buffer.filetype,
                     self.buf_to_highlighter.get_mut(&buffer.bufnr),
                 )
