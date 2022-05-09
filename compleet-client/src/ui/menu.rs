@@ -84,14 +84,14 @@ impl CompletionMenu {
             let offset = completion.label_byte_offset();
             mc_opts.set("end_row", row)?;
             mc_opts.set("end_col", offset + matched_bytes)?;
-            api::buf_set_extmark(
-                lua,
-                self.bufnr,
-                self.nsid,
-                row as u16,
-                offset as u16,
-                mc_opts.clone(),
-            )?;
+            // api::buf_set_extmark(
+            //     lua,
+            //     self.bufnr,
+            //     self.nsid,
+            //     row as u16,
+            //     offset as u16,
+            //     mc_opts.clone(),
+            // )?;
 
             // Set the highlight groups of the completion item.
             for range in completion.highlight_ranges() {

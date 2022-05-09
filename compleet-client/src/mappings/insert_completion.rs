@@ -2,6 +2,8 @@ use bindings::{api, nvim};
 use mlua::prelude::{Lua, LuaResult};
 use sources::prelude::{CompletionItem, Cursor};
 
+// TODO: handle multiline completion texts.
+
 /// Executed on both `<Plug>(compleet-insert-first-completion)` and
 /// `<Plug>(compleet-insert-selected-completion)`.
 pub fn insert_completion(

@@ -42,24 +42,24 @@ impl CompletionHint {
     ) -> LuaResult<()> {
         // TODO: use completion.text instead. In the case of a multiline string
         // only show the hint if the user is on the last line of the document.
-        let text = &completion.label[matched_bytes..];
+        // let text = &completion.label[matched_bytes..];
 
-        let opts = lua.create_table_from([
-            ("id", 1u8.to_lua(lua)?),
-            ("virt_text", [[text, ui::HINT]].to_lua(lua)?),
-            ("virt_text_pos", "overlay".to_lua(lua)?),
-        ])?;
+        // let opts = lua.create_table_from([
+        //     ("id", 1u8.to_lua(lua)?),
+        //     ("virt_text", [[text, ui::HINT]].to_lua(lua)?),
+        //     ("virt_text_pos", "overlay".to_lua(lua)?),
+        // ])?;
 
-        api::buf_set_extmark(
-            lua,
-            0,
-            self.nsid,
-            cursor.row,
-            cursor.bytes.try_into().unwrap(),
-            opts,
-        )?;
+        // api::buf_set_extmark(
+        //     lua,
+        //     0,
+        //     self.nsid,
+        //     cursor.row,
+        //     cursor.bytes.try_into().unwrap(),
+        //     opts,
+        // )?;
 
-        self.is_visible = true;
+        // self.is_visible = true;
 
         Ok(())
     }
