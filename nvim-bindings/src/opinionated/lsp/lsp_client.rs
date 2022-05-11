@@ -1,23 +1,14 @@
 use std::sync::Arc;
 
 use mlua::prelude::{
-    Lua,
-    LuaFunction,
-    LuaRegistryKey,
-    LuaResult,
-    LuaSerdeExt,
-    LuaTable,
+    Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaSerdeExt, LuaTable,
     LuaValue,
 };
 use tokio::sync::oneshot;
 
 use super::protocol::{
-    CompletionItem,
-    CompletionList,
-    CompletionParams,
-    CompletionResponse,
-    PositionEncodingKind,
-    ResponseError,
+    CompletionItem, CompletionList, CompletionParams, CompletionResponse,
+    PositionEncodingKind, ResponseError,
 };
 use super::LspResult;
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
@@ -84,20 +75,20 @@ impl LspClient {
                 Some(t) if t.contains_key("isIncomplete")? => {
                     let val = LuaValue::Table(t);
                     let list = lua.from_value::<CompletionList>(val)?;
-                    Ok(CompletionResponse::CompletionList(list))
+                    Ok(CompletionResponse::List(list))
                 },
 
-                // If it isn't deserialize it as a `CompletionItem[]`.
+                // If it isn't deserialize it as a `Vec<CompletionItem>`.
                 Some(t) => {
                     let val = LuaValue::Table(t);
                     let items = lua.from_value::<Vec<CompletionItem>>(val)?;
-                    Ok(CompletionResponse::CompletionItems(items))
+                    Ok(CompletionResponse::Array(items))
                 },
 
                 // If there's no result then the `err` table *should* be
                 // populated..
                 None if err.is_some() => {
-                    let val = LuaValue::Table(err.expect("no result => err"));
+                    let val = LuaValue::Table(err.unwrap());
                     let error = lua.from_value::<ResponseError>(val)?;
                     Err(error.into())
                 },

@@ -1,10 +1,10 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::state::State;
+use crate::client::Client;
 use crate::ui::{floater::RelativeTo, menu};
 
 /// Executed on `<Plug>(compleet-show-completions)`.
-pub fn show_completions(lua: &Lua, state: &mut State) -> LuaResult<()> {
+pub fn show_completions(lua: &Lua, state: &mut Client) -> LuaResult<()> {
     let menu = &mut state.ui.menu;
 
     if !menu.floater.is_open() && !state.completions.is_empty() {

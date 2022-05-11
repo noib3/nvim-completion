@@ -8,7 +8,11 @@ use mlua::Lua;
 use treesitter_highlighter::Highlighter;
 
 use super::{setup, LspConfig};
-use crate::completion_source::{CompletionSource, ShouldAttach};
+use crate::completion_source::{
+    CompletionSource,
+    ShouldAttach,
+    ShouldRecompute,
+};
 use crate::prelude::{CompletionItem, Completions, Cursor};
 
 #[derive(Debug, Default, Clone)]
@@ -48,18 +52,22 @@ impl CompletionSource for Lsp {
         Ok(true)
     }
 
+    fn on_edit(
+        &mut self,
+        _lua: &Lua,
+        _buffer: &Buffer,
+    ) -> crate::Result<ShouldRecompute> {
+        Ok(true)
+    }
+
     async fn complete(
         &mut self,
         nvim: &Neovim,
         cursor: &Cursor,
         buffer: &Buffer,
     ) -> crate::Result<Completions> {
-        // let clients = self.clients.get(&buffer.bufnr).unwrap();
+        // let clients = &self._clients[&buffer.bufnr];
         let clients = nvim.lsp_buf_get_clients(buffer.bufnr).await;
-
-        if clients.is_empty() {
-            return Ok(Vec::new());
-        }
 
         let requests = clients.iter().map(|client| {
             let params = super::make_completion_params(
@@ -76,8 +84,8 @@ impl CompletionSource for Lsp {
             .into_iter()
             .filter_map(Result::ok)
             .flat_map(|response| match response {
-                CompletionResponse::CompletionList(list) => list.items,
-                CompletionResponse::CompletionItems(items) => items,
+                CompletionResponse::List(list) => list.items,
+                CompletionResponse::Array(items) => items,
             })
             .map(|lsp_item| {
                 CompletionItem::from_lsp_item(

@@ -1,28 +1,25 @@
 use bindings::{api, nvim, opinionated::Buffer};
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::{utils, State};
+use crate::client::Client;
+use crate::messages;
 
 /// Attaches `nvim-compleet` to all the buffers.
-pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
-    if state.augroup.is_set() {
+pub fn attach_all(lua: &Lua, client: &mut Client) -> LuaResult<()> {
+    if client.is_completion_on() {
         let current = Buffer::get_current(lua)?;
-        // If the current buffer is not attached we try to attach it.
-        if !state.is_buffer_attached(&current) {
-            self::attach_current(lua, state)?;
-        }
-        // If it is we echo an error message.
-        else {
-            utils::echoerr(lua, "Completion is already on")?;
-        }
-        return Ok(());
+
+        return match client.is_buffer_attached(&current) {
+            true => messages::echoerr!(lua, "Completion is already on"),
+            false => self::attach_current(lua, client),
+        };
     }
 
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    state.cancel_detach_all();
+    client.cancel_detach_all();
 
     // Set the augroup.
-    state.augroup.set(lua)?;
+    client.augroup.set(lua)?;
 
     // Schedule a `BufEnter` event on this buffer to attach it.
     nvim::schedule(
@@ -32,17 +29,17 @@ pub fn attach_all(lua: &Lua, state: &mut State) -> LuaResult<()> {
         })?,
     )?;
 
-    utils::echoinfo(lua, "Started completion in all buffers")?;
+    messages::echoinfo!(lua, "Started completion in all buffers")?;
 
     Ok(())
 }
 
 /// Attaches `nvim-compleet` to the current buffer.
-pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
+pub fn attach_current(lua: &Lua, state: &mut Client) -> LuaResult<()> {
     let current = Buffer::get_current(lua)?;
 
     if state.is_buffer_attached(&current) {
-        utils::echoerr(lua, "Completion is already on in this buffer")?;
+        messages::echoerr!(lua, "Completion is already on in this buffer")?;
         return Ok(());
     }
 
@@ -63,7 +60,7 @@ pub fn attach_current(lua: &Lua, state: &mut State) -> LuaResult<()> {
     )?;
 
     // TODO: only display this if we've successfully attached to the buffer.
-    utils::echoinfo(lua, format!("Started completion in buffer '{current}'"))?;
+    messages::echoinfo!(lua, "Started completion in buffer '{current}'",)?;
 
     Ok(())
 }

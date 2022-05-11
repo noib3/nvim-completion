@@ -5,9 +5,10 @@ use bindings::opinionated::{Buffer, Neovim};
 use mlua::Lua;
 
 use crate::completion_item::Completions;
-use crate::cursor::Cursor;
+use crate::completion_context::Cursor;
 
 pub type ShouldAttach = bool;
+pub type ShouldRecompute = bool;
 pub type Sources = Vec<Arc<tokio::sync::Mutex<dyn CompletionSource>>>;
 
 #[async_trait]
@@ -26,8 +27,18 @@ pub trait CompletionSource: std::fmt::Debug + Send + Sync {
         Ok(())
     }
 
-    /// Called the first time a buffer is opened, return `true` if the source
-    /// should attach to the buffer.
+    /// Called on every insert mode edit in an attached buffer. Return `true`
+    /// if the source should recompute its completions.
+    fn on_edit(
+        &mut self,
+        _lua: &Lua,
+        _buffer: &Buffer,
+    ) -> crate::Result<ShouldRecompute> {
+        Ok(true)
+    }
+
+    /// Called the first time a new buffer is opened. Return `true` if the
+    /// source should attach to the buffer.
     fn on_buf_enter(
         &mut self,
         lua: &Lua,

@@ -45,17 +45,18 @@ fn make_position_params(
 fn make_position(cursor: &Cursor, encoding: PositionEncodingKind) -> Position {
     let line = cursor.row as u32;
 
+    // Only include the text up to the current word boundary when computing the
+    // horizontal position. E.g., if the line if `self.foo|`, only consider
+    // `self.|`. TODO: explain why.
+    let text = {
+        let bytes_boundary = cursor.word_bytes_pre(None);
+        &cursor.line[..(cursor.bytes - bytes_boundary)]
+    };
+
     let character = match encoding {
-        PositionEncodingKind::Utf8 => cursor.bytes,
-
-        PositionEncodingKind::Utf16 => {
-            cursor.line[..cursor.bytes].encode_utf16().count()
-        },
-
-        // Who tf even uses UTF-32?
-        PositionEncodingKind::Utf32 => {
-            U32String::from(&cursor.line[..cursor.bytes]).len()
-        },
+        PositionEncodingKind::Utf8 => text.len(),
+        PositionEncodingKind::Utf16 => text.encode_utf16().count(),
+        PositionEncodingKind::Utf32 => U32String::from(text).len(),
     } as u32;
 
     Position { line, character }

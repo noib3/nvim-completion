@@ -23,6 +23,9 @@ pub enum Error {
     /// returned an error.
     ReceiverError(RecvError),
 
+    /// .
+    // NoResultOrError,
+
     /// A catchall for `mlua` errors.
     Lua(LuaError),
 }

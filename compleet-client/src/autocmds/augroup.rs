@@ -3,7 +3,13 @@ use std::{cell::RefCell, rc::Rc};
 use bindings::api;
 use mlua::prelude::{Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaValue};
 
-use crate::{channel, constants::AUGROUP_NAME, state::State, ui};
+use crate::{channel, client::Client, constants::AUGROUP_NAME, ui};
+
+pub type OnInsertLeave =
+    Box<dyn 'static + Send + for<'lua> Fn(&'lua Lua, ()) -> mlua::Result<()>>;
+
+pub type OnCursorMovedI =
+    Box<dyn 'static + Send + for<'lua> Fn(&'lua Lua, ()) -> mlua::Result<()>>;
 
 #[derive(Debug, Default)]
 pub struct Augroup {
@@ -16,7 +22,7 @@ pub struct Augroup {
 }
 
 impl Augroup {
-    pub fn new(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<Self> {
+    pub fn new(lua: &Lua, state: &Rc<RefCell<Client>>) -> LuaResult<Self> {
         let cloned = state.clone();
         let on_insert_leave_key = lua.create_registry_value(
             // Called on every `InsertLeave` event in attached buffers.

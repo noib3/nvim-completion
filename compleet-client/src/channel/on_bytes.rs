@@ -1,15 +1,17 @@
 use bindings::api;
 use mlua::{prelude::LuaResult, Lua};
 
-use crate::state::State;
+use crate::client::Client;
 
 // TODO: refactor
+// parse arguments into an `Edit` struct.
+// update the cursor position by merging the edit.
 
 /// Executed every time a byte or a group of bytes in an attached buffer is
 /// modified.
 pub fn on_bytes(
     lua: &Lua,
-    state: &mut State,
+    state: &mut Client,
     bufnr: u16,
     changedtick: u32,
     start_row: u16,
@@ -20,14 +22,11 @@ pub fn on_bytes(
     bytes_added: u16,
 ) -> LuaResult<Option<bool>> {
     // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    // If this buffer is queued to be detached we return `true`, as explained
-    // in `:h api-lua-detach`. The help docs also mention a `nvim_buf_detach`
-    // function but it seems to have been removed.
     if state.should_detach(bufnr) {
         return Ok(Some(true));
     }
 
-    // Skip this iteration, resetting `ignore_next_on_bytes` to `false`.
+    // Skip this iteration.
     if state.ignore_next_on_bytes {
         state.ignore_next_on_bytes = false;
         return Ok(None);

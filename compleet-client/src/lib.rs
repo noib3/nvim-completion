@@ -1,12 +1,13 @@
 mod autocmds;
 mod channel;
+mod client;
 mod commands;
 mod constants;
 mod hlgroups;
 mod mappings;
+mod messages;
 mod settings;
 mod setup;
-mod state;
 mod ui;
 mod utils;
 
@@ -15,7 +16,7 @@ use std::{cell::RefCell, rc::Rc};
 use bindings::lsp;
 use mlua::{prelude::LuaResult, Lua, Table};
 
-use crate::{settings::Settings, state::State};
+use crate::{client::Client, settings::Settings};
 
 fn lsp_client_capabilities<'lua>(
     lua: &'lua Lua,
@@ -45,7 +46,7 @@ fn lsp_client_capabilities<'lua>(
 
 #[mlua::lua_module]
 fn compleet(lua: &Lua) -> LuaResult<Table> {
-    let state = Rc::<RefCell<State>>::default();
+    let state = Rc::<RefCell<Client>>::default();
 
     let cloned = state.clone();
     let lsp_client_capabilities = lua.create_function(move |lua, ()| {

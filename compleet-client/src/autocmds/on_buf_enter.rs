@@ -1,55 +1,42 @@
-use bindings::opinionated::Buffer;
-use mlua::prelude::{Lua, LuaFunction, LuaResult};
+use bindings::opinionated::{Buffer, OnBytesHook};
+use mlua::prelude::{Lua, LuaFunction};
 
-use crate::state::State;
-use crate::utils;
+use crate::client::Client;
+use crate::messages;
 
-/// Called on every `BufEnter` event.
+/// Called every time the user enters a buffer.
 pub fn on_buf_enter(
     lua: &Lua,
-    state: &mut State,
+    client: &mut Client,
     on_insert_leave: LuaFunction,
     on_cursor_moved_i: LuaFunction,
     on_bytes: LuaFunction,
-) -> LuaResult<()> {
-    let buffer = Buffer::get_current(lua)?;
+) -> mlua::Result<()> {
+    let buf = Buffer::get_current(lua)?;
+    let already_seen = client.entered_buffer(&buf);
 
-    // Don't attach if:
-    //
-    // 1. the buffer is already attached;
-    //
-    // 2. the `modifiable` option is turned off. This should catch a large
-    //    number of buffers we'd like to ignore like netwr, startify, terminal,
-    //    help, etc;
-    //
-    // 3. there aren't any enabled sources for this buffer.
-    if state.is_buffer_attached(&buffer)
-        || !buffer.get_option(lua, "modifiable")?
-        || !state
-            .channel
-            .as_mut()
-            .expect("channel already created")
-            .should_attach(lua, &buffer)?
+    if already_seen
+        || !buf.is_modifiable(lua)?
+        || !client.has_enabled_sources(lua, &buf)?
     {
         return Ok(());
     }
 
-    if !buffer.on_bytes(lua, on_bytes)? {
-        // Echo an error if for some reason we couldn't attach to the buffer.
-        utils::echoerr(lua, "Couldn't attach to buffer")?;
-    } else {
-        // Add two buffer-local autocommands on this buffer.
-        state.augroup.set_local(
-            lua,
-            buffer.bufnr,
-            vec![
+    match buf.attach_on_bytes(lua, on_bytes) {
+        Ok(()) => {
+            let autocmds = &[
                 ("CursorMovedI", on_cursor_moved_i),
                 ("InsertLeave", on_insert_leave),
-            ],
-        )?;
+            ];
 
-        state.attach_buffer(buffer);
-    };
+            client.register_autocommands(lua, autocmds, Some(&buf))?;
+            client.attach_buffer(buf)
+        },
+
+        Err(reason) => {
+            messages::echoerr!(lua, "Couldn't attach to buffer: {reason}",)?
+        },
+    }
 
     Ok(())
 }

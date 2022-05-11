@@ -96,6 +96,7 @@ impl Floater {
         let columns = api::get_option::<u16>(lua, "columns")?;
         let (_, mut cols_before) = crate::utils::get_screen_cursor(lua)?;
 
+        // TODO: this panics.
         let cols_after = columns
             - (cols_before + 1)
             - self.width

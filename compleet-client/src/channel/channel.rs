@@ -10,7 +10,7 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{state::State, ui, utils};
+use crate::{client::Client, messages, ui};
 
 /// TODO: docs
 struct Msg {
@@ -45,7 +45,7 @@ impl Channel {
     /// TODO: docs
     pub fn new(
         lua: &Lua,
-        state: &Rc<RefCell<State>>,
+        state: &Rc<RefCell<Client>>,
         sources: Sources,
     ) -> LuaResult<Channel> {
         let (sender, mut receiver) = mpsc::unbounded_channel::<Msg>();
@@ -80,7 +80,7 @@ impl Channel {
 
                     match maybe_cmp {
                         Ok(compl) => completions.extend(compl),
-                        Err(err) => utils::echowar(lua, err)?,
+                        Err(err) => messages::echowarn!(lua, "{err}")?,
                     }
                 }
             }

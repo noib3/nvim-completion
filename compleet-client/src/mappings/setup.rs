@@ -3,9 +3,9 @@ use std::{cell::RefCell, rc::Rc};
 use bindings::api;
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::state::State;
+use crate::client::Client;
 
-pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
+pub fn setup(lua: &Lua, state: &Rc<RefCell<Client>>) -> LuaResult<()> {
     // Insert either the first or the selected completion into the buffer,
     // depending on the value of `first`.
     let cloned = state.clone();

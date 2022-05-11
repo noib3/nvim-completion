@@ -84,6 +84,7 @@ impl CompletionMenu {
             let offset = completion.label_byte_offset();
             mc_opts.set("end_row", row)?;
             mc_opts.set("end_col", offset + matched_bytes)?;
+
             // api::buf_set_extmark(
             //     lua,
             //     self.bufnr,

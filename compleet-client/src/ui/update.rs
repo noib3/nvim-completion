@@ -5,7 +5,7 @@ use mlua::prelude::{Lua, LuaResult};
 use sources::prelude::Completions;
 
 use super::floater::RelativeTo;
-use crate::{state::State, ui};
+use crate::{client::Client, ui};
 
 // TODO: refactor everything
 
@@ -16,7 +16,7 @@ use crate::{state::State, ui};
 /// Scheduled when a source sends its completions to the channel.
 pub fn update(
     lua: &Lua,
-    state: &mut State,
+    state: &mut Client,
     mut new: Completions,
     changedtick: u32,
     has_last: bool,

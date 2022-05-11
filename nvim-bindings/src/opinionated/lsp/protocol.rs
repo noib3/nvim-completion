@@ -232,8 +232,8 @@ pub struct CompletionList {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum CompletionResponse {
-    CompletionList(CompletionList),
-    CompletionItems(Vec<CompletionItem>),
+    List(CompletionList),
+    Array(Vec<CompletionItem>),
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]

@@ -7,9 +7,9 @@ use mlua::{
 };
 
 use super::{compleet_start, compleet_stop};
-use crate::State;
+use crate::Client;
 
-pub fn setup(lua: &Lua, state: &Rc<RefCell<State>>) -> LuaResult<()> {
+pub fn setup(lua: &Lua, state: &Rc<RefCell<Client>>) -> LuaResult<()> {
     let cloned = state.clone();
     let start = lua.create_function(move |lua, opts: Table| {
         let state = &mut cloned.borrow_mut();

@@ -1,11 +1,11 @@
 use mlua::prelude::{Lua, LuaResult};
 
-use crate::state::State;
+use crate::client::Client;
 
 /// Executed on `<Plug>(compleet-{prev,next}-completion)`.
 pub fn select_completion(
     lua: &Lua,
-    state: &mut State,
+    state: &mut Client,
     step: i8, // either 1 or -1
 ) -> LuaResult<()> {
     let ui = &mut state.ui;

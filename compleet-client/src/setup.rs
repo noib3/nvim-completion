@@ -1,101 +1,61 @@
 use std::{cell::RefCell, rc::Rc};
 
-use bindings::{nvim, r#fn};
-use mlua::{
-    prelude::{Lua, LuaError, LuaResult, LuaValue},
-    serde::Deserializer,
-};
+use mlua::{prelude::Lua, serde::Deserializer, Table};
 use serde_path_to_error::deserialize;
 
-use crate::{
-    autocmds::Augroup,
-    channel::Channel,
-    commands,
-    hlgroups,
-    mappings,
-    settings::Settings,
-    state::State,
-    ui::Ui,
-    utils,
-};
+use crate::autocmds::Augroup;
+use crate::channel::Channel;
+use crate::client::Client;
+use crate::commands;
+use crate::hlgroups;
+use crate::mappings;
+use crate::messages;
+use crate::settings::Settings;
+use crate::ui::Ui;
 
 /// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
-    state: &Rc<RefCell<State>>,
-    preferences: LuaValue,
-) -> LuaResult<()> {
-    // Setup the highlight groups used in the error messages.
-    hlgroups::setup_error_msg(lua)?;
+    state: &Rc<RefCell<Client>>,
+    preferences: Option<Table>,
+) -> mlua::Result<()> {
+    // Setup the highlight groups used when displaying warning/error messages.
+    messages::hlgroups::setup(lua)?;
 
-    // If the Neovim version isn't 0.7+ we echo an error message and return
-    // early.
-    if !r#fn::has(lua, "nvim-0.7")? {
-        utils::echoerr(lua, "Neovim v0.7+ is required")?;
-        return Ok(());
-    }
+    let settings = if let Some(table) = preferences {
+        let deserializer = Deserializer::new(mlua::Value::Table(table));
+        match deserialize::<_, Settings>(deserializer) {
+            Ok(settings) => settings,
 
-    // Try to merge the `preferences` table with the default settings, echoing
-    // an error message and returning early if something goes wrong.
-    let Settings { ui, completion, sources } = match preferences {
-        LuaValue::Nil => Settings::default(),
-
-        LuaValue::Table(t) => {
-            let deserializer = Deserializer::new(LuaValue::Table(t));
-            match deserialize::<_, Settings>(deserializer) {
-                Ok(settings) => settings,
-
-                Err(e) => match e.inner() {
-                    // If the deserialization failed because of a
-                    // badly-configured option we print an informative error
-                    // message and return.
-                    LuaError::DeserializeError(msg) => {
-                        utils::echoerr(
-                            lua,
-                            format!(
-                                "Error for `{}`: {}",
-                                e.path(),
-                                msg.replace("`", "\"")
-                            ),
-                        )?;
-                        return Ok(());
-                    },
-
-                    // All other errors are bubbled up.
-                    _ => return Err(e.into_inner()),
+            Err(err) => match err.inner() {
+                // If the deserialization failed because of a badly-configured
+                // option we print an informative error message and return.
+                mlua::Error::DeserializeError(msg) => {
+                    let opt = err.path();
+                    let msg = msg.replace("`", "\"");
+                    messages::echoerr!(lua, "Error for `{opt}`: {msg}")?;
+                    return Ok(());
                 },
-            }
-        },
 
-        _ => {
-            utils::echoerr(
-                lua,
-                format!(
-                    "Invalid value \"{}\". The setup function accepts either \
-                     a table or `nil`",
-                    nvim::inspect(lua, preferences)?
-                ),
-            )?;
-            return Ok(());
-        },
+                // All other errors are bubbled up.
+                _ => return Err(err.into_inner()),
+            },
+        }
+    } else {
+        Settings::default()
     };
 
-    // crate::bindings::nvim::print(lua, format!("{sources:#?}"))?;
-    // crate::bindings::nvim::print(lua, format!("{ui:#?}"))?;
-
-    // If there aren't any sources enabled we echo a warning message and
-    // return.
-    if sources.is_empty() {
-        utils::echowar(
-            lua,
-            "All sources are disabled, I'm more useless than nipples on a man",
-        )?;
+    if settings.sources.is_empty() {
+        messages::echowarn!(lua, "All sources are disabled")?;
         return Ok(());
     }
 
     // Update the state if this is the first time this function is called.
+    // TODO: refactor
     let borrowed = &mut state.borrow_mut();
     if !borrowed.did_setup {
+        let Settings { ui, completion, sources } = settings;
+
         borrowed.channel = Some(Channel::new(lua, state, sources)?);
 
         hlgroups::setup(lua)?;
