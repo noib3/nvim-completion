@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use bindings::opinionated::Buffer;
+use bindings::opinionated::buffer::{Buffer, LuaFn};
 use mlua::Lua;
 use sources::prelude::{Completions, Cursor};
 
@@ -64,22 +64,91 @@ pub struct Client {
 
     /// Whether the next `CursorMovedI` event will be ignored.
     skip_next_cursor_moved_i: bool,
+
+    /// TODO: docs
+    on_insert_leave: LuaFn<(), ()>,
+
+    /// TODO: docs
+    on_cursor_moved_i: LuaFn<(), ()>,
+
+    /// TODO: docs
+    on_bytes: LuaFn<OnBytesSignature, Option<bool>>,
+}
+
+#[derive(Error)]
+pub enum AttachError {
+    AlreadyAttached(Buffer),
+
+    NotModifiable(Buffer),
+
+    NoSourcesEnabled(Buffer),
+
+    AttachFailed,
+
+    #[transparent]
+    Other(#[from] mlua::Error),
 }
 
 impl Client {
     /// TODO: docs
-    pub fn attach_buffer(&mut self, buffer: Buffer) {
+    // pub fn attach_buffer(&mut self, buffer: Buffer) {
+    //     self.attached_buffers.insert(buffer.bufnr, Arc::new(buffer));
+    // }
+
+    /// TODO: docs
+    pub fn attach_buffer(
+        &mut self,
+        lua: &Lua,
+        buf: Buffer,
+    ) -> Result<(), AttachError> {
+        if self.is_buffer_attached(&buf) {
+            return Err(AttachError::AlreadyAttached(buf));
+        }
+
+        if !buf.is_modifiable(lua)? {
+            return Err(AttachError::NotModifiable(buf));
+        }
+
+        if !self.has_enabled_sources(lua, &buf)? {
+            return Err(AttachError::NoSourcesEnabled(buf));
+        }
+
+        if !buf.attach_on_bytes(lua, self.on_bytes.clone()) {
+            return Err(AttachError::AttachFailed);
+        }
+
+        let autocmds = &[
+            ("CursorMovedI", self.on_cursor_moved_i.clone()),
+            ("InsertLeave", self.on_insert_leave.clone()),
+        ];
+
+        let augroup = match &self.augroup {
+            Some(grp) => grp,
+            None => self.create_augroup(lua)?,
+        };
+
         self.attached_buffers.insert(buffer.bufnr, Arc::new(buffer));
-    }
-
-    /// TODO: docs
-    pub fn cancel_detach_all(&mut self) {
-        self.buffers_to_be_detached.clear()
-    }
-
-    /// TODO: docs
-    pub fn cancel_detach_buffer(&mut self, buffer: &Buffer) {
         self.buffers_to_be_detached.retain(|&b| b != buffer.bufnr);
+
+        Ok(())
+    }
+
+    pub fn attach_all_buffers(
+        &mut self,
+        lua: &Lua,
+    ) -> Result<(), AttachError> {
+        self.buffers_to_be_detached.clear();
+        self.create_augroup(lua)?;
+        self.attach_buffer(lua, Buffer::get_current(lua)?)
+    }
+
+    /// TODO: docs
+    fn create_augroup(&self, lua: &Lua) -> mlua::Result<()> {
+        let augroup = Augroup::new(lua, "TODO");
+        augroup
+            .set_global(lua, ["BufEnter", self.on_buf_enter.clone()])
+            .unwrap();
+        augroup
     }
 
     /// TODO: docs
@@ -143,7 +212,7 @@ impl Client {
     /// Notifies the client that the user entered a buffer. Returns `true` if
     /// the client had already seen that buffer.
     pub fn entered_buffer(&mut self, buf: &Buffer) -> bool {
-        self.seen_bufnrs.insert(buf.bufnr)
+        !self.seen_bufnrs.insert(buf.bufnr)
     }
 
     /// TODO: docs

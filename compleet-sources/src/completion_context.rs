@@ -28,16 +28,6 @@ impl Cursor {
             .count()
     }
 
-    /// Returns the number of characters preceding the cursor that are part of
-    /// the current word boundary.
-    pub fn word_chars_pre(&self) -> usize {
-        self.line[..self.bytes]
-            .chars()
-            .rev()
-            .take_while(|&char| char.is_alphanumeric() || char == '_')
-            .count()
-    }
-
     /// The number of bytes between the cursor and the first whitespace
     /// character before it.
     fn non_whitespace_bytes_pre(&self) -> usize {

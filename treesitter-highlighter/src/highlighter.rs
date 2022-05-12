@@ -1,4 +1,4 @@
-use std::{clone, fmt};
+use std::fmt;
 
 use tree_sitter_highlight::{
     Highlight,
@@ -13,14 +13,6 @@ use crate::generated::config_from_filetype;
 pub struct Highlighter {
     config: HighlightConfiguration,
     highlighter: OGHighlighter,
-}
-
-// A dummy implementation of `Clone` just to satisfy the trait bounds of
-// `Arc::make_mut`.
-impl clone::Clone for Highlighter {
-    fn clone(&self) -> Self {
-        Self::from_filetype("").expect("this should never get cloned!")
-    }
 }
 
 impl fmt::Debug for Highlighter {
@@ -48,6 +40,7 @@ impl Highlighter {
             .highlight(&self.config, text.as_bytes(), None, |_| None)
             .unwrap();
 
+        let mut source_seen = false;
         let size = events.size_hint();
         let mut ranges = Vec::with_capacity(size.1.unwrap_or(size.0) / 3);
         let (mut hl, mut st, mut en) = ("", 0, 0);
@@ -58,8 +51,20 @@ impl Highlighter {
             // event w/o a following `Source`.
             match event {
                 HighlightStart(Highlight(i)) => hl = TS_HLGROUPS[i],
-                Source { start, end } => (st, en) = (start, end),
-                HighlightEnd => ranges.push((st..en, hl)),
+
+                Source { start, end } => {
+                    source_seen = true;
+                    (st, en) = (start, end)
+                },
+
+                HighlightEnd => {
+                    // Only add the current range if there was a preceding
+                    // `Source` event.
+                    if source_seen {
+                        source_seen = false;
+                        ranges.push((st..en, hl))
+                    }
+                },
             }
         }
 
@@ -67,4 +72,39 @@ impl Highlighter {
     }
 }
 
-// TODO: add tests!
+#[cfg(test)]
+mod tests {
+    use super::Highlighter;
+
+    #[test]
+    fn rust_mut() {
+        let mut highlighter = Highlighter::from_filetype("rust").unwrap();
+
+        let text = "&mut Foo";
+        let groups = vec![
+            (0..1, "TSOperator"),
+            (1..4, "TSKeyword"),
+            (5..8, "TSVariable"),
+        ];
+
+        assert_eq!(groups, highlighter.highlight(text))
+    }
+
+    #[test]
+    fn rust_parenthesis() {
+        let mut highlighter = Highlighter::from_filetype("rust").unwrap();
+
+        let text = "self.foo (as Foo)";
+        let groups = vec![
+            (0..4, "TSVariableBuiltin"),
+            (4..5, "TSPunctDelimiter"),
+            (5..8, "TSField"),
+            (9..10, "TSPunctBracket"),
+            (10..12, "TSVariable"),
+            (13..16, "TSVariable"),
+            (16..17, "TSPunctBracket"),
+        ];
+
+        assert_eq!(groups, highlighter.highlight(text))
+    }
+}

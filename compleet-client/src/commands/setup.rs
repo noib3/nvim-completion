@@ -1,35 +1,28 @@
 use std::{cell::RefCell, rc::Rc};
 
 use bindings::api;
-use mlua::{
-    prelude::{Lua, LuaResult},
-    Table,
-};
+use mlua::{Lua, Table};
 
 use super::{compleet_start, compleet_stop};
 use crate::Client;
 
-pub fn setup(lua: &Lua, state: &Rc<RefCell<Client>>) -> LuaResult<()> {
-    let cloned = state.clone();
+pub fn setup(lua: &Lua, client: &Rc<RefCell<Client>>) -> mlua::Result<()> {
+    let cloned = client.clone();
     let start = lua.create_function(move |lua, opts: Table| {
-        let state = &mut cloned.borrow_mut();
+        let client = &mut cloned.borrow_mut();
         if opts.get::<_, bool>("bang")? {
-            // `CompleetStart!` attaches to all the buffers.
-            compleet_start::attach_all(lua, state)
+            compleet_start::attach_all(lua, client)
         } else {
-            // `CompleetStart` only attaches the current buffer.
-            compleet_start::attach_current(lua, state)
+            compleet_start::attach_current(lua, client)
         }
     })?;
 
-    let cloned = state.clone();
+    let cloned = client.clone();
     let stop = lua.create_function(move |lua, opts: Table| {
         let state = &mut cloned.borrow_mut();
         if opts.get::<_, bool>("bang")? {
-            // `CompleetStop!` detached from all the buffers.
             compleet_stop::detach_all(lua, state)
         } else {
-            // `CompleetStop` only detaches the current buffer.
             compleet_stop::detach_current(lua, state)
         }
     })?;

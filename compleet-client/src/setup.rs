@@ -54,14 +54,12 @@ pub fn setup(
     // TODO: refactor
     let borrowed = &mut state.borrow_mut();
     if !borrowed.did_setup {
-        let Settings { ui, completion, sources } = settings;
-
-        borrowed.channel = Some(Channel::new(lua, state, sources)?);
-
-        hlgroups::setup(lua)?;
         commands::setup(lua, state)?;
         mappings::setup(lua, state)?;
 
+        let Settings { ui, completion, sources } = settings;
+
+        borrowed.channel = Some(Channel::new(lua, state, sources)?);
         borrowed.augroup = Augroup::new(lua, state)?;
         borrowed.augroup.set(lua)?;
         borrowed.did_setup = true;

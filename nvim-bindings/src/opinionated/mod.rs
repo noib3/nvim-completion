@@ -1,5 +1,5 @@
 mod bridge_request;
-mod buffer;
+pub mod buffer;
 pub mod lsp;
 mod lua_bridge;
 mod neovim;

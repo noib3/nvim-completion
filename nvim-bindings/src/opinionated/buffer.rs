@@ -1,9 +1,33 @@
 use std::{fmt, ops::Range};
 
-// use std::path::PathBuf;
-use mlua::prelude::{FromLua, Lua, LuaFunction, LuaResult};
+use mlua::prelude::{FromLua, Lua, LuaResult};
 
 use crate::api;
+
+/// The function signature of the `on_bytes` Lua callback passed to
+/// `vim.api.nvim_buf_attach`.
+pub type OnBytesSignature =
+    (String, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+
+// pub type OnBytesHook = Box<
+//     dyn 'static
+//         + Send
+//         + for<'lua> Fn(&'lua Lua, OnBytesSignature) -> mlua::Result<()>,
+// >;
+
+pub type OnBytesHook = LuaFn<OnBytesSignature, Option<bool>>;
+
+pub type LuaFn<A, R> =
+    Box<dyn 'static + Send + for<'lua> Fn(&'lua Lua, A) -> mlua::Result<R>>;
+
+pub type LuaFnMut<A, R> =
+    Box<dyn 'static + Send + for<'lua> FnMut(&'lua Lua, A) -> mlua::Result<R>>;
+
+// pub type LuaFn = Box<
+//     dyn 'static
+//         + Send
+//         + for<'lua> Fn(&'lua Lua, dyn ToLuaMulti<'lua>) -> mlua::Result<()>,
+// >;
 
 /// TODO: docs
 pub enum LineSelect {
@@ -17,7 +41,6 @@ pub enum LineSelect {
 #[derive(Debug, Default, PartialEq)]
 pub struct Buffer {
     pub bufnr: u16,
-    // pub filepath: PathBuf,
     pub filepath: String,
     pub filetype: String,
 }
@@ -80,12 +103,17 @@ impl Buffer {
         api::buf_get_option(lua, self.bufnr, name)
     }
 
+    pub fn is_modifiable(&self, lua: &Lua) -> mlua::Result<bool> {
+        self.get_option(lua, "modifiable")
+    }
+
     /// TODO: docs
-    pub fn on_bytes(
+    pub fn attach_on_bytes(
         &self,
         lua: &Lua,
-        callback: LuaFunction,
+        hook: OnBytesHook,
     ) -> LuaResult<bool> {
+        let callback = lua.create_function(hook)?;
         let opts = lua.create_table_from([("on_bytes", callback)])?;
         api::buf_attach(lua, self.bufnr, false, opts)
     }

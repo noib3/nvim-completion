@@ -49,7 +49,7 @@ fn make_position(cursor: &Cursor, encoding: PositionEncodingKind) -> Position {
     // horizontal position. E.g., if the line if `self.foo|`, only consider
     // `self.|`. TODO: explain why.
     let text = {
-        let bytes_boundary = cursor.word_bytes_pre(None);
+        let bytes_boundary = cursor.word_chars_pre();
         &cursor.line[..(cursor.bytes - bytes_boundary)]
     };
 
