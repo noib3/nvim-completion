@@ -1,9 +1,3 @@
-/// The name of the augroup used to namespace all the autocommands.
-pub const AUGROUP_NAME: &str = "Compleet";
-
-/// The tag used as a prefix in all the messages.
-pub const MSG_TAG: &str = "[nvim-compleet]";
-
 pub mod hlgroups {
     pub mod messages {
         /// Highlights the prefix tag of error messages.

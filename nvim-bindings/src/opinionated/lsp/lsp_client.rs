@@ -1,14 +1,23 @@
 use std::sync::Arc;
 
 use mlua::prelude::{
-    Lua, LuaFunction, LuaRegistryKey, LuaResult, LuaSerdeExt, LuaTable,
+    Lua,
+    LuaFunction,
+    LuaRegistryKey,
+    LuaResult,
+    LuaSerdeExt,
+    LuaTable,
     LuaValue,
 };
 use tokio::sync::oneshot;
 
 use super::protocol::{
-    CompletionItem, CompletionList, CompletionParams, CompletionResponse,
-    PositionEncodingKind, ResponseError,
+    CompletionItem,
+    CompletionList,
+    CompletionParams,
+    CompletionResponse,
+    PositionEncodingKind,
+    ResponseError,
 };
 use super::LspResult;
 use crate::opinionated::{BridgeRequest, LspHandler, LuaBridge};
@@ -61,7 +70,7 @@ impl LspClient {
     pub async fn request_completions(
         &self,
         params: CompletionParams,
-        bufnr: u16,
+        bufnr: u32,
     ) -> LspResult<CompletionResponse> {
         let (tx, rx) = oneshot::channel::<LspResult<CompletionResponse>>();
         let mut tx = Some(tx);

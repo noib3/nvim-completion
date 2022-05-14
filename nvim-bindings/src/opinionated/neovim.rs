@@ -16,14 +16,14 @@ impl Neovim {
     }
 
     /// Binding to `vim.api.nvim_buf_get_name`.
-    pub async fn api_buf_get_name(&self, bufnr: u16) -> String {
+    pub async fn api_buf_get_name(&self, bufnr: u32) -> String {
         let (responder, receiver) = oneshot::channel();
         let request = BridgeRequest::ApiBufGetName { bufnr, responder };
         self.bridge.send(request, receiver).await
     }
 
     /// Binding to `vim.api.nvim_get_current_buf`.
-    pub async fn api_get_current_buf(&self) -> u16 {
+    pub async fn api_get_current_buf(&self) -> u32 {
         let (responder, receiver) = oneshot::channel();
         let request = BridgeRequest::ApiGetCurrentBuf { responder };
         self.bridge.send(request, receiver).await
@@ -32,7 +32,7 @@ impl Neovim {
     /// Binding to `vim.lsp.buf_get_clients`.
     pub async fn lsp_buf_get_clients(
         &self,
-        bufnr: u16,
+        bufnr: u32,
     ) -> Vec<lsp::LspClient> {
         let (responder, receiver) = oneshot::channel();
         let request = BridgeRequest::LspBufGetClients {

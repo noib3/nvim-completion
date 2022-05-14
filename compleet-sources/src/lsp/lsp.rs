@@ -15,15 +15,15 @@ use crate::completion_source::{
 };
 use crate::prelude::{CompletionItem, Completions, Cursor};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Lsp {
     pub config: LspConfig,
 
     /// The Lsp clients attached to a buffer.
-    pub _clients: HashMap<u16, Vec<LspClient>>,
+    pub _clients: HashMap<u32, Vec<LspClient>>,
 
     /// Maps buffer numbers to tree-sitter highlighters.
-    pub buf_to_highlighter: HashMap<u16, Highlighter>,
+    pub buf_to_highlighter: HashMap<u32, Highlighter>,
 }
 
 #[async_trait]

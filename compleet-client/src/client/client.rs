@@ -1,38 +1,34 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use bindings::opinionated::buffer::{Buffer, LuaFn};
+use bindings::api;
+use bindings::opinionated::buffer::{Buffer, LuaFn, OnBytesSignature};
 use mlua::Lua;
 use sources::prelude::{Completions, Cursor};
 
-use crate::{autocmds::Augroup, channel::Channel, settings::Settings, ui::Ui};
+use super::{AttachError, LateInit};
+use crate::channel::Channel;
+use crate::settings::Settings;
+use crate::ui::Ui;
 
-// TODO: refactor
-// rename channel to bridge.
-// make variables private
-// expose functionality via functions
+const AUGROUP_NAME: &str = "Compleet";
 
-/// Holds state about the state of the compleet client.
 #[derive(Default)]
 pub struct Client {
     /// The currently attached buffers.
-    pub attached_buffers: HashMap<u16, Arc<Buffer>>,
+    pub attached_buffers: HashMap<u32, Arc<Buffer>>,
 
-    /// The augroup namespacing all the autocommands.
-    pub augroup: Augroup,
+    augroup_id: Option<u32>,
+    buffers_to_be_detached: Vec<u32>,
 
-    // TODO: remove after https://github.com/neovim/neovim/issues/17874.
-    buffers_to_be_detached: Vec<u16>,
-
-    /// TODO: docs
     pub changedtick_last_seen: u32,
 
-    /// TODO: docs
     pub changedtick_last_update: u32,
 
     /// A channel used to communicate w/ the tokio threadpool where the
     /// completion results are computed.
-    pub channel: Option<Channel>,
+    pub channel: LateInit<RefCell<Channel>>,
 
     /// The currently available completion items.
     pub completions: Completions,
@@ -47,7 +43,7 @@ pub struct Client {
     pub ignore_next_on_bytes: bool,
 
     /// Whether the setup function has ever been called.
-    pub did_setup: bool,
+    did_setup: bool,
 
     /// TODO: docs
     pub matched_bytes: usize,
@@ -60,40 +56,22 @@ pub struct Client {
 
     /// The set of buffer numbers the client has seen. A buffer is seen when
     /// after it triggers the `BufEnter` autocommand for the first time.
-    seen_bufnrs: HashSet<u16>,
+    seen_bufnrs: HashSet<u32>,
 
     /// Whether the next `CursorMovedI` event will be ignored.
     skip_next_cursor_moved_i: bool,
 
-    /// TODO: docs
-    on_insert_leave: LuaFn<(), ()>,
-
-    /// TODO: docs
-    on_cursor_moved_i: LuaFn<(), ()>,
-
-    /// TODO: docs
-    on_bytes: LuaFn<OnBytesSignature, Option<bool>>,
+    on_cursor_moved_i: LateInit<LuaFn<(), ()>>,
+    on_insert_leave: LateInit<LuaFn<(), ()>>,
+    on_buf_enter: LateInit<LuaFn<(), ()>>,
+    on_bytes: LateInit<LuaFn<OnBytesSignature, Option<bool>>>,
 }
 
-#[derive(Error)]
-pub enum AttachError {
-    AlreadyAttached(Buffer),
-
-    NotModifiable(Buffer),
-
-    NoSourcesEnabled(Buffer),
-
-    AttachFailed,
-
-    #[transparent]
-    Other(#[from] mlua::Error),
-}
-
+// Public impl block.
 impl Client {
-    /// TODO: docs
-    // pub fn attach_buffer(&mut self, buffer: Buffer) {
-    //     self.attached_buffers.insert(buffer.bufnr, Arc::new(buffer));
-    // }
+    pub fn did_setup(&self) -> bool {
+        self.did_setup
+    }
 
     /// TODO: docs
     pub fn attach_buffer(
@@ -113,22 +91,13 @@ impl Client {
             return Err(AttachError::NoSourcesEnabled(buf));
         }
 
-        if !buf.attach_on_bytes(lua, self.on_bytes.clone()) {
+        if buf.attach_on_bytes(lua, *self.on_bytes).is_err() {
             return Err(AttachError::AttachFailed);
         }
 
-        let autocmds = &[
-            ("CursorMovedI", self.on_cursor_moved_i.clone()),
-            ("InsertLeave", self.on_insert_leave.clone()),
-        ];
-
-        let augroup = match &self.augroup {
-            Some(grp) => grp,
-            None => self.create_augroup(lua)?,
-        };
-
-        self.attached_buffers.insert(buffer.bufnr, Arc::new(buffer));
-        self.buffers_to_be_detached.retain(|&b| b != buffer.bufnr);
+        self.set_buflocal_autocmds(lua, &buf)?;
+        self.buffers_to_be_detached.retain(|&b| b != buf.bufnr);
+        self.attached_buffers.insert(buf.bufnr, Arc::new(buf));
 
         Ok(())
     }
@@ -138,24 +107,40 @@ impl Client {
         lua: &Lua,
     ) -> Result<(), AttachError> {
         self.buffers_to_be_detached.clear();
-        self.create_augroup(lua)?;
+        self.set_augroup(lua)?;
         self.attach_buffer(lua, Buffer::get_current(lua)?)
     }
 
     /// TODO: docs
-    fn create_augroup(&self, lua: &Lua) -> mlua::Result<()> {
-        let augroup = Augroup::new(lua, "TODO");
-        augroup
-            .set_global(lua, ["BufEnter", self.on_buf_enter.clone()])
-            .unwrap();
-        augroup
+    pub fn setup(
+        &mut self,
+        lua: &Lua,
+        (on_insert_leave, on_cursor_moved_i, on_buf_enter, on_bytes): (
+            LuaFn<(), ()>,
+            LuaFn<(), ()>,
+            LuaFn<(), ()>,
+            LuaFn<OnBytesSignature, Option<bool>>,
+        ),
+        settings: Settings,
+    ) -> mlua::Result<()> {
+        self.on_insert_leave = LateInit::set(on_insert_leave);
+        self.on_cursor_moved_i = LateInit::set(on_cursor_moved_i);
+        self.on_buf_enter = LateInit::set(on_buf_enter);
+        self.on_bytes = LateInit::set(on_bytes);
+
+        self.settings = settings;
+        self.did_setup = true;
+
+        self.set_augroup(lua)?;
+
+        Ok(())
     }
 
     /// TODO: docs
     pub fn detach_all_buffers(&mut self, lua: &Lua) -> mlua::Result<()> {
         let attached = self.attached_buffers.drain().map(|(bufnr, _)| bufnr);
         self.buffers_to_be_detached.extend(attached);
-        self.augroup.unset(lua)?;
+        self.clear_augroup(lua)?;
         self.cleanup_ui(lua)?;
         self.clear_completions();
         Ok(())
@@ -169,7 +154,7 @@ impl Client {
     ) -> mlua::Result<()> {
         self.attached_buffers.remove(&buffer.bufnr);
         self.buffers_to_be_detached.push(buffer.bufnr);
-        self.augroup.clear_local(lua, buffer.bufnr)?;
+        self.clear_buflocal_autocmds(lua, &buffer)?;
         self.cleanup_ui(lua);
         self.clear_completions();
         Ok(())
@@ -192,11 +177,11 @@ impl Client {
 
     /// TODO: docs
     pub fn is_completion_on(&self) -> bool {
-        self.augroup.is_set()
+        self.augroup_id.is_some()
     }
 
     /// TODO: docs
-    pub fn should_detach(&mut self, bufnr: u16) -> bool {
+    pub fn should_detach(&mut self, bufnr: u32) -> bool {
         if !self.buffers_to_be_detached.contains(&bufnr) {
             return false;
         }
@@ -205,7 +190,7 @@ impl Client {
     }
 
     /// TODO: docs
-    pub fn _get_buffer(&self, bufnr: u16) -> Option<Arc<Buffer>> {
+    pub fn _get_buffer(&self, bufnr: u32) -> Option<Arc<Buffer>> {
         self.attached_buffers.get(&bufnr).map(|buf| buf.clone())
     }
 
@@ -221,10 +206,7 @@ impl Client {
         lua: &Lua,
         buf: &Buffer,
     ) -> mlua::Result<bool> {
-        self.channel
-            .as_mut()
-            .expect("bridge already created")
-            .should_attach(lua, buf)
+        self.channel.get_mut().should_attach(lua, buf)
     }
 
     /// TODO: docs
@@ -259,5 +241,76 @@ impl Client {
         buf: &Buffer,
     ) -> mlua::Result<bool> {
         todo!()
+    }
+}
+
+// Private impl block.
+impl Client {
+    /// Creates the `Compleet` augroup, adding a global autocommand on the
+    /// `BufEnter` event.
+    fn set_augroup(&mut self, lua: &Lua) -> mlua::Result<u32> {
+        let opts = lua.create_table_from([("clear", true)])?;
+        let id = api::create_augroup(lua, AUGROUP_NAME, opts)?.into();
+
+        let opts = lua.create_table_with_capacity(0, 2)?;
+        opts.set("group", id)?;
+        opts.set("callback", lua.create_function(*self.on_buf_enter)?)?;
+        api::create_autocmd(lua, ["BufEnter"], opts)?;
+
+        self.augroup_id = Some(id);
+
+        Ok(id)
+    }
+
+    /// Deletes the `Compleet` augroup and all its autocommands.
+    fn clear_augroup(&mut self, lua: &Lua) -> mlua::Result<()> {
+        if let Some(id) = self.augroup_id {
+            api::del_augroup_by_id(lua, id.try_into().unwrap())?;
+            self.augroup_id = None;
+        }
+
+        Ok(())
+    }
+
+    /// Sets the two buffer-local autocommands on the `CursorMovedI` and
+    /// `InsertLeave` events, creating the `Compleet` augroup if it's not
+    /// already set.
+    fn set_buflocal_autocmds(
+        &mut self,
+        lua: &Lua,
+        buf: &Buffer,
+    ) -> mlua::Result<()> {
+        let id =
+            self.augroup_id.unwrap_or_else(|| self.set_augroup(lua).unwrap());
+
+        let opts = lua.create_table_with_capacity(0, 3)?;
+        opts.set("group", id)?;
+        opts.set("buffer", buf.bufnr)?;
+
+        opts.set("callback", lua.create_function(*self.on_cursor_moved_i)?)?;
+        api::create_autocmd(lua, vec!["CursorMovedI"], opts.clone())?;
+
+        opts.set("callback", lua.create_function(*self.on_insert_leave)?)?;
+        api::create_autocmd(lua, vec!["InsertLeave"], opts)?;
+
+        Ok(())
+    }
+
+    /// Clears all the buffer-local autocommands in the `Compleet` augroup set
+    /// on a buffer.
+    fn clear_buflocal_autocmds(
+        &self,
+        lua: &Lua,
+        buf: &Buffer,
+    ) -> mlua::Result<()> {
+        if let Some(id) = self.augroup_id {
+            let opts = lua.create_table_from([
+                ("group", id),
+                ("buffer", buf.bufnr.into()),
+            ])?;
+            api::clear_autocmds(lua, opts)?;
+        }
+
+        Ok(())
     }
 }

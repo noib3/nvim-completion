@@ -9,7 +9,7 @@ use mlua::{
 /// Binding to `vim.api.nvim_buf_attach`.
 pub fn buf_attach(
     lua: &Lua,
-    bufnr: u16,
+    bufnr: u32,
     send_buffer: bool,
     opts: Table,
 ) -> LuaResult<bool> {
@@ -22,14 +22,14 @@ pub fn buf_attach(
 
 #[allow(dead_code)]
 /// Binding to `vim.api.nvim_buf_call`.
-pub fn buf_call(lua: &Lua, bufnr: u16, fun: LuaFunction) -> LuaResult<()> {
+pub fn buf_call(lua: &Lua, bufnr: u32, fun: LuaFunction) -> LuaResult<()> {
     super::api(lua)?.get::<_, LuaFunction>("nvim_buf_call")?.call((bufnr, fun))
 }
 
 /// Binding to `vim.api.nvim_buf_get_lines`.
 pub fn buf_get_lines(
     lua: &Lua,
-    bufnr: u16,
+    bufnr: u32,
     start: i32,
     end: i32,
     strict_indexing: bool,
@@ -43,14 +43,14 @@ pub fn buf_get_lines(
 }
 
 /// Binding to `vim.api.nvim_buf_get_name`.
-pub fn buf_get_name(lua: &Lua, bufnr: u16) -> LuaResult<String> {
+pub fn buf_get_name(lua: &Lua, bufnr: u32) -> LuaResult<String> {
     super::api(lua)?.get::<_, LuaFunction>("nvim_buf_get_name")?.call(bufnr)
 }
 
 /// Binding to `vim.api.nvim_buf_get_option`.
 pub fn buf_get_option<'lua, V: FromLua<'lua>>(
     lua: &'lua Lua,
-    bufnr: u16,
+    bufnr: u32,
     name: &str,
 ) -> LuaResult<V> {
     super::api(lua)?
@@ -61,7 +61,7 @@ pub fn buf_get_option<'lua, V: FromLua<'lua>>(
 /// Binding to `vim.api.nvim_buf_set_lines`.
 pub fn buf_set_lines(
     lua: &Lua,
-    bufnr: u16,
+    bufnr: u32,
     start: i32,
     end: i32,
     strict_indexing: bool,
@@ -79,7 +79,7 @@ pub fn buf_set_lines(
 /// Binding to `vim.api.nvim_win_set_option`
 pub fn buf_set_option<'lua, V: ToLua<'lua>>(
     lua: &'lua Lua,
-    bufnr: u16,
+    bufnr: u32,
     name: &str,
     value: V,
 ) -> LuaResult<()> {
@@ -91,7 +91,7 @@ pub fn buf_set_option<'lua, V: ToLua<'lua>>(
 /// Binding to `vim.api.nvim_buf_set_text`.
 pub fn buf_set_text(
     lua: &Lua,
-    bufnr: u16,
+    bufnr: u32,
     start_row: u16,
     start_col: u16,
     end_row: u16,

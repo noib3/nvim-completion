@@ -10,8 +10,14 @@ pub fn attach_all(lua: &Lua, client: &mut Client) -> mlua::Result<()> {
         return Ok(());
     }
 
-    client.attach_all_buffers(lua)?;
-    messages::echoinfo!(lua, "Started completion in all buffers")
+    if let Err(err) = client.attach_all_buffers(lua) {
+        messages::echoerr!(lua, "Couldn't attach to buffer: {err}")?;
+        return Ok(());
+    }
+
+    messages::echoinfo!(lua, "Started completion in all buffers")?;
+
+    Ok(())
 }
 
 pub fn attach_current(lua: &Lua, client: &mut Client) -> mlua::Result<()> {
@@ -22,5 +28,7 @@ pub fn attach_current(lua: &Lua, client: &mut Client) -> mlua::Result<()> {
         return Ok(());
     }
 
-    messages::echoinfo!(lua, "Started completion in buffer {current}")
+    messages::echoinfo!(lua, "Started completion in buffer {buf}")?;
+
+    Ok(())
 }

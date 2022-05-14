@@ -13,7 +13,7 @@ use crate::settings::ui::menu::MenuSettings;
 pub struct CompletionMenu {
     /// Number of the buffer used to show the completions. It's created on
     /// once in `CompletionMenu::new` and never changes.
-    pub bufnr: u16,
+    pub bufnr: u32,
 
     /// Floating window used to show the completion menu.
     pub floater: Floater,

@@ -6,7 +6,7 @@ use mlua::{
 /// Binding to `vim.api.nvim_open_win`.
 pub fn open_win(
     lua: &Lua,
-    bufnr: u16,
+    bufnr: u32,
     enter: bool,
     config: Table,
 ) -> LuaResult<u16> {

@@ -37,7 +37,8 @@ pub enum BorderStyle {
     Array8([BorderItem; 8]),
 }
 
-#[derive(Debug, Deserialize)]
+// TODO: do I need this?
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum BorderString {
     None,
@@ -50,10 +51,7 @@ pub enum BorderString {
 
 impl BorderString {
     pub fn has_edges(&self) -> bool {
-        match self {
-            Self::None | Self::Shadow => false,
-            _ => true,
-        }
+        *self != Self::None && *self != Self::Shadow
     }
 }
 
@@ -107,6 +105,7 @@ impl BorderStyle {
     }
 }
 
+// TODO: do I need this?
 impl BorderStyle {
     pub fn to_lua<'lua>(&self, lua: &'lua Lua) -> LuaResult<LuaValue<'lua>> {
         match self {

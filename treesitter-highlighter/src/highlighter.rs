@@ -22,14 +22,13 @@ impl fmt::Debug for Highlighter {
 }
 
 impl Highlighter {
+    /// TODO: docs
     pub fn from_filetype(ft: &str) -> Option<Self> {
         let mut config = config_from_filetype(ft)?;
         config.configure(HIGHLIGHT_NAMES);
         Some(Self { config, highlighter: OGHighlighter::new() })
     }
-}
 
-impl Highlighter {
     /// TODO: docs
     pub fn highlight(
         &mut self,
@@ -40,15 +39,13 @@ impl Highlighter {
             .highlight(&self.config, text.as_bytes(), None, |_| None)
             .unwrap();
 
-        let mut source_seen = false;
         let size = events.size_hint();
         let mut ranges = Vec::with_capacity(size.1.unwrap_or(size.0) / 3);
         let (mut hl, mut st, mut en) = ("", 0, 0);
+        let mut source_seen = false;
 
         use HighlightEvent::*;
         while let Some(Ok(event)) = events.next() {
-            // TODO: this is wrong, you could have a final `HighlightStart`
-            // event w/o a following `Source`.
             match event {
                 HighlightStart(Highlight(i)) => hl = TS_HLGROUPS[i],
 

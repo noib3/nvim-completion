@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mlua::prelude::{Lua, LuaResult, LuaValue, ToLua};
+use mlua::{Lua, ToLua, Value};
 use serde::{
     de::{self, Deserializer, Visitor},
     Deserialize,
@@ -43,6 +43,7 @@ impl<'de> Deserialize<'de> for BorderItem {
             {
                 match s.chars().count() {
                     0 | 1 => Ok(BorderItem::Char(s.into())),
+
                     _ => Err(E::invalid_length(
                         s.chars().count(),
                         &"either 0 or 1 characters",
@@ -71,7 +72,7 @@ impl<'de> Deserialize<'de> for BorderItem {
                 // Deserializing the character
                 let c = visitor
                     .next_element::<String>()?
-                    .expect("Already checked that len is > 1");
+                    .expect("already checked that len is > 1");
 
                 if c.chars().count() > 2 {
                     return Err(de::Error::invalid_value(
@@ -91,12 +92,14 @@ impl<'de> Deserialize<'de> for BorderItem {
     }
 }
 
+// TODO: do I need this?
 impl<'lua> ToLua<'lua> for BorderItem {
-    fn to_lua(self, lua: &'lua Lua) -> LuaResult<LuaValue<'lua>> {
+    fn to_lua(self, lua: &'lua Lua) -> mlua::Result<Value<'lua>> {
         match self {
             Self::Char(c) => c.to_lua(lua),
+
             Self::Tuple((c, maybe_hl)) => {
-                Ok(LuaValue::Table(if let Some(hl) = maybe_hl {
+                Ok(Value::Table(if let Some(hl) = maybe_hl {
                     lua.create_sequence_from([c, hl])?
                 } else {
                     lua.create_sequence_from([c])?

@@ -7,7 +7,7 @@ use crate::api;
 /// The function signature of the `on_bytes` Lua callback passed to
 /// `vim.api.nvim_buf_attach`.
 pub type OnBytesSignature =
-    (String, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+    (String, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
 
 // pub type OnBytesHook = Box<
 //     dyn 'static
@@ -18,10 +18,10 @@ pub type OnBytesSignature =
 pub type OnBytesHook = LuaFn<OnBytesSignature, Option<bool>>;
 
 pub type LuaFn<A, R> =
-    Box<dyn 'static + Send + for<'lua> Fn(&'lua Lua, A) -> mlua::Result<R>>;
+    Box<dyn 'static + for<'lua> Fn(&'lua Lua, A) -> mlua::Result<R>>;
 
 pub type LuaFnMut<A, R> =
-    Box<dyn 'static + Send + for<'lua> FnMut(&'lua Lua, A) -> mlua::Result<R>>;
+    Box<dyn 'static + for<'lua> FnMut(&'lua Lua, A) -> mlua::Result<R>>;
 
 // pub type LuaFn = Box<
 //     dyn 'static
@@ -40,7 +40,7 @@ pub enum LineSelect {
 /// TODO: docs
 #[derive(Debug, Default, PartialEq)]
 pub struct Buffer {
-    pub bufnr: u16,
+    pub bufnr: u32,
     pub filepath: String,
     pub filetype: String,
 }
@@ -60,7 +60,7 @@ impl Buffer {
         let filepath = api::buf_get_name(lua, bufnr)?;
         let filetype = api::buf_get_option::<String>(lua, bufnr, "filetype")?;
 
-        Ok(Self { bufnr, filepath, filetype })
+        Ok(Self { bufnr: bufnr.into(), filepath, filetype })
     }
 
     /// Creates and returns a new buffer.
@@ -69,7 +69,7 @@ impl Buffer {
         is_listed: bool,
         is_scratch: bool,
     ) -> LuaResult<Self> {
-        let bufnr = api::create_buf(lua, is_listed, is_scratch)?;
+        let bufnr = api::create_buf(lua, is_listed, is_scratch)?.into();
 
         Ok(Self { bufnr, ..Default::default() })
     }

@@ -30,16 +30,16 @@ pub type Responder<T> = oneshot::Sender<T>;
 
 pub enum BridgeRequest {
     ApiBufGetName {
-        bufnr: u16,
+        bufnr: u32,
         responder: Responder<String>,
     },
 
     ApiGetCurrentBuf {
-        responder: Responder<u16>,
+        responder: Responder<u32>,
     },
 
     LspBufGetClients {
-        bufnr: u16,
+        bufnr: u32,
         bridge: Arc<LuaBridge>,
         responder: Responder<Vec<LspClient>>,
     },
@@ -48,7 +48,7 @@ pub enum BridgeRequest {
         req_key: Arc<LuaRegistryKey>,
         params: CompletionParams,
         handler: LspHandler,
-        bufnr: u16,
+        bufnr: u32,
         responder: Responder<LspResult<u32>>,
     },
 }

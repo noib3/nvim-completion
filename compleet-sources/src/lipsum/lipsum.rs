@@ -4,11 +4,11 @@ use mlua::Lua;
 
 use super::lorems::{LOREMS, LOREM_IPSUM};
 use super::LipsumConfig;
+use crate::completion_context::Cursor;
 use crate::completion_item::{CompletionItemBuilder, Completions};
 use crate::completion_source::{CompletionSource, ShouldAttach};
-use crate::completion_context::Cursor;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Lipsum {
     pub _config: LipsumConfig,
 }

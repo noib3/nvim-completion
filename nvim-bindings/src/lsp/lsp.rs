@@ -8,7 +8,7 @@ fn lsp(lua: &Lua) -> LuaResult<Table> {
 }
 
 /// Binding to `vim.lsp.buf_get_clients`.
-pub fn buf_get_clients(lua: &Lua, bufnr: u16) -> LuaResult<Table> {
+pub fn buf_get_clients(lua: &Lua, bufnr: u32) -> LuaResult<Table> {
     self::lsp(lua)?.get::<_, LuaFunction>("buf_get_clients")?.call(bufnr)
 }
 

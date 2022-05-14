@@ -6,10 +6,9 @@ use sources::prelude::{CompletionSource, Sources, ValidSource};
 use sources::*;
 use tokio::sync::Mutex;
 
-pub fn deserialize<'de, D>(deserializer: D) -> Result<Sources, D::Error>
-where
-    D: Deserializer<'de>,
-{
+pub fn deserialize<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Sources, D::Error> {
     deserializer.deserialize_map(SourcesVisitor)
 }
 
@@ -22,14 +21,12 @@ impl<'de> Visitor<'de> for SourcesVisitor {
         f.write_str("a list of completion sources")
     }
 
-    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-    where
-        M: MapAccess<'de>,
-    {
-        let mut sources = match access.size_hint() {
-            Some(len) => Vec::with_capacity(len),
-            None => Vec::new(),
-        };
+    fn visit_map<M: MapAccess<'de>>(
+        self,
+        mut access: M,
+    ) -> Result<Self::Value, M::Error> {
+        let mut sources =
+            Vec::with_capacity(access.size_hint().unwrap_or_default());
 
         use ValidSource::*;
         while let Some(name) = access.next_key::<ValidSource>()? {

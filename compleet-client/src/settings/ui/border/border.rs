@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 use super::BorderStyle;
 
@@ -17,10 +17,21 @@ pub struct Border {
 /// the details window with different defaults.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct IncompleteBorder {
-    #[serde(rename = "enable")]
-    pub maybe_enable: Option<bool>,
+struct IncompleteBorder {
+    pub enable: Option<bool>,
+    pub style: Option<BorderStyle>,
+}
 
-    #[serde(rename = "style")]
-    pub maybe_style: Option<BorderStyle>,
+pub fn deserialize<'de, D: Deserializer<'de>>(
+    deserializer: D,
+    default_enable: fn() -> bool,
+    default_style: fn() -> BorderStyle,
+) -> Result<Border, D::Error> {
+    Deserialize::deserialize(deserializer).map(
+        |IncompleteBorder { enable, style }| Border {
+            enable: enable
+                .unwrap_or_else(|| style.is_some() || default_enable()),
+            style: style.unwrap_or_else(default_style),
+        },
+    )
 }

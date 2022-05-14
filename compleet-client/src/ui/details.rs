@@ -11,7 +11,7 @@ use crate::{constants::hlgroups::ui, settings::ui::details::DetailsSettings};
 pub struct CompletionDetails {
     /// Number of the buffer used to show the completion details. It's created
     /// once in `CompletionDetails::new` and never changes.
-    bufnr: u16,
+    bufnr: u32,
 
     /// Floating window used to show the completion details.
     pub floater: Floater,

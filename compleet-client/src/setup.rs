@@ -1,25 +1,28 @@
 use std::{cell::RefCell, rc::Rc};
 
-use mlua::{prelude::Lua, serde::Deserializer, Table};
+use mlua::{serde::Deserializer, Lua, Table};
 use serde_path_to_error::deserialize;
 
-use crate::autocmds::Augroup;
-use crate::channel::Channel;
+use crate::autocmds;
 use crate::client::Client;
 use crate::commands;
-use crate::hlgroups;
 use crate::mappings;
 use crate::messages;
 use crate::settings::Settings;
-use crate::ui::Ui;
 
-/// Executed by the `require("compleet").setup` Lua function.
 pub fn setup(
     lua: &Lua,
     state: &Rc<RefCell<Client>>,
     preferences: Option<Table>,
 ) -> mlua::Result<()> {
-    // Setup the highlight groups used when displaying warning/error messages.
+    let client = &mut state.borrow_mut();
+
+    if client.did_setup() {
+        messages::echoerr!(lua, "Can't setup more than once per session")?;
+        return Ok(());
+    }
+
+    // Setup the highlight groups used to display warning/error messages.
     messages::hlgroups::setup(lua)?;
 
     let settings = if let Some(table) = preferences {
@@ -50,23 +53,12 @@ pub fn setup(
         return Ok(());
     }
 
-    // Update the state if this is the first time this function is called.
-    // TODO: refactor
-    let borrowed = &mut state.borrow_mut();
-    if !borrowed.did_setup {
-        commands::setup(lua, state)?;
-        mappings::setup(lua, state)?;
+    commands::setup(lua, state)?;
+    mappings::setup(lua, state)?;
 
-        let Settings { ui, completion, sources } = settings;
+    let autocmds = autocmds::setup(state);
 
-        borrowed.channel = Some(Channel::new(lua, state, sources)?);
-        borrowed.augroup = Augroup::new(lua, state)?;
-        borrowed.augroup.set(lua)?;
-        borrowed.did_setup = true;
-        borrowed.ui = Ui::new(lua, &ui)?;
-        borrowed.settings.ui = ui;
-        borrowed.settings.completion = completion;
-    }
+    client.setup(lua, autocmds, settings)?;
 
     Ok(())
 }

@@ -1,4 +1,7 @@
-// Taken from `nvim-treesitter/lua/nvim-treesitter/highlight.lua`.
+// Obtained by joining
+// https://github.com/nvim-treesitter/nvim-treesitter/blob/master/lua/nvim-treesitter/highlight.lua
+// and
+// https://github.com/neovim/neovim/blob/master/runtime/lua/vim/treesitter/highlighter.lua
 
 pub(crate) const HIGHLIGHT_NAMES: &[&str] = &[
     "annotation",

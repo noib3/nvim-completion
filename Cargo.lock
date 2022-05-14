@@ -93,10 +93,12 @@ version = "0.1.0"
 dependencies = [
  "bindings",
  "mlua",
+ "once_cell",
  "parking_lot 0.10.2",
  "serde",
  "serde_path_to_error",
  "sources",
+ "thiserror",
  "tokio",
 ]
 

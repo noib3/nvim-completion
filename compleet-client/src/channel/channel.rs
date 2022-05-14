@@ -175,7 +175,7 @@ impl Channel {
     }
 
     /// TODO: docs
-    // pub fn should_attach(&mut self, bufnr: u16) -> bool {
+    // pub fn should_attach(&mut self, bufnr: u32) -> bool {
     pub fn should_attach(
         &mut self,
         lua: &Lua,
