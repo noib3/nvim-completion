@@ -1,5 +1,8 @@
 # :zap: nvim-compleet
 
+UPDATE: further development has been momentarily put on hold in favor of
+[nvim-oxi](https://github.com/noib3/nvim-oxi).
+
 This plugin is still in early development.
 
 ![preview](https://user-images.githubusercontent.com/2746374/160488112-4686a0f2-92ac-4bbb-974b-a8e86e27c042.gif)
