@@ -1,0 +1,14 @@
+[package]
+name = "compleet-plugin"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+compleet-core = { path = "../compleet-core" }
+compleet-lipsum = { path = "../compleet-sources/compleet-lipsum" }
+# compleet-lsp = { path = "../compleet-sources/compleet-lsp" }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }

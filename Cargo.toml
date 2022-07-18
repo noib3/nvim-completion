@@ -1,13 +1,11 @@
 [workspace]
 
 members = [
-  "compleet-client",
-  "compleet-sources",
-  "nvim-bindings",
-  "treesitter-highlighter",
+  "compleet-core",
+  "compleet-plugin",
+  "compleet-sources/*"
 ]
 
-# Sacrifice compilation speed for runtime performance.
 [profile.release]
-lto = "fat"
+lto = true
 codegen-units = 1

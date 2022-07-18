@@ -1,6 +1,6 @@
-/lua
-/target
+target/
+lua/
+**/Cargo.lock
 /TODO.md
-
 /treesitter-highlighter/src/generated.rs
 /treesitter-highlighter/src/queries

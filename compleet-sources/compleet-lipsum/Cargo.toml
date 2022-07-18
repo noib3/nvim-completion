@@ -1,0 +1,8 @@
+[package]
+name = "compleet-lipsum"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[dependencies]
+compleet-core = { path = "../../compleet-core" }

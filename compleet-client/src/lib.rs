@@ -88,3 +88,48 @@ fn compleet(lua: &Lua) -> LuaResult<Table> {
         ("setup", setup),
     ])
 }
+
+// #[nvim::module]
+// fn compleet() -> nvim::Result<Dictionary> {
+//     let state = Rc::<RefCell<Client>>::default();
+
+//     let cloned = state.clone();
+//     let lsp_client_capabilities = LuaFun::from_fn_mut(move |()| {
+//         self::lsp_client_capabilities(&cloned.borrow().settings)
+//     });
+
+//     let cloned = state.clone();
+//     let has_completions = LuaFun::from_fn_mut(move |()| {
+//         // TODO: implement this
+//         let _ = cloned.borrow_mut();
+//         Ok(false)
+//     });
+
+//     let cloned = state.clone();
+//     let is_completion_selected = LuaFun::from_fn_mut(move |()| {
+//         Ok(cloned.borrow().ui.menu.selected_index.is_some())
+//     });
+
+//     let cloned = state.clone();
+//     let is_hint_visible =
+//         LuaFun::from_fn_mut(move |()| Ok(cloned.borrow().ui.hint.is_visible));
+
+//     let cloned = state.clone();
+//     let is_menu_open = LuaFun::from_fn_mut(move |()| {
+//         Ok(cloned.borrow().ui.menu.floater.is_open())
+//     });
+
+//     let setup = LuaFun::from_fn_mut(move |preferences: Object| {
+//         setup::setup(&state, preferences)
+//     });
+
+//     Ok([
+//         ("lsp_client_capabilities", lsp_client_capabilities),
+//         ("has_completions", has_completions),
+//         ("is_completion_selected", is_completion_selected),
+//         ("is_hint_visible", is_hint_visible),
+//         ("is_menu_open", is_menu_open),
+//         ("setup", setup),
+//     ]
+//     .collect())
+// }

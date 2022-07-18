@@ -34,3 +34,30 @@ pub fn setup(lua: &Lua, client: &Rc<RefCell<Client>>) -> mlua::Result<()> {
 
     Ok(())
 }
+
+// pub fn setup(client: &Rc<RefCell<Client>>) -> nvim::Result<()> {
+//     let cloned = client.clone();
+//     let start = move |opts| {
+//         let client = &mut cloned.borrow_mut();
+//         match opts.bang {
+//             true => compleet_stop::attach_all(client),
+//             _ => compleet_stop::attach_current(client),
+//         }
+//     };
+
+//     let cloned = client.clone();
+//     let stop = move |opts| {
+//         let client = &mut cloned.borrow_mut();
+//         match opts.bang {
+//             true => compleet_stop::detach_all(client),
+//             _ => compleet_stop::detach_current(client),
+//         }
+//     };
+
+//     let opts = UserCommandOptsBuilder::new().bang().build();
+
+//     api::create_user_command("CompleetStart", start, &opts)?;
+//     api::create_user_command("CompleetStop", stop, &opts)?;
+
+//     Ok(())
+// }
