@@ -5,4 +5,7 @@ authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1"
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+serde = { version = "1.0", features = ["derive"] }
+serde_path_to_error = "0.1"

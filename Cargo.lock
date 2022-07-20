@@ -3,10 +3,24 @@
 version = 3
 
 [[package]]
+name = "async-trait"
+version = "0.1.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed6aa3524a2dfcf9fe180c51eae2b58738348d819517ceadf95789c51fff7600"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "compleet-core"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "nvim-oxi",
+ "serde",
+ "serde_path_to_error",
 ]
 
 [[package]]
@@ -186,6 +200,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "serde_path_to_error"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7868ad3b8196a8a0aea99a8220b124278ee5320a55e4fde97794b6f85b1a377"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
