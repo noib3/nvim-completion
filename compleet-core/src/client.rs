@@ -5,7 +5,7 @@ use std::sync::Arc;
 use nvim_oxi::{Function, Object};
 
 use super::setup;
-use crate::CompletionSource;
+use crate::{CompletionSource, Error};
 
 #[derive(Default)]
 pub struct Client(Rc<RefCell<State>>);
@@ -23,8 +23,17 @@ impl Client {
 
     pub fn setup(&self) -> Function<Object, ()> {
         let state = Rc::clone(&self.0);
+
         Function::from_fn(move |preferences| {
-            setup::setup(&mut state.borrow_mut(), preferences)
+            if let Err(err) =
+                setup::setup(&mut state.borrow_mut(), preferences)
+            {
+                if matches!(err, Error::BadPreferences { .. }) {
+                    // messages::echoerr("{err}");
+                }
+            }
+
+            Ok(())
         })
     }
 }
