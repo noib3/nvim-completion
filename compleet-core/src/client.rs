@@ -2,25 +2,49 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use nvim_oxi::{Function, Object};
+use nvim_oxi::{api::Buffer, Dictionary, Function, Object};
 
-use super::setup;
-use crate::messages;
-use crate::{CompletionSource, Error};
+use crate::{messages, setup};
+use crate::{CompletionSource, Config, Error};
 
 #[derive(Default)]
 pub struct Client(Rc<RefCell<State>>);
 
 #[derive(Default)]
 pub(crate) struct State {
+    /// The id of the `Compleet` augroup if currently set, `None` otherwise.
+    augroup_id: Option<u32>,
+
     /// Whether the [`setup`](setup::setup) function has ever been called.
     did_setup: bool,
 
     sources: Vec<Arc<dyn CompletionSource>>,
 }
 
+impl From<&Rc<RefCell<State>>> for Client {
+    fn from(state: &Rc<RefCell<State>>) -> Self {
+        Self(Rc::clone(&state))
+    }
+}
+
 impl Client {
     #[inline]
+    pub(crate) fn already_setup(&self) -> bool {
+        self.0.borrow().did_setup
+    }
+
+    /// Returns a [`Dictionary`] representing the public API of the plugin.
+    pub fn build_api(&self) -> Dictionary {
+        Dictionary::from_iter([("setup", Object::from(self.setup()))])
+    }
+
+    #[inline]
+    pub(crate) fn did_setup(&self) {
+        self.0.borrow_mut().did_setup = true;
+    }
+
+    #[inline]
+    /// Creates a new [`Client`].
     pub fn new() -> Self {
         Self::default()
     }
@@ -33,27 +57,28 @@ impl Client {
         sources.push(Arc::new(source));
     }
 
-    pub fn setup(&self) -> Function<Object, ()> {
+    pub(crate) fn setup(&self) -> Function<Object, ()> {
         let state = Rc::clone(&self.0);
 
         Function::from_fn(move |preferences| {
-            if let Err(err) =
-                setup::setup(&mut state.borrow_mut(), preferences)
-            {
-                use Error::*;
-                if matches!(err, AlreadySetup | BadPreferences { .. }) {
-                    // messages::echoerr("{err}");
+            let client = Client::from(&state);
+            if let Err(err) = setup::setup(&client, preferences) {
+                match err {
+                    Error::NvimError(err) => return Err(err),
+                    other => messages::echoerr!("{other}"),
                 }
             }
-
             Ok(())
         })
     }
-}
 
-impl State {
-    #[inline]
-    pub const fn already_setup(&self) -> bool {
-        self.did_setup
+    pub(crate) fn set_config(&self, config: Config) {
+        todo!()
+    }
+
+    /// Queries all the registered completion sources, returning whether any of
+    /// them are enabled for the given `buf`.
+    pub(crate) fn should_attach(&self, buf: &Buffer) -> bool {
+        todo!()
     }
 }

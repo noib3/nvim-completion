@@ -1,10 +1,10 @@
 use nvim_oxi::{object, Object, ObjectKind};
 
 use crate::{autocmds, commands, hlgroups, mappings};
-use crate::{Config, Error, Result, State};
+use crate::{Client, Config, Error, Result};
 
-pub(crate) fn setup(state: &mut State, preferences: Object) -> Result<()> {
-    if state.already_setup() {
+pub(crate) fn setup(client: &Client, preferences: Object) -> Result<()> {
+    if client.already_setup() {
         return Err(Error::AlreadySetup);
     }
 
@@ -12,7 +12,7 @@ pub(crate) fn setup(state: &mut State, preferences: Object) -> Result<()> {
     // error messages will be displayed with the right colors.
     hlgroups::setup()?;
 
-    let _config = match preferences.kind() {
+    let config = match preferences.kind() {
         ObjectKind::Nil => Config::default(),
 
         _ => {
@@ -21,11 +21,12 @@ pub(crate) fn setup(state: &mut State, preferences: Object) -> Result<()> {
         },
     };
 
-    autocmds::setup()?;
-    commands::setup()?;
-    mappings::setup()?;
+    autocmds::setup(client)?;
+    commands::setup(client)?;
+    mappings::setup(client)?;
 
-    // state.did_setup();
+    client.set_config(config);
+    client.did_setup();
 
     Ok(())
 }

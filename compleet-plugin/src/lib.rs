@@ -1,9 +1,12 @@
 use compleet_core as compleet;
-use nvim_oxi::{self as nvim, Dictionary, Result};
+use compleet_lipsum;
+use nvim_oxi::{self as nvim, Dictionary};
 
 #[nvim::module]
-fn compleet() -> Result<Dictionary> {
+fn compleet() -> nvim::Result<Dictionary> {
     let client = compleet::Client::new();
 
-    Ok(Dictionary::from_iter([("setup", client.setup())]))
+    // client.register_source(compleet_lipsum::Lipsum);
+
+    Ok(client.build_api())
 }
