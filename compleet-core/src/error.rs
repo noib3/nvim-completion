@@ -5,6 +5,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("can't setup more than once per session")]
+    AlreadySetup,
+
     #[error("error parsing `{option}`: {why}")]
     BadPreferences { option: serde_path_to_error::Path, why: String },
 
