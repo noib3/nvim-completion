@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use nvim_oxi::{api::Buffer, Dictionary, Function, Object};
+use nvim_oxi::{api::Buffer, Dictionary, FromObject, Function, Object};
 
 use crate::{messages, setup};
 use crate::{CompletionSource, Config, Error};
@@ -38,6 +38,24 @@ impl Client {
         Dictionary::from_iter([("setup", Object::from(self.setup()))])
     }
 
+    pub(crate) fn create_fn<F, A, E>(&self, fun: F) -> Function<A, ()>
+    where
+        F: Fn(&Self, A) -> Result<(), E> + 'static,
+        A: FromObject,
+        E: Into<Error>,
+    {
+        let state = Rc::clone(&self.0);
+        Function::from_fn(move |args| {
+            if let Err(err) = fun(&Client::from(&state), args) {
+                match err.into() {
+                    Error::NvimError(err) => return Err(err),
+                    other => messages::echoerr!("{other}"),
+                }
+            }
+            Ok(())
+        })
+    }
+
     #[inline]
     pub(crate) fn did_setup(&self) {
         self.0.borrow_mut().did_setup = true;
@@ -58,18 +76,7 @@ impl Client {
     }
 
     pub(crate) fn setup(&self) -> Function<Object, ()> {
-        let state = Rc::clone(&self.0);
-
-        Function::from_fn(move |preferences| {
-            let client = Client::from(&state);
-            if let Err(err) = setup::setup(&client, preferences) {
-                match err {
-                    Error::NvimError(err) => return Err(err),
-                    other => messages::echoerr!("{other}"),
-                }
-            }
-            Ok(())
-        })
+        self.create_fn(setup::setup)
     }
 
     pub(crate) fn set_config(&self, config: Config) {
