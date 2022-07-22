@@ -1,8 +1,12 @@
-use nvim_oxi::opts::{CreateAugroupOpts, CreateAutocmdOpts};
+use nvim_oxi::{
+    self as nvim,
+    api,
+    opts::{CreateAugroupOpts, CreateAutocmdOpts},
+};
 
 use crate::Client;
 
-pub(crate) fn setup(client: &Client) -> crate::Result<()> {
+pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
     // let state = Rc::clone(client.0);
     // let on_buf_enter = move |args| {
 

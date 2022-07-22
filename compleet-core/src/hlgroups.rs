@@ -1,8 +1,6 @@
-use nvim_oxi::{api, opts::SetHighlightOpts};
+use nvim_oxi::{self as nvim, api, opts::SetHighlightOpts};
 
-use crate::Result;
-
-pub(crate) fn setup() -> Result<()> {
+pub(crate) fn setup() -> nvim::Result<()> {
     let mut opts = SetHighlightOpts::builder();
     opts.default(true);
 

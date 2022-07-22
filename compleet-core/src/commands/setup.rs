@@ -1,8 +1,13 @@
-use nvim_oxi::{api, opts::CreateCommandOpts, types::CommandArgs};
+use nvim_oxi::{
+    self as nvim,
+    api,
+    opts::CreateCommandOpts,
+    types::CommandArgs,
+};
 
 use crate::Client;
 
-pub(crate) fn setup(client: &Client) -> crate::Result<()> {
+pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
     let stats =
         client.create_fn(|client, _args| super::compleet_stats(client));
 
