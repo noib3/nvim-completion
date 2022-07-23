@@ -93,7 +93,7 @@ impl Client {
     }
 
     pub(crate) fn set_config(&self, config: Config) {
-        todo!()
+        // todo!()
     }
 
     /// Queries all the registered completion sources, returning whether any of

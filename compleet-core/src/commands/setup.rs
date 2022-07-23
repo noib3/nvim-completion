@@ -2,7 +2,7 @@ use nvim_oxi::{
     self as nvim,
     api,
     opts::CreateCommandOpts,
-    types::CommandArgs,
+    types::{CommandArgs, CommandNArgs},
 };
 
 use crate::Client;
@@ -19,7 +19,10 @@ pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
         super::compleet_stop(client, args.bang, args.fargs)
     });
 
-    let opts = CreateCommandOpts::builder().bang(true).build();
+    let opts = CreateCommandOpts::builder()
+        .bang(true)
+        .nargs(CommandNArgs::Any)
+        .build();
 
     api::create_user_command("CompleetStats", stats, None)?;
     api::create_user_command("CompleetStart", start, Some(&opts))?;
