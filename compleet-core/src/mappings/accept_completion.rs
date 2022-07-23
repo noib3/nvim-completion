@@ -5,5 +5,5 @@ pub(super) fn accept_completion(
     client: &Client,
     which: IdentifyCompletion,
 ) -> crate::Result<()> {
-    todo!()
+    Ok(())
 }

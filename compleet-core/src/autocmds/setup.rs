@@ -1,20 +1,21 @@
 use nvim_oxi::{
     self as nvim,
     api,
-    opts::{CreateAugroupOpts, CreateAutocmdOpts},
+    opts::CreateAutocmdOpts,
+    types::AutocmdCallbackArgs,
 };
 
 use crate::Client;
 
 pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
-    // let state = Rc::clone(client.0);
-    // let on_buf_enter = move |args| {
+    let buf_new = client.create_fn(|client, args: AutocmdCallbackArgs| {
+        super::on_buf_new(client, args.buffer).map(|_| false)
+    });
 
-    // };
-
-    // let mut opts = CreateAutocmdOpts::builder();
-
-    // opts.call
+    api::create_autocmd(
+        ["BufNew"],
+        &CreateAutocmdOpts::builder().callback(buf_new).build(),
+    )?;
 
     Ok(())
 }

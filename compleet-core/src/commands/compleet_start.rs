@@ -5,5 +5,5 @@ pub(super) fn compleet_start(
     bang: bool,
     sources: Vec<String>,
 ) -> crate::Result<()> {
-    todo!()
+    Ok(())
 }

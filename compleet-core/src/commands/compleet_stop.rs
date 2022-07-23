@@ -5,5 +5,5 @@ pub(super) fn compleet_stop(
     bang: bool,
     sources: Vec<String>,
 ) -> crate::Result<()> {
-    todo!()
+    Ok(())
 }

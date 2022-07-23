@@ -2,7 +2,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use nvim_oxi::{api::Buffer, Dictionary, FromObject, Function, Object};
+use nvim_oxi::{
+    api::Buffer,
+    Dictionary,
+    FromObject,
+    Function,
+    Object,
+    ToObject,
+};
 
 use crate::{messages, setup};
 use crate::{CompletionSource, Config, Error};
@@ -38,21 +45,27 @@ impl Client {
         Dictionary::from_iter([("setup", Object::from(self.setup()))])
     }
 
-    pub(crate) fn create_fn<F, A, E>(&self, fun: F) -> Function<A, ()>
+    pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
     where
-        F: Fn(&Self, A) -> Result<(), E> + 'static,
+        F: Fn(&Self, A) -> Result<R, E> + 'static,
         A: FromObject,
+        R: ToObject + Default,
         E: Into<Error>,
     {
         let state = Rc::clone(&self.0);
         Function::from_fn(move |args| {
-            if let Err(err) = fun(&Client::from(&state), args) {
-                match err.into() {
-                    Error::NvimError(err) => return Err(err),
-                    other => messages::echoerr!("{other}"),
-                }
+            match fun(&Client::from(&state), args).map_err(Into::into) {
+                Ok(ret) => Ok(ret),
+
+                Err(err) => match err {
+                    Error::NvimError(nvim) => Err(nvim),
+
+                    other => {
+                        messages::echoerr!("{other}");
+                        Ok(R::default())
+                    },
+                },
             }
-            Ok(())
         })
     }
 

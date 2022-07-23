@@ -7,5 +7,5 @@ pub(super) fn select_completion(
     client: &Client,
     which: IdentifyCompletion,
 ) -> nvim::Result<()> {
-    todo!()
+    Ok(())
 }
