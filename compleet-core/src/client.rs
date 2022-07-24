@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -18,14 +19,14 @@ use crate::{CompletionSource, Config, Error};
 pub struct Client(Rc<RefCell<State>>);
 
 #[derive(Default)]
-pub(crate) struct State {
+struct State {
     /// The id of the `Compleet` augroup if currently set, `None` otherwise.
     augroup_id: Option<u32>,
 
     /// Whether the [`setup`](setup::setup) function has ever been called.
     did_setup: bool,
 
-    sources: Vec<Arc<dyn CompletionSource>>,
+    sources: HashMap<&'static str, Arc<dyn CompletionSource>>,
 }
 
 impl From<&Rc<RefCell<State>>> for Client {
@@ -85,7 +86,7 @@ impl Client {
         S: CompletionSource,
     {
         let sources = &mut self.0.borrow_mut().sources;
-        sources.push(Arc::new(source));
+        sources.insert(source.name(), Arc::new(source));
     }
 
     pub(crate) fn setup(&self) -> Function<Object, ()> {

@@ -4,6 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    devshell = {
+      url = "github:numtide/devshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-utils = {
       url = "github:numtide/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -11,11 +16,6 @@
 
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    devshell = {
-      url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -32,21 +32,21 @@
         };
       in
       {
-        devShell = pkgs.devshell.mkShell {
+        devShells.default = pkgs.devshell.mkShell {
           name = "nvim-compleet";
 
           packages = with pkgs; [
               (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
               neovim
           ];
-        };
 
-        commands = [
-          {
-            name = "install";
-            command = ''"$PRJ_ROOT/install.sh" "$@"'';
-          }
-        ];
+          commands = [
+            {
+              name = "install";
+              command = ''"$PRJ_ROOT/install.sh" "$@"'';
+            }
+          ];
+        };
       }
     );
 }
