@@ -43,7 +43,16 @@ impl Client {
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.
     pub fn build_api(&self) -> Dictionary {
-        Dictionary::from_iter([("setup", Object::from(self.setup()))])
+        [("setup", Object::from(self.setup()))]
+            .into_iter()
+            .chain(
+                self.0
+                    .borrow()
+                    .sources
+                    .iter()
+                    .map(|(&name, source)| (name, source.api())),
+            )
+            .collect()
     }
 
     pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
@@ -94,7 +103,10 @@ impl Client {
     }
 
     pub(crate) fn set_config(&self, config: Config) {
-        // todo!()
+        let state = &mut self.0.borrow_mut();
+        state.sources.retain(|name, _| {
+            config.sources.get(*name).map(|enable| *enable).unwrap_or_default()
+        });
     }
 
     /// Queries all the registered completion sources, returning whether any of

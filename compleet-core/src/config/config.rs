@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
+
+pub(super) type SourcesConfig = HashMap<String, bool>;
 
 #[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -8,6 +12,9 @@ pub(crate) struct Config {
 
     #[serde(default)]
     completion: super::CompletionConfig,
+
+    #[serde(default, with = "super::sources")]
+    pub(crate) sources: SourcesConfig,
 }
 
 impl Config {
