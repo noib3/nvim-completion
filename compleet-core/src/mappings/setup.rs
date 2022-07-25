@@ -19,8 +19,7 @@ pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
         super::accept_completion(client, IdentifyCompletion::FromSelected(0))
     });
 
-    let _scroll_details =
-        client.create_fn(|client, lines| super::scroll_details(client, lines));
+    let _scroll_details = client.create_fn(super::scroll_details);
 
     let select_next = client.create_fn(|client, _| {
         super::select_completion(client, IdentifyCompletion::FromSelected(1))

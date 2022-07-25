@@ -6,10 +6,10 @@ use std::sync::Arc;
 use nvim_oxi::{
     api::Buffer,
     Dictionary,
-    FromObject,
     Function,
+    LuaPoppable,
+    LuaPushable,
     Object,
-    ToObject,
 };
 
 use crate::{
@@ -62,8 +62,8 @@ impl Client {
     pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
     where
         F: Fn(&Self, A) -> Result<R, E> + 'static,
-        A: FromObject,
-        R: ToObject + Default,
+        A: LuaPoppable,
+        R: LuaPushable + Default,
         E: Into<Error>,
     {
         let state = Rc::clone(&self.0);
@@ -118,7 +118,7 @@ impl Client {
 
     /// Queries all the registered completion sources, returning whether any of
     /// them are enabled for the given `buf`.
-    pub(crate) fn should_attach(&self, buf: &Buffer) -> bool {
-        todo!()
+    pub(crate) fn should_attach(&self, buf: &Buffer) -> crate::Result<bool> {
+        buf.get_option("modifiable").map_err(Into::into)
     }
 }

@@ -7,6 +7,7 @@ mod error;
 mod hlgroups;
 mod mappings;
 mod messages;
+mod on_bytes;
 mod setup;
 
 pub use client::Client;
