@@ -1,7 +1,7 @@
 use nvim_oxi::{object, Object, ObjectKind};
 
 use crate::{autocmds, commands, hlgroups, mappings};
-use crate::{Client, Config, Error, Result};
+use crate::{config::Config, Client, Error, Result};
 
 pub(crate) fn setup(client: &Client, preferences: Object) -> Result<()> {
     if client.already_setup() {

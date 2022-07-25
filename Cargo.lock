@@ -19,6 +19,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "nvim-oxi",
+ "once_cell",
  "serde",
  "serde_path_to_error",
  "thiserror",
@@ -28,6 +29,7 @@ dependencies = [
 name = "compleet-lipsum"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "compleet-core",
 ]
 

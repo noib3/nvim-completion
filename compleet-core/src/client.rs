@@ -12,8 +12,12 @@ use nvim_oxi::{
     ToObject,
 };
 
+use crate::{
+    config::{Config, SOURCE_NAMES},
+    CompletionSource,
+    Error,
+};
 use crate::{messages, setup};
-use crate::{CompletionSource, Config, Error};
 
 #[derive(Default)]
 pub struct Client(Rc<RefCell<State>>);
@@ -94,6 +98,9 @@ impl Client {
     where
         S: CompletionSource,
     {
+        SOURCE_NAMES.with(|names| {
+            names.borrow_mut().as_mut().unwrap().push(source.name())
+        });
         let sources = &mut self.0.borrow_mut().sources;
         sources.insert(source.name(), Arc::new(source));
     }

@@ -11,5 +11,4 @@ mod setup;
 
 pub use client::Client;
 pub use completion_source::CompletionSource;
-use config::Config;
 pub use error::{Error, Result};

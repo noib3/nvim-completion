@@ -5,4 +5,5 @@ authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1"
 compleet-core = { path = "../../compleet-core" }
