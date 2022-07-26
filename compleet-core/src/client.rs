@@ -11,9 +11,11 @@ use nvim_oxi::{
     LuaPushable,
     Object,
 };
+use ropey::{Rope, RopeBuilder};
 
 use crate::{
     config::{Config, SOURCE_NAMES},
+    edit::Edit,
     CompletionSource,
     Error,
 };
@@ -26,6 +28,9 @@ pub struct Client(Rc<RefCell<State>>);
 struct State {
     /// The id of the `Compleet` augroup if currently set, `None` otherwise.
     augroup_id: Option<u32>,
+
+    /// Mapping from [`Buffer`]s to buffer contents represented as [`Rope`]s.
+    buffers: HashMap<Buffer, Rope>,
 
     /// Whether the [`setup`](setup::setup) function has ever been called.
     did_setup: bool,
@@ -43,6 +48,31 @@ impl Client {
     #[inline]
     pub(crate) fn already_setup(&self) -> bool {
         self.0.borrow().did_setup
+    }
+
+    /// TODO: docs
+    pub(crate) fn apply_edit<'ins>(
+        &self,
+        buf: &Buffer,
+        edit: Edit<'ins>,
+    ) -> crate::Result<()> {
+        let state = &mut self.0.borrow_mut();
+        let rope = state.buffers.get_mut(buf).ok_or(Error::AlreadySetup)?;
+        edit.apply_to_rope(rope);
+        Ok(())
+    }
+
+    /// Attaches a new buffer by ...
+    pub(crate) fn attach_buffer(&self, buf: Buffer) -> crate::Result<()> {
+        let mut builder = RopeBuilder::new();
+        for line in buf.get_lines(0, buf.line_count()?, true)? {
+            builder.append(&line.to_string_lossy());
+        }
+
+        let state = &mut self.0.borrow_mut();
+        state.buffers.insert(buf, builder.finish());
+
+        Ok(())
     }
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.

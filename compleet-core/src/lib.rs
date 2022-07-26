@@ -3,6 +3,7 @@ mod client;
 mod commands;
 mod completion_source;
 mod config;
+mod edit;
 mod error;
 mod hlgroups;
 mod mappings;

@@ -9,6 +9,7 @@ pub(super) fn on_buf_enter(client: &Client, buf: Buffer) -> crate::Result<()> {
         let on_bytes = client.create_fn(on_bytes::on_bytes);
         let opts = BufAttachOpts::builder().on_bytes(on_bytes).build();
         buf.attach(false, &opts)?;
+        client.attach_buffer(buf)?;
     }
 
     Ok(())
