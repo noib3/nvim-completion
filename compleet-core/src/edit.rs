@@ -12,7 +12,22 @@ pub(crate) enum Edit<'ins> {
 
 impl<'ins> Edit<'ins> {
     pub(crate) fn apply_to_rope(&self, rope: &mut Rope) {
-        todo!()
+        match self {
+            Edit::Insertion(range, text) => {
+                let start = rope.byte_to_char(*range.start());
+                let end = rope.byte_to_char(*range.end());
+                if start < end {
+                    rope.remove(start..=end);
+                }
+                rope.insert(start, text);
+            },
+
+            Edit::Deletion(range) => {
+                let start = rope.byte_to_char(*range.start());
+                let end = rope.byte_to_char(*range.end());
+                rope.remove(start..=end);
+            },
+        }
     }
 }
 
