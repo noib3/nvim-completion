@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 [dependencies]
 compleet-core = { path = "../compleet-core" }
 compleet-lipsum = { path = "../compleet-sources/compleet-lipsum" }
-# compleet-lsp = { path = "../compleet-sources/compleet-lsp" }
+compleet-lsp = { path = "../compleet-sources/compleet-lsp" }
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }

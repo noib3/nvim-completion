@@ -35,11 +35,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "compleet-lsp"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "compleet-core",
+ "nvim-oxi",
+]
+
+[[package]]
 name = "compleet-plugin"
 version = "0.1.0"
 dependencies = [
  "compleet-core",
  "compleet-lipsum",
+ "compleet-lsp",
  "nvim-oxi",
 ]
 
