@@ -1,16 +1,16 @@
 use async_trait::async_trait;
-use compleet_core as compleet;
+use compleet_core::{CompletionContext, CompletionItem, CompletionSource};
 
 pub struct CompleetLipsum;
 
 #[async_trait]
-impl compleet::CompletionSource for CompleetLipsum {
+impl CompletionSource for CompleetLipsum {
     #[inline]
     fn name(&self) -> &'static str {
         "lipsum"
     }
 
-    async fn complete(&self) -> Vec<String> {
+    async fn complete(&self, ctx: &CompletionContext) -> Vec<CompletionItem> {
         Vec::new()
     }
 }
