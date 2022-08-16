@@ -1,5 +1,10 @@
 use async_trait::async_trait;
-use compleet_core::{CompletionContext, CompletionItem, CompletionSource};
+use compleet_core::{
+    CompletionContext,
+    CompletionItem,
+    CompletionItemBuilder,
+    CompletionSource,
+};
 use nvim_oxi::{Dictionary, Function, Object};
 
 use super::client_capabilities::client_capabilities;
@@ -14,11 +19,12 @@ impl CompletionSource for CompleetLsp {
     }
 
     async fn complete(&self, ctx: &CompletionContext) -> Vec<CompletionItem> {
-        vec![CompletionItem::new(format!(
+        vec![CompletionItemBuilder::new(format!(
             "{} received {}",
             self.name(),
             ctx.ch()
-        ))]
+        ))
+        .build()]
     }
 
     fn api(&self) -> Object {

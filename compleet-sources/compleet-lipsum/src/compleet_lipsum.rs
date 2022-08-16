@@ -1,20 +1,23 @@
 use async_trait::async_trait;
-use compleet_core::{CompletionContext, CompletionItem, CompletionSource};
+use compleet_core::{
+    CompletionContext,
+    CompletionItem,
+    CompletionItemBuilder,
+    CompletionSource,
+};
 
 pub struct CompleetLipsum;
 
 #[async_trait]
 impl CompletionSource for CompleetLipsum {
-    #[inline]
     fn name(&self) -> &'static str {
         "lipsum"
     }
 
-    async fn complete(&self, ctx: &CompletionContext) -> Vec<CompletionItem> {
-        vec![CompletionItem::new(format!(
-            "{} received {}",
-            self.name(),
-            ctx.ch()
-        ))]
+    async fn complete(&self, _ctx: &CompletionContext) -> Vec<CompletionItem> {
+        super::WORDS
+            .iter()
+            .map(|word| CompletionItemBuilder::new(*word).build())
+            .collect::<Vec<_>>()
     }
 }

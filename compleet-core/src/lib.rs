@@ -16,6 +16,6 @@ mod setup;
 
 pub use client::Client;
 pub use completion_context::CompletionContext;
-pub use completion_item::CompletionItem;
+pub use completion_item::{CompletionItem, CompletionItemBuilder};
 pub use completion_source::CompletionSource;
 pub use error::{Error, Result};

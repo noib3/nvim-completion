@@ -1,6 +1,9 @@
 target/
 lua/
 **/Cargo.lock
+
+/compleet-sources/compleet-lipsum/src/words.rs
+
 /TODO.md
 /treesitter-highlighter/src/generated.rs
 /treesitter-highlighter/src/queries

@@ -15,4 +15,12 @@ impl CompletionContext {
     pub fn ch(&self) -> char {
         self.ch
     }
+
+    pub fn line_up_to_cursor(&self) -> &str {
+        todo!()
+    }
+
+    pub fn line_from_cursor_to_end(&self) -> &str {
+        todo!()
+    }
 }
