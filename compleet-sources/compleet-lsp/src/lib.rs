@@ -1,4 +1,4 @@
 mod client_capabilities;
 mod compleet_lsp;
 
-pub use compleet_lsp::CompleetLsp;
+pub use crate::compleet_lsp::CompleetLsp;

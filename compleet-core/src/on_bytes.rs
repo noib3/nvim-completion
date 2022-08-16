@@ -28,7 +28,10 @@ pub(crate) fn on_bytes(
 ) -> crate::Result<ShouldDetach> {
     // client.apply_edit(&args.1, Edit::try_from(&args)?)?;
 
-    client.send_ctx(CompletionContext::new('a'));
+    let buf = &args.1;
+    let ctx = client.get_context(buf);
+
+    client.send_ctx(ctx);
 
     Ok(false)
 }

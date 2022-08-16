@@ -11,11 +11,9 @@ use nvim_oxi::{
     LuaPushable,
     Object,
 };
-use ropey::{Rope, RopeBuilder};
 use tokio::sync::mpsc;
 
 use crate::config::{Config, SOURCE_NAMES};
-use crate::edit::Edit;
 use crate::{channels, mappings, messages, setup};
 use crate::{CompletionContext, CompletionSource, Error};
 
@@ -29,8 +27,8 @@ struct State {
     /// The id of the `Compleet` augroup if currently set, `None` otherwise.
     augroup_id: Option<u32>,
 
-    /// Mapping from [`Buffer`]s to buffer contents represented as [`Rope`]s.
-    buffers: HashMap<Buffer, Rope>,
+    /// Every attached buffer has its own completion context...
+    contexts: HashMap<Buffer, Arc<CompletionContext>>,
 
     /// TODO: docs
     ctx_sender: Option<mpsc::UnboundedSender<Arc<crate::CompletionContext>>>,
@@ -53,27 +51,24 @@ impl Client {
         self.state.borrow().did_setup
     }
 
-    /// TODO: docs
-    pub(crate) fn apply_edit<'ins>(
-        &self,
-        buf: &Buffer,
-        edit: Edit<'ins>,
-    ) -> crate::Result<()> {
-        let state = &mut self.state.borrow_mut();
-        let rope = state.buffers.get_mut(buf).ok_or(Error::AlreadySetup)?;
-        edit.apply_to_rope(rope);
-        Ok(())
-    }
+    // /// TODO: docs
+    // pub(crate) fn apply_edit<'ins>(
+    //     &self,
+    //     buf: &Buffer,
+    //     edit: Edit<'ins>,
+    // ) -> crate::Result<()> {
+    //     let state = &mut self.state.borrow_mut();
+    //     let rope = state.buffers.get_mut(buf).ok_or(Error::AlreadySetup)?;
+    //     edit.apply_to_rope(rope);
+    //     Ok(())
+    // }
 
     /// Attaches a new buffer by ...
     pub(crate) fn attach_buffer(&self, buf: Buffer) -> crate::Result<()> {
-        let mut builder = RopeBuilder::new();
-        for line in buf.get_lines(0, buf.line_count()?, true)? {
-            builder.append(&line.to_string_lossy());
-        }
+        let state = &mut *self.state.borrow_mut();
 
-        let state = &mut self.state.borrow_mut();
-        state.buffers.insert(buf, builder.finish());
+        let context = CompletionContext::new(buf.clone());
+        state.contexts.insert(buf, Arc::new(context));
 
         Ok(())
     }
@@ -122,6 +117,12 @@ impl Client {
         self.state.borrow_mut().did_setup = true;
     }
 
+    /// TODO: docs
+    pub(crate) fn get_context(&self, buf: &Buffer) -> Arc<CompletionContext> {
+        let state = self.state.borrow();
+        state.contexts.get(buf).unwrap().clone()
+    }
+
     /// Creates a new [`Client`].
     #[inline]
     pub fn new() -> Self {
@@ -139,14 +140,8 @@ impl Client {
         sources.insert(source.name(), Arc::new(source));
     }
 
-    pub(crate) fn send_ctx(&self, ctx: CompletionContext) {
-        let _ = self
-            .state
-            .borrow()
-            .ctx_sender
-            .as_ref()
-            .unwrap()
-            .send(Arc::new(ctx));
+    pub(crate) fn send_ctx(&self, ctx: Arc<CompletionContext>) {
+        let _ = self.state.borrow().ctx_sender.as_ref().unwrap().send(ctx);
     }
 
     pub(crate) fn set_config(&self, config: Config) {
