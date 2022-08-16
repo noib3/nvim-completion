@@ -16,7 +16,7 @@ use tokio::sync::mpsc;
 
 use crate::config::{Config, SOURCE_NAMES};
 use crate::edit::Edit;
-use crate::{channels, messages, setup};
+use crate::{channels, mappings, messages, setup};
 use crate::{CompletionContext, CompletionSource, Error};
 
 #[derive(Default)]
@@ -80,8 +80,9 @@ impl Client {
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.
     pub fn build_api(&self) -> Dictionary {
-        [("setup", Object::from(self.setup()))]
+        [("setup", Object::from(self.create_fn(setup::setup)))]
             .into_iter()
+            .chain(mappings::setup(self))
             .chain(
                 self.state
                     .borrow()
@@ -121,8 +122,8 @@ impl Client {
         self.state.borrow_mut().did_setup = true;
     }
 
-    #[inline]
     /// Creates a new [`Client`].
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -136,10 +137,6 @@ impl Client {
         });
         let sources = &mut self.state.borrow_mut().sources;
         sources.insert(source.name(), Arc::new(source));
-    }
-
-    pub(crate) fn setup(&self) -> Function<Object, ()> {
-        self.create_fn(setup::setup)
     }
 
     pub(crate) fn send_ctx(&self, ctx: CompletionContext) {

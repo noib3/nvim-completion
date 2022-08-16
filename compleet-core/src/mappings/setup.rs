@@ -1,8 +1,8 @@
-use nvim_oxi::{self as nvim, api, opts::SetKeymapOpts, types::Mode};
+use nvim_oxi::Object;
 
 use crate::Client;
 
-pub(crate) enum IdentifyCompletion {
+pub(super) enum IdentifyCompletion {
     /// A specific completion.
     ByIndex(usize),
 
@@ -10,64 +10,35 @@ pub(crate) enum IdentifyCompletion {
     FromSelected(isize),
 }
 
-pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
-    let accept_first = client.create_fn(|client, _| {
+pub(crate) fn setup(
+    client: &Client,
+) -> impl IntoIterator<Item = (&'static str, Object)> {
+    let accept_first = client.create_fn(|client, ()| {
         super::accept_completion(client, IdentifyCompletion::ByIndex(0))
     });
 
-    let accept_selected = client.create_fn(|client, _| {
+    let accept_selected = client.create_fn(|client, ()| {
         super::accept_completion(client, IdentifyCompletion::FromSelected(0))
     });
 
-    let _scroll_details = client.create_fn(super::scroll_details);
+    let scroll_details = client.create_fn(super::scroll_details);
 
-    let select_next = client.create_fn(|client, _| {
+    let select_next = client.create_fn(|client, ()| {
         super::select_completion(client, IdentifyCompletion::FromSelected(1))
     });
 
-    let select_prev = client.create_fn(|client, _| {
+    let select_prev = client.create_fn(|client, ()| {
         super::select_completion(client, IdentifyCompletion::FromSelected(-1))
     });
 
-    let show = client.create_fn(|client, _| super::show_completions(client));
+    let show = client.create_fn(|client, ()| super::show_completions(client));
 
-    let mut opts = SetKeymapOpts::builder();
-    opts.silent(true);
-
-    api::set_keymap(
-        Mode::Insert,
-        "<Plug>(compleet-accept-first)",
-        "",
-        Some(&opts.callback(accept_first).build()),
-    )?;
-
-    api::set_keymap(
-        Mode::Insert,
-        "<Plug>(compleet-accept-selected)",
-        "",
-        Some(&opts.callback(accept_selected).build()),
-    )?;
-
-    api::set_keymap(
-        Mode::Insert,
-        "<Plug>(compleet-select-next)",
-        "",
-        Some(&opts.callback(select_next).build()),
-    )?;
-
-    api::set_keymap(
-        Mode::Insert,
-        "<Plug>(compleet-select-prev)",
-        "",
-        Some(&opts.callback(select_prev).build()),
-    )?;
-
-    api::set_keymap(
-        Mode::Insert,
-        "<Plug>(compleet-show-completion)",
-        "",
-        Some(&opts.callback(show).build()),
-    )?;
-
-    Ok(())
+    [
+        ("accept_first", Object::from(accept_first)),
+        ("accept_selected", Object::from(accept_selected)),
+        ("scroll_details", Object::from(scroll_details)),
+        ("select_next", Object::from(select_next)),
+        ("select_prev", Object::from(select_prev)),
+        ("show", Object::from(show)),
+    ]
 }
