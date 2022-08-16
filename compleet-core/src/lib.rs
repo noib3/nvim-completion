@@ -1,4 +1,5 @@
 mod autocmds;
+mod channels;
 mod client;
 mod commands;
 mod completion_context;

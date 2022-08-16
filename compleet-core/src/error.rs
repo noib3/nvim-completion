@@ -13,6 +13,9 @@ pub enum Error {
 
     #[error(transparent)]
     NvimError(#[from] nvim_oxi::Error),
+
+    #[error(transparent)]
+    LoopError(#[from] nvim_oxi::r#loop::Error),
 }
 
 impl From<serde_path_to_error::Error<nvim::Error>> for Error {

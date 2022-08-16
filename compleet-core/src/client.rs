@@ -12,17 +12,17 @@ use nvim_oxi::{
     Object,
 };
 use ropey::{Rope, RopeBuilder};
+use tokio::sync::mpsc;
 
-use crate::{
-    config::{Config, SOURCE_NAMES},
-    edit::Edit,
-    CompletionSource,
-    Error,
-};
-use crate::{messages, setup};
+use crate::config::{Config, SOURCE_NAMES};
+use crate::edit::Edit;
+use crate::{channels, messages, setup};
+use crate::{CompletionContext, CompletionSource, Error};
 
 #[derive(Default)]
-pub struct Client(Rc<RefCell<State>>);
+pub struct Client {
+    state: Rc<RefCell<State>>,
+}
 
 #[derive(Default)]
 struct State {
@@ -32,6 +32,9 @@ struct State {
     /// Mapping from [`Buffer`]s to buffer contents represented as [`Rope`]s.
     buffers: HashMap<Buffer, Rope>,
 
+    /// TODO: docs
+    ctx_sender: Option<mpsc::UnboundedSender<Arc<crate::CompletionContext>>>,
+
     /// Whether the [`setup`](setup::setup) function has ever been called.
     did_setup: bool,
 
@@ -40,14 +43,14 @@ struct State {
 
 impl From<&Rc<RefCell<State>>> for Client {
     fn from(state: &Rc<RefCell<State>>) -> Self {
-        Self(Rc::clone(&state))
+        Self { state: Rc::clone(&state) }
     }
 }
 
 impl Client {
     #[inline]
     pub(crate) fn already_setup(&self) -> bool {
-        self.0.borrow().did_setup
+        self.state.borrow().did_setup
     }
 
     /// TODO: docs
@@ -56,7 +59,7 @@ impl Client {
         buf: &Buffer,
         edit: Edit<'ins>,
     ) -> crate::Result<()> {
-        let state = &mut self.0.borrow_mut();
+        let state = &mut self.state.borrow_mut();
         let rope = state.buffers.get_mut(buf).ok_or(Error::AlreadySetup)?;
         edit.apply_to_rope(rope);
         Ok(())
@@ -69,7 +72,7 @@ impl Client {
             builder.append(&line.to_string_lossy());
         }
 
-        let state = &mut self.0.borrow_mut();
+        let state = &mut self.state.borrow_mut();
         state.buffers.insert(buf, builder.finish());
 
         Ok(())
@@ -80,7 +83,7 @@ impl Client {
         [("setup", Object::from(self.setup()))]
             .into_iter()
             .chain(
-                self.0
+                self.state
                     .borrow()
                     .sources
                     .iter()
@@ -96,7 +99,7 @@ impl Client {
         R: LuaPushable + Default,
         E: Into<Error>,
     {
-        let state = Rc::clone(&self.0);
+        let state = Rc::clone(&self.state);
         Function::from_fn(move |args| {
             match fun(&Client::from(&state), args).map_err(Into::into) {
                 Ok(ret) => Ok(ret),
@@ -115,7 +118,7 @@ impl Client {
 
     #[inline]
     pub(crate) fn did_setup(&self) {
-        self.0.borrow_mut().did_setup = true;
+        self.state.borrow_mut().did_setup = true;
     }
 
     #[inline]
@@ -131,7 +134,7 @@ impl Client {
         SOURCE_NAMES.with(|names| {
             names.borrow_mut().as_mut().unwrap().push(source.name())
         });
-        let sources = &mut self.0.borrow_mut().sources;
+        let sources = &mut self.state.borrow_mut().sources;
         sources.insert(source.name(), Arc::new(source));
     }
 
@@ -139,11 +142,34 @@ impl Client {
         self.create_fn(setup::setup)
     }
 
+    pub(crate) fn send_ctx(&self, ctx: CompletionContext) {
+        let _ = self
+            .state
+            .borrow()
+            .ctx_sender
+            .as_ref()
+            .unwrap()
+            .send(Arc::new(ctx));
+    }
+
     pub(crate) fn set_config(&self, config: Config) {
-        let state = &mut self.0.borrow_mut();
+        let state = &mut *self.state.borrow_mut();
         state.sources.retain(|name, _| {
             config.sources.get(*name).map(|enable| *enable).unwrap_or_default()
         });
+    }
+
+    pub(crate) fn start_channel(&self) -> crate::Result<()> {
+        let state = &mut *self.state.borrow_mut();
+
+        let (sender, recv) = mpsc::unbounded_channel();
+
+        state.ctx_sender = Some(sender);
+
+        let sources =
+            state.sources.values().map(Arc::clone).collect::<Vec<_>>();
+
+        channels::setup(sources, recv)
     }
 
     /// Queries all the registered completion sources, returning whether any of

@@ -1,3 +1,10 @@
+#[derive(Debug)]
 pub struct CompletionItem {
-    text: String,
+    pub(crate) text: String,
+}
+
+impl CompletionItem {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
 }

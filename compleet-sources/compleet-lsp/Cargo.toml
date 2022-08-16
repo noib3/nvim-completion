@@ -7,4 +7,5 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 compleet-core = { path = "../../compleet-core" }
-nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+# nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+nvim-oxi = { path = "../../../nvim-oxi/nvim-oxi" }

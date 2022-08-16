@@ -26,6 +26,7 @@ pub(crate) fn setup(client: &Client, preferences: Object) -> Result<()> {
     mappings::setup(client)?;
 
     client.set_config(config);
+    client.start_channel()?;
     client.did_setup();
 
     Ok(())

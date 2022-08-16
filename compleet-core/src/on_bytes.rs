@@ -1,5 +1,6 @@
 use nvim_oxi::opts::{OnBytesArgs, ShouldDetach};
 
+use crate::CompletionContext;
 use crate::{edit::Edit, Client};
 
 /*
@@ -25,6 +26,9 @@ pub(crate) fn on_bytes(
     client: &Client,
     args: OnBytesArgs,
 ) -> crate::Result<ShouldDetach> {
-    client.apply_edit(&args.1, Edit::try_from(&args)?)?;
+    // client.apply_edit(&args.1, Edit::try_from(&args)?)?;
+
+    client.send_ctx(CompletionContext::new('a'));
+
     Ok(false)
 }

@@ -1,16 +1,13 @@
 use async_trait::async_trait;
 use compleet_core::{CompletionContext, CompletionItem, CompletionSource};
-use nvim_oxi::{Dictionary, Function, Object};
 
-use super::client_capabilities::client_capabilities;
-
-pub struct CompleetLsp;
+pub struct CompleetLipsum;
 
 #[async_trait]
-impl CompletionSource for CompleetLsp {
+impl CompletionSource for CompleetLipsum {
     #[inline]
     fn name(&self) -> &'static str {
-        "lsp"
+        "lipsum"
     }
 
     async fn complete(&self, ctx: &CompletionContext) -> Vec<CompletionItem> {
@@ -19,13 +16,5 @@ impl CompletionSource for CompleetLsp {
             self.name(),
             ctx.ch()
         ))]
-    }
-
-    fn api(&self) -> Object {
-        Dictionary::from_iter([(
-            "client_capabilities",
-            Function::from_fn(client_capabilities),
-        )])
-        .into()
     }
 }
