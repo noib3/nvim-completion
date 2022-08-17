@@ -7,3 +7,4 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 compleet-core = { path = "../../compleet-core" }
+tokio = { version = "1.20", features = ["full"] }

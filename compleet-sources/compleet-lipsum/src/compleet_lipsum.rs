@@ -4,6 +4,7 @@ use compleet_core::{
     CompletionItem,
     CompletionItemBuilder,
     CompletionSource,
+    Result,
 };
 
 pub struct CompleetLipsum;
@@ -14,10 +15,17 @@ impl CompletionSource for CompleetLipsum {
         "lipsum"
     }
 
-    async fn complete(&self, _ctx: &CompletionContext) -> Vec<CompletionItem> {
-        super::WORDS
+    async fn complete(
+        &self,
+        _ctx: &CompletionContext,
+    ) -> Result<Vec<CompletionItem>> {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+        let completions = super::WORDS
             .iter()
             .map(|word| CompletionItemBuilder::new(*word).build())
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+        Ok(completions)
     }
 }

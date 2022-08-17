@@ -13,8 +13,9 @@ use nvim_oxi::{
 };
 use tokio::sync::mpsc;
 
+use crate::channels::{self, PoolMessage};
 use crate::config::{Config, SOURCE_NAMES};
-use crate::{channels, mappings, messages, setup};
+use crate::{mappings, messages, setup};
 use crate::{CompletionContext, CompletionSource, Error};
 
 #[derive(Default)]
@@ -31,12 +32,18 @@ struct State {
     contexts: HashMap<Buffer, Arc<CompletionContext>>,
 
     /// TODO: docs
-    ctx_sender: Option<mpsc::UnboundedSender<Arc<crate::CompletionContext>>>,
+    pool_sender: Option<mpsc::UnboundedSender<PoolMessage>>,
 
     /// Whether the [`setup`](setup::setup) function has ever been called.
     did_setup: bool,
 
     sources: HashMap<&'static str, Arc<dyn CompletionSource>>,
+}
+
+impl Clone for Client {
+    fn clone(&self) -> Self {
+        Self { state: Rc::clone(&self.state) }
+    }
 }
 
 impl From<&Rc<RefCell<State>>> for Client {
@@ -46,6 +53,12 @@ impl From<&Rc<RefCell<State>>> for Client {
 }
 
 impl Client {
+    /// Creates a new [`Client`].
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     #[inline]
     pub(crate) fn already_setup(&self) -> bool {
         self.state.borrow().did_setup
@@ -63,14 +76,9 @@ impl Client {
     //     Ok(())
     // }
 
-    /// Attaches a new buffer by ...
-    pub(crate) fn attach_buffer(&self, buf: Buffer) -> crate::Result<()> {
+    pub(crate) fn add_context(&self, buf: Buffer, ctx: CompletionContext) {
         let state = &mut *self.state.borrow_mut();
-
-        let context = CompletionContext::new(buf.clone());
-        state.contexts.insert(buf, Arc::new(context));
-
-        Ok(())
+        state.contexts.insert(buf, Arc::new(ctx));
     }
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.
@@ -95,9 +103,9 @@ impl Client {
         R: LuaPushable + Default,
         E: Into<Error>,
     {
-        let state = Rc::clone(&self.state);
+        let client = self.clone();
         Function::from_fn(move |args| {
-            match fun(&Client::from(&state), args).map_err(Into::into) {
+            match fun(&client, args).map_err(Into::into) {
                 Ok(ret) => Ok(ret),
 
                 Err(err) => match err {
@@ -120,13 +128,7 @@ impl Client {
     /// TODO: docs
     pub(crate) fn get_context(&self, buf: &Buffer) -> Arc<CompletionContext> {
         let state = self.state.borrow();
-        state.contexts.get(buf).unwrap().clone()
-    }
-
-    /// Creates a new [`Client`].
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
+        Arc::clone(state.contexts.get(buf).unwrap())
     }
 
     pub fn register_source<S>(&self, source: S)
@@ -138,10 +140,6 @@ impl Client {
         });
         let sources = &mut self.state.borrow_mut().sources;
         sources.insert(source.name(), Arc::new(source));
-    }
-
-    pub(crate) fn send_ctx(&self, ctx: Arc<CompletionContext>) {
-        let _ = self.state.borrow().ctx_sender.as_ref().unwrap().send(ctx);
     }
 
     pub(crate) fn set_config(&self, config: Config) {
@@ -156,17 +154,38 @@ impl Client {
 
         let (sender, recv) = mpsc::unbounded_channel();
 
-        state.ctx_sender = Some(sender);
+        state.pool_sender = Some(sender);
 
         let sources =
             state.sources.values().map(Arc::clone).collect::<Vec<_>>();
 
-        channels::setup(sources, recv)
+        channels::setup(self, sources, recv)
     }
 
-    /// Queries all the registered completion sources, returning whether any of
-    /// them are enabled for the given `buf`.
-    pub(crate) fn should_attach(&self, buf: &Buffer) -> crate::Result<bool> {
-        buf.get_option("modifiable").map_err(Into::into)
+    // -----------------------------------------------------------------------
+    // Thread pool messaging.
+
+    /// Sends a message to the thread pool.
+    #[inline]
+    fn send_pool_msg(&self, msg: PoolMessage) {
+        self.state.borrow().pool_sender.as_ref().unwrap().send(msg).unwrap();
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn query_attach(&self, buf: Buffer) {
+        self.send_pool_msg(PoolMessage::QueryAttach(buf))
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn query_completions(&self, ctx: Arc<CompletionContext>) {
+        self.send_pool_msg(PoolMessage::QueryCompletions(ctx))
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn stop_sources(&self) {
+        self.send_pool_msg(PoolMessage::AbortAll);
     }
 }

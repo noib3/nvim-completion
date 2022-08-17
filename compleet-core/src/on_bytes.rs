@@ -31,7 +31,7 @@ pub(crate) fn on_bytes(
     let buf = &args.1;
     let ctx = client.get_context(buf);
 
-    client.send_ctx(ctx);
+    client.query_completions(ctx);
 
     Ok(false)
 }

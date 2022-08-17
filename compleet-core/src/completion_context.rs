@@ -1,7 +1,7 @@
 use nvim_oxi::api::Buffer;
 // use ropey::Rope;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct CompletionContext {
     // rope: Rope,
     buf: Option<Buffer>,
@@ -33,6 +33,17 @@ impl CompletionContext {
     /// TODO: docs
     pub(crate) fn apply_change(&mut self) {
         self.prefix_offset = self::find_prefix(&self.line, self.cursor);
+    }
+
+    /// Returns a reference to the [`Buffer`] associated to this context.
+    #[inline]
+    pub(crate) fn buf(&self) -> &Buffer {
+        self.buf.as_ref().unwrap()
+    }
+
+    /// TODO: docs
+    pub fn file_path(&self) -> &std::path::Path {
+        todo!()
     }
 
     /// TODO: docs

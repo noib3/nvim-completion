@@ -1,3 +1,3 @@
 mod setup;
 
-pub(crate) use setup::setup;
+pub(crate) use setup::{setup, PoolMessage};

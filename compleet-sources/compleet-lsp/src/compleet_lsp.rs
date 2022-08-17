@@ -4,6 +4,7 @@ use compleet_core::{
     CompletionItem,
     CompletionItemBuilder,
     CompletionSource,
+    Result,
 };
 use nvim_oxi::{Dictionary, Function, Object};
 
@@ -18,13 +19,18 @@ impl CompletionSource for CompleetLsp {
         "lsp"
     }
 
-    async fn complete(&self, ctx: &CompletionContext) -> Vec<CompletionItem> {
-        vec![CompletionItemBuilder::new(format!(
+    async fn complete(
+        &self,
+        ctx: &CompletionContext,
+    ) -> Result<Vec<CompletionItem>> {
+        let completions = vec![CompletionItemBuilder::new(format!(
             "{} received {}",
             self.name(),
             ctx.ch()
         ))
-        .build()]
+        .build()];
+
+        Ok(completions)
     }
 
     fn api(&self) -> Object {

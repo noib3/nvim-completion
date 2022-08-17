@@ -4,6 +4,7 @@ use nvim_oxi as nvim;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     #[error("can't setup more than once per session")]
     AlreadySetup,
@@ -16,6 +17,12 @@ pub enum Error {
 
     #[error(transparent)]
     LoopError(#[from] nvim_oxi::r#loop::Error),
+
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+
+    #[error("{0}")]
+    Other(String),
 }
 
 impl From<serde_path_to_error::Error<nvim::Error>> for Error {
@@ -31,3 +38,14 @@ impl From<serde_path_to_error::Error<nvim::Error>> for Error {
         }
     }
 }
+
+// impl Error {
+//     pub fn
+// }
+
+// impl Error {
+//     /// TODO: docs
+//     pub(crate) fn bubble_or_print(self) {
+
+//     }
+// }
