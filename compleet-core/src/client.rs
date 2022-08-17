@@ -13,8 +13,8 @@ use nvim_oxi::{
 };
 use tokio::sync::mpsc;
 
-use crate::channels::{self, PoolMessage};
 use crate::config::{Config, SOURCE_NAMES};
+use crate::threads::{self, PoolMessage};
 use crate::{mappings, messages, setup};
 use crate::{CompletionContext, CompletionSource, Error};
 
@@ -46,18 +46,72 @@ impl Clone for Client {
     }
 }
 
-impl From<&Rc<RefCell<State>>> for Client {
-    fn from(state: &Rc<RefCell<State>>) -> Self {
-        Self { state: Rc::clone(&state) }
-    }
-}
-
 impl Client {
+    // -----------------------------------------------------------------------
+    // Public API.
+
     /// Creates a new [`Client`].
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// TODO: docs
+    pub fn register_source<S>(&self, source: S)
+    where
+        S: CompletionSource,
+    {
+        SOURCE_NAMES.with(|names| {
+            names.borrow_mut().as_mut().unwrap().push(source.name())
+        });
+        let sources = &mut self.state.borrow_mut().sources;
+        sources.insert(source.name(), Arc::new(source));
+    }
+
+    /// Returns a [`Dictionary`] representing the public API of the plugin.
+    pub fn build_api(&self) -> Dictionary {
+        [("setup", Object::from(self.create_fn(setup::setup)))]
+            .into_iter()
+            .chain(mappings::setup(self))
+            .chain(
+                self.state
+                    .borrow()
+                    .sources
+                    .iter()
+                    .map(|(&name, source)| (name, source.api())),
+            )
+            .collect()
+    }
+
+    // -----------------------------------------------------------------------
+    // Thread pool messaging.
+
+    /// Sends a message to the thread pool.
+    #[inline]
+    fn send_pool_msg(&self, msg: PoolMessage) {
+        self.state.borrow().pool_sender.as_ref().unwrap().send(msg).unwrap();
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn query_attach(&self, buf: Buffer) {
+        self.send_pool_msg(PoolMessage::QueryAttach(buf))
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn query_completions(&self, ctx: Arc<CompletionContext>) {
+        self.send_pool_msg(PoolMessage::QueryCompletions(ctx))
+    }
+
+    // TODO: docs
+    #[inline]
+    pub(crate) fn stop_sources(&self) {
+        self.send_pool_msg(PoolMessage::AbortAll);
+    }
+
+    // -----------------------------------------------------------------------
+    // Misc.
 
     #[inline]
     pub(crate) fn already_setup(&self) -> bool {
@@ -79,21 +133,6 @@ impl Client {
     pub(crate) fn add_context(&self, buf: Buffer, ctx: CompletionContext) {
         let state = &mut *self.state.borrow_mut();
         state.contexts.insert(buf, Arc::new(ctx));
-    }
-
-    /// Returns a [`Dictionary`] representing the public API of the plugin.
-    pub fn build_api(&self) -> Dictionary {
-        [("setup", Object::from(self.create_fn(setup::setup)))]
-            .into_iter()
-            .chain(mappings::setup(self))
-            .chain(
-                self.state
-                    .borrow()
-                    .sources
-                    .iter()
-                    .map(|(&name, source)| (name, source.api())),
-            )
-            .collect()
     }
 
     pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
@@ -131,17 +170,6 @@ impl Client {
         Arc::clone(state.contexts.get(buf).unwrap())
     }
 
-    pub fn register_source<S>(&self, source: S)
-    where
-        S: CompletionSource,
-    {
-        SOURCE_NAMES.with(|names| {
-            names.borrow_mut().as_mut().unwrap().push(source.name())
-        });
-        let sources = &mut self.state.borrow_mut().sources;
-        sources.insert(source.name(), Arc::new(source));
-    }
-
     pub(crate) fn set_config(&self, config: Config) {
         let state = &mut *self.state.borrow_mut();
         state.sources.retain(|name, _| {
@@ -159,33 +187,6 @@ impl Client {
         let sources =
             state.sources.values().map(Arc::clone).collect::<Vec<_>>();
 
-        channels::setup(self, sources, recv)
-    }
-
-    // -----------------------------------------------------------------------
-    // Thread pool messaging.
-
-    /// Sends a message to the thread pool.
-    #[inline]
-    fn send_pool_msg(&self, msg: PoolMessage) {
-        self.state.borrow().pool_sender.as_ref().unwrap().send(msg).unwrap();
-    }
-
-    // TODO: docs
-    #[inline]
-    pub(crate) fn query_attach(&self, buf: Buffer) {
-        self.send_pool_msg(PoolMessage::QueryAttach(buf))
-    }
-
-    // TODO: docs
-    #[inline]
-    pub(crate) fn query_completions(&self, ctx: Arc<CompletionContext>) {
-        self.send_pool_msg(PoolMessage::QueryCompletions(ctx))
-    }
-
-    // TODO: docs
-    #[inline]
-    pub(crate) fn stop_sources(&self) {
-        self.send_pool_msg(PoolMessage::AbortAll);
+        threads::setup(self.clone(), sources, recv)
     }
 }

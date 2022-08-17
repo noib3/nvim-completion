@@ -1,5 +1,4 @@
 mod autocmds;
-mod channels;
 mod client;
 mod commands;
 mod completion_context;
@@ -13,6 +12,7 @@ mod mappings;
 mod messages;
 mod on_bytes;
 mod setup;
+mod threads;
 
 pub use client::Client;
 pub use completion_context::CompletionContext;
