@@ -1,6 +1,7 @@
 target/
 lua/
 **/Cargo.lock
+.DS_Store
 
 /compleet-sources/compleet-lipsum/src/words.rs
 
