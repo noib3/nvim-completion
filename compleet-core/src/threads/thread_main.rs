@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use nvim_oxi as nvim;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -12,7 +13,7 @@ pub(crate) enum MainMessage {
     AttachBuf(Arc<crate::Buffer>),
 
     /// TODO: docs
-    ShowCompletions(crate::Result<Vec<CompletionItem>>),
+    ShowCompletions(crate::Result<Vec<CompletionItem>>, Arc<Instant>),
 }
 
 pub(super) fn main_cb(
@@ -23,11 +24,11 @@ pub(super) fn main_cb(
 
     while let Ok(msg) = receiver.try_recv() {
         match msg {
-            MainMessage::ShowCompletions(Ok(cmp)) => {
-                completions.extend(cmp.into_iter().take(1))
+            MainMessage::ShowCompletions(Ok(cmp), start) => {
+                completions.push((cmp.into_iter().next().unwrap(), start))
             },
 
-            MainMessage::ShowCompletions(Err(_err)) => todo!(),
+            MainMessage::ShowCompletions(Err(_err), _) => todo!(),
 
             MainMessage::AttachBuf(buf) => client.attach_buffer(buf)?,
         }
@@ -41,11 +42,13 @@ pub(super) fn main_cb(
 }
 
 /// TODO: docs
-fn show_completions(_client: &Client, completions: Vec<CompletionItem>) {
+fn show_completions(
+    _client: &Client,
+    completions: Vec<(CompletionItem, Arc<Instant>)>,
+) {
     nvim::schedule(move |_| {
-        let time = std::time::Instant::now();
-        for cmp in completions {
-            nvim::print!("{}, {:?}", cmp.text, time);
+        for (cmp, start) in completions {
+            nvim::print!("{}, {:?}", cmp.text, start.elapsed());
         }
 
         Ok(())

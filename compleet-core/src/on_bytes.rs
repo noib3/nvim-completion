@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use nvim_oxi::opts::{OnBytesArgs, ShouldDetach};
 
 use crate::{Client, CompletionContext};
@@ -25,12 +27,14 @@ pub(crate) fn on_bytes(
     client: &Client,
     args: OnBytesArgs,
 ) -> crate::Result<ShouldDetach> {
+    let start = Instant::now();
+
     client.stop_sources();
 
     let buf = &args.1;
     let ctx = CompletionContext::new("".into(), 0);
 
-    client.query_completions(buf, ctx);
+    client.query_completions(buf, ctx, start);
 
     Ok(false)
 }

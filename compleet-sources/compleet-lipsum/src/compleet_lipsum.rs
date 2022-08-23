@@ -21,7 +21,7 @@ impl CompletionSource for CompleetLipsum {
         _buf: &Buffer,
         _ctx: &CompletionContext,
     ) -> Result<Vec<CompletionItem>> {
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        // tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         let completions = super::WORDS
             .iter()

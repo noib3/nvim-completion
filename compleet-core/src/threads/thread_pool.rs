@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use futures::stream::{FuturesOrdered, StreamExt};
 use nvim_oxi::api::Buffer as NvimBuffer;
@@ -20,7 +21,7 @@ pub(crate) enum PoolMessage {
     QueryAttach(Arc<Buffer>),
 
     /// TODO: docs
-    QueryCompletions(Arc<Buffer>, Arc<CompletionContext>),
+    QueryCompletions(Arc<Buffer>, Arc<CompletionContext>, Arc<Instant>),
 }
 
 /// TODO: let this thread pool own the sources which are currently stored as a
@@ -56,13 +57,14 @@ pub(super) async fn sources_pool(
                 }
             },
 
-            PoolMessage::QueryCompletions(buf, ctx) => {
+            PoolMessage::QueryCompletions(buf, ctx, start) => {
                 handles.drain(..).for_each(|task| task.abort());
 
                 handles = self::send_completions(
                     buf_sources.get(buf.nvim_buf()).unwrap(),
                     buf,
                     ctx,
+                    start,
                     &sender,
                     &cb_handle,
                 )
@@ -103,6 +105,7 @@ async fn send_completions(
     sources: &[Arc<dyn CompletionSource>],
     buf: Arc<Buffer>,
     ctx: Arc<CompletionContext>,
+    start: Arc<Instant>,
     sender: &UnboundedSender<MainMessage>,
     handle: &AsyncHandle,
 ) -> Vec<JoinHandle<()>> {
@@ -111,6 +114,7 @@ async fn send_completions(
         .map(|source| {
             let buf = Arc::clone(&buf);
             let ctx = Arc::clone(&ctx);
+            let start = Arc::clone(&start);
             let source = Arc::clone(source);
             let sender = sender.clone();
             let mut handle = handle.clone();
@@ -118,7 +122,7 @@ async fn send_completions(
             tokio::spawn(async move {
                 let completions = source.complete(&buf, &ctx).await;
                 sender
-                    .send(MainMessage::ShowCompletions(completions))
+                    .send(MainMessage::ShowCompletions(completions, start))
                     .unwrap();
                 handle.send().unwrap();
             })

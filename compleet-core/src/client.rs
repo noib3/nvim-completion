@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::time::Instant;
 
 use nvim::api::Buffer as NvimBuffer;
 use nvim_oxi::{
@@ -115,10 +116,15 @@ impl Client {
         &self,
         buf: &NvimBuffer,
         ctx: CompletionContext,
+        start: Instant,
     ) {
         // TODO: explain why we can unwrap here.
         let buf = self.state.borrow().bufs.get(buf).map(Arc::clone).unwrap();
-        self.send_pool_msg(PoolMessage::QueryCompletions(buf, Arc::new(ctx)))
+        self.send_pool_msg(PoolMessage::QueryCompletions(
+            buf,
+            Arc::new(ctx),
+            Arc::new(start),
+        ))
     }
 
     /// Sends a message to the thread pool to stop any running tasks querying
