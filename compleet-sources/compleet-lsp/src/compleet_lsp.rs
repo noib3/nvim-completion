@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use compleet_core::{
+    Buffer,
     CompletionContext,
     CompletionItem,
     CompletionItemBuilder,
@@ -21,6 +22,7 @@ impl CompletionSource for CompleetLsp {
 
     async fn complete(
         &self,
+        _buf: &Buffer,
         ctx: &CompletionContext,
     ) -> Result<Vec<CompletionItem>> {
         let completions = vec![CompletionItemBuilder::new(format!(

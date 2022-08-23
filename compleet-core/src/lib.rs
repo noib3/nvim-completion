@@ -1,4 +1,5 @@
 mod autocmds;
+mod buffer;
 mod client;
 mod commands;
 mod completion_context;
@@ -14,6 +15,7 @@ mod on_bytes;
 mod setup;
 mod threads;
 
+pub use buffer::Buffer;
 pub use client::Client;
 pub use completion_context::CompletionContext;
 pub use completion_item::{CompletionItem, CompletionItemBuilder};

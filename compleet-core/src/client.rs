@@ -3,8 +3,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use nvim::api::Buffer as NvimBuffer;
 use nvim_oxi::{
-    api::Buffer,
+    self as nvim,
+    opts::*,
     Dictionary,
     Function,
     LuaPoppable,
@@ -14,9 +16,9 @@ use nvim_oxi::{
 use tokio::sync::mpsc;
 
 use crate::config::{Config, SOURCE_NAMES};
-use crate::threads::{self, PoolMessage};
+use crate::threads::{self, MainMessage, PoolMessage};
 use crate::{mappings, messages, setup};
-use crate::{CompletionContext, CompletionSource, Error};
+use crate::{Buffer, CompletionContext, CompletionSource, Error};
 
 #[derive(Default)]
 pub struct Client {
@@ -28,8 +30,11 @@ struct State {
     /// The id of the `Compleet` augroup if currently set, `None` otherwise.
     augroup_id: Option<u32>,
 
-    /// Every attached buffer has its own completion context...
-    contexts: HashMap<Buffer, Arc<CompletionContext>>,
+    /// TODO: docs
+    bufs: HashMap<nvim::api::Buffer, Arc<crate::Buffer>>,
+
+    /// TODO: docs
+    cb_sender: Option<mpsc::UnboundedSender<MainMessage>>,
 
     /// TODO: docs
     pool_sender: Option<mpsc::UnboundedSender<PoolMessage>>,
@@ -94,17 +99,30 @@ impl Client {
 
     // TODO: docs
     #[inline]
-    pub(crate) fn query_attach(&self, buf: Buffer) {
-        self.send_pool_msg(PoolMessage::QueryAttach(buf))
+    pub(crate) fn query_attach(&self, buf: NvimBuffer) -> crate::Result<()> {
+        let buf = {
+            let state = &*self.state.borrow();
+            let sender = state.cb_sender.as_ref().unwrap().clone();
+            crate::Buffer::new(buf, sender).map(Arc::new)?
+        };
+        self.send_pool_msg(PoolMessage::QueryAttach(buf));
+        Ok(())
     }
 
     // TODO: docs
     #[inline]
-    pub(crate) fn query_completions(&self, ctx: Arc<CompletionContext>) {
-        self.send_pool_msg(PoolMessage::QueryCompletions(ctx))
+    pub(crate) fn query_completions(
+        &self,
+        buf: &NvimBuffer,
+        ctx: CompletionContext,
+    ) {
+        // TODO: explain why we can unwrap here.
+        let buf = self.state.borrow().bufs.get(buf).map(Arc::clone).unwrap();
+        self.send_pool_msg(PoolMessage::QueryCompletions(buf, Arc::new(ctx)))
     }
 
-    // TODO: docs
+    /// Sends a message to the thread pool to stop any running tasks querying
+    /// completion items from an earlier request.
     #[inline]
     pub(crate) fn stop_sources(&self) {
         self.send_pool_msg(PoolMessage::AbortAll);
@@ -113,26 +131,25 @@ impl Client {
     // -----------------------------------------------------------------------
     // Misc.
 
+    /// Attaches a buffer by...
+    pub(crate) fn attach_buffer(&self, buf: Arc<Buffer>) -> crate::Result<()> {
+        // Tell Neovim to call the [on_bytes] function on this buffer whenever
+        // its contents are modified.
+        let on_bytes = self.create_fn(crate::on_bytes::on_bytes);
+        let opts = BufAttachOpts::builder().on_bytes(on_bytes).build();
+        buf.nvim_buf().attach(false, &opts)?;
+
+        // TODO: docs
+        let state = &mut *self.state.borrow_mut();
+        state.bufs.insert(buf.nvim_buf().clone(), buf);
+
+        Ok(())
+    }
+
+    /// Returns whether the [setup] function has already been called.
     #[inline]
     pub(crate) fn already_setup(&self) -> bool {
         self.state.borrow().did_setup
-    }
-
-    // /// TODO: docs
-    // pub(crate) fn apply_edit<'ins>(
-    //     &self,
-    //     buf: &Buffer,
-    //     edit: Edit<'ins>,
-    // ) -> crate::Result<()> {
-    //     let state = &mut self.state.borrow_mut();
-    //     let rope = state.buffers.get_mut(buf).ok_or(Error::AlreadySetup)?;
-    //     edit.apply_to_rope(rope);
-    //     Ok(())
-    // }
-
-    pub(crate) fn add_context(&self, buf: Buffer, ctx: CompletionContext) {
-        let state = &mut *self.state.borrow_mut();
-        state.contexts.insert(buf, Arc::new(ctx));
     }
 
     pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
@@ -164,12 +181,6 @@ impl Client {
         self.state.borrow_mut().did_setup = true;
     }
 
-    /// TODO: docs
-    pub(crate) fn get_context(&self, buf: &Buffer) -> Arc<CompletionContext> {
-        let state = self.state.borrow();
-        Arc::clone(state.contexts.get(buf).unwrap())
-    }
-
     pub(crate) fn set_config(&self, config: Config) {
         let state = &mut *self.state.borrow_mut();
         state.sources.retain(|name, _| {
@@ -178,15 +189,22 @@ impl Client {
     }
 
     pub(crate) fn start_channel(&self) -> crate::Result<()> {
+        let (cb_sender, cb_receiver) = mpsc::unbounded_channel();
+        let (pool_sender, pool_receiver) = mpsc::unbounded_channel();
+
         let state = &mut *self.state.borrow_mut();
-
-        let (sender, recv) = mpsc::unbounded_channel();
-
-        state.pool_sender = Some(sender);
+        state.cb_sender = Some(cb_sender.clone());
+        state.pool_sender = Some(pool_sender);
 
         let sources =
             state.sources.values().map(Arc::clone).collect::<Vec<_>>();
 
-        threads::setup(self.clone(), sources, recv)
+        threads::setup(
+            self.clone(),
+            sources,
+            cb_sender,
+            cb_receiver,
+            pool_receiver,
+        )
     }
 }

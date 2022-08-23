@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use nvim_oxi::{api::Buffer, Object};
+use nvim_oxi::Object;
 
 // use serde::Deserialize;
 use crate::{CompletionContext, CompletionItem, Result};
@@ -17,15 +17,16 @@ pub trait CompletionSource: Send + Sync + 'static {
     fn name(&self) -> &'static str;
 
     /// TODO: docs
-    async fn complete(
-        &self,
-        ctx: &CompletionContext,
-    ) -> Result<Vec<CompletionItem>>;
-
-    /// TODO: docs
-    async fn should_attach(&self, buf: &Buffer) -> Result<bool> {
+    async fn should_attach(&self, buf: &crate::Buffer) -> Result<bool> {
         Ok(true)
     }
+
+    /// TODO: docs
+    async fn complete(
+        &self,
+        buf: &crate::Buffer,
+        ctx: &CompletionContext,
+    ) -> Result<Vec<CompletionItem>>;
 
     /// TODO: docs
     #[inline]

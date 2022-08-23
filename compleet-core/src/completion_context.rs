@@ -1,11 +1,5 @@
-use nvim_oxi::api::Buffer;
-// use ropey::Rope;
-
 #[derive(Default, Debug)]
 pub struct CompletionContext {
-    // rope: Rope,
-    buf: Option<Buffer>,
-
     /// The line the cursor is currently on.
     line: String,
 
@@ -21,29 +15,10 @@ pub struct CompletionContext {
 }
 
 impl CompletionContext {
-    /// Initializes and returns a new completion context for a specific buffer.
-    pub(crate) fn new(buf: Buffer) -> Self {
-        Self { buf: Some(buf), ..Default::default() }
-    }
-
-    pub fn ch(&self) -> char {
-        'a'
-    }
-
     /// TODO: docs
-    pub(crate) fn apply_change(&mut self) {
-        self.prefix_offset = self::find_prefix(&self.line, self.cursor);
-    }
-
-    /// Returns a reference to the [`Buffer`] associated to this context.
-    #[inline]
-    pub(crate) fn buf(&self) -> &Buffer {
-        self.buf.as_ref().unwrap()
-    }
-
-    /// TODO: docs
-    pub fn file_path(&self) -> &std::path::Path {
-        todo!()
+    #[inline(always)]
+    pub fn current_line(&self) -> &str {
+        &self.line
     }
 
     /// TODO: docs
@@ -57,6 +32,16 @@ impl CompletionContext {
     pub fn line_from_cursor_to_end(&self) -> &str {
         let offset = self::find_postfix(&self.line, self.cursor);
         &self.line[offset..]
+    }
+
+    pub fn ch(&self) -> char {
+        'a'
+    }
+
+    /// Initializes and returns a new completion context for a specific buffer.
+    pub(crate) fn new(line: String, cursor: usize) -> Self {
+        let prefix_offset = self::find_prefix(&line, cursor);
+        Self { line, cursor, prefix_offset }
     }
 }
 

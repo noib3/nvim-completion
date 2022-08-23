@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use compleet_core::{
+    Buffer,
     CompletionContext,
     CompletionItem,
     CompletionItemBuilder,
@@ -17,6 +18,7 @@ impl CompletionSource for CompleetLipsum {
 
     async fn complete(
         &self,
+        _buf: &Buffer,
         _ctx: &CompletionContext,
     ) -> Result<Vec<CompletionItem>> {
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
