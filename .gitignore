@@ -6,5 +6,6 @@ lua/
 /compleet-sources/compleet-lipsum/src/words.rs
 
 /TODO.md
+/config.lua
 /treesitter-highlighter/src/generated.rs
 /treesitter-highlighter/src/queries

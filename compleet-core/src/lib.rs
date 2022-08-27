@@ -22,9 +22,11 @@ mod ui;
 
 pub use buffer::Buffer;
 pub use client::Client;
+use completion_bundle::{CompletionBundle, CompletionRequest, RevId};
 pub use completion_context::CompletionContext;
 pub use completion_item::{CompletionItem, CompletionItemBuilder};
 pub use completion_source::CompletionSource;
+use completion_source::SourceId;
 pub use error::{Error, Result};
 use on_bytes::on_bytes;
 use on_completions_arrival::on_completions_arrival;

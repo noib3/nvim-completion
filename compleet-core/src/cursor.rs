@@ -1,4 +1,7 @@
-pub(crate) struct Cursor {
+use nvim_oxi as nvim;
+
+#[derive(Debug)]
+pub struct Cursor {
     /// TODO: docs
     pub(crate) row: usize,
 
@@ -19,16 +22,87 @@ pub(crate) struct Cursor {
 }
 
 impl Cursor {
+    /// TODO: docs
+    #[inline(always)]
+    pub fn current_line(&self) -> &str {
+        &self.line
+    }
+
+    /// TODO: docs
+    #[inline(always)]
+    pub fn line_up_to_cursor(&self) -> &str {
+        &self.line[..self.len_prefix]
+    }
+
+    /// TODO: docs
+    #[inline(always)]
+    pub fn line_from_cursor_to_end(&self) -> &str {
+        let offset = self::find_postfix(&self.line, self.col);
+        &self.line[offset..]
+    }
+
     #[inline]
     pub(crate) fn new(row: usize, col: usize, line: String) -> Self {
-        let len_prefix = self::find_prefix(&line, col);
+        let len_prefix = line.len() - self::find_prefix(&line, col);
         Self { row, col, line, len_prefix }
     }
 
-    pub fn is_at_eol(&self) -> bool {
+    #[inline]
+    pub(crate) fn is_at_eol(&self) -> bool {
         self.line.len() == self.col
     }
 }
+
+impl TryFrom<&nvim::opts::OnBytesArgs> for Cursor {
+    type Error = nvim::Error;
+
+    fn try_from(
+        &(
+            _,
+            ref buf,
+            _,
+            start_row,
+            start_col,
+            _,
+            _,
+            _,
+            bytes_deleted,
+            _,
+            _,
+            bytes_added,
+        ): &nvim::opts::OnBytesArgs,
+    ) -> Result<Self, Self::Error> {
+        let col = start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
+
+        let line = buf
+            .get_lines(start_row, start_row + 1, true)?
+            .next()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+
+        Ok(Cursor::new(start_row, col, line))
+    }
+}
+
+/*
+
+- helix
+/helix-core/src/movement.rs -> is_word_boundary
+/helix-core/src/chars.rs -> categorize_char
+
+
+:h iskeyword
+:lua =vim.api.nvim_buf_get_option(0, "iskeyword")
+
+```lua
+-- /runtime/lua/vim/lsp/handlers.lua L291
+local line_to_cursor = "pub(crate) fn echo(msg:String"
+local textMatch = vim.fn.match(line_to_cursor, '\\k*$')
+local prefix = line_to_cursor:sub(textMatch + 1)
+print(prefix) -- `String`
+```
+*/
 
 /// TODO: docs
 fn find_prefix(line: &str, col: usize) -> usize {
@@ -44,6 +118,22 @@ fn find_prefix(line: &str, col: usize) -> usize {
     }
 
     col
+}
+
+/// TODO: docs
+fn find_postfix(line: &str, col: usize) -> usize {
+    debug_assert!(col <= line.len());
+
+    const WORD_BOUNDARIES: &[u8] =
+        &[b' ', b'.', b'\'', b'"', b'\t', b'(', b')', b'[', b']', b'{', b'}'];
+
+    for (idx, byte) in line[col..].bytes().enumerate() {
+        if WORD_BOUNDARIES.contains(&byte) {
+            return col + idx;
+        }
+    }
+
+    line.len()
 }
 
 #[cfg(test)]
@@ -72,5 +162,26 @@ mod prefix_tests {
     fn foo_dot_bar() {
         let p = find_prefix("foo.bar", 6);
         assert_eq!("foo.", p)
+    }
+}
+
+#[cfg(test)]
+mod postfix_tests {
+    /// See doc comment above about `prefix_tests::find_prefix`.
+    fn find_postfix(line: &str, cursor: usize) -> &str {
+        let postfix = super::find_postfix(line, cursor);
+        &line[cursor + postfix..]
+    }
+
+    #[test]
+    fn foo() {
+        let p = find_postfix("foo", 0);
+        assert_eq!("", p)
+    }
+
+    #[test]
+    fn foo_dot_bar() {
+        let p = find_postfix("foo.bar", 2);
+        assert_eq!(".bar", p)
     }
 }

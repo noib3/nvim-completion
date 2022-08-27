@@ -8,8 +8,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 
 use super::MainMessage;
-use crate::completion_bundle::CompletionRequest;
-use crate::{Buffer, CompletionSource};
+use crate::{Buffer, CompletionRequest, CompletionSource};
 
 /// Messages sent from the main thread to the thread pool.
 #[derive(Debug)]
@@ -27,7 +26,7 @@ pub(crate) enum PoolMessage {
 /// TODO: let this thread pool own the sources which are currently stored as a
 /// hashmap on the UI thread?
 #[tokio::main]
-pub(super) async fn sources_pool(
+pub(crate) async fn sources_pool(
     sources: Vec<Arc<dyn CompletionSource>>,
     mut receiver: UnboundedReceiver<PoolMessage>,
     cb_sender: UnboundedSender<MainMessage>,

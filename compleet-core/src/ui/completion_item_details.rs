@@ -1,2 +1,2 @@
 #[derive(Default)]
-pub(super) struct CompletionItemDetails;
+pub(crate) struct CompletionItemDetails;

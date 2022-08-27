@@ -13,7 +13,7 @@ use crate::CompletionItem;
 
 const HINT_NAMESPACE: &str = "completion_hint";
 
-pub(super) struct CompletionHint {
+pub(crate) struct CompletionHint {
     namespace_id: u32,
     extmark_id: Option<u32>,
     opts: Option<SetExtmarkOpts>,
@@ -53,9 +53,16 @@ impl CompletionHint {
         cursor: &Cursor,
         completion: &CompletionItem,
     ) -> nvim::Result<()> {
+        // to be removed, only for testing
+        if self.is_visible() {
+            return Ok(());
+        }
+
         let text = match extract_hint_text(cursor, completion) {
             Some(text) => text,
-            None => return Ok(()),
+            None => {
+                return Ok(());
+            },
         };
 
         // self.opts.set_id(self.extmark_id.unwrap_or(1));
@@ -76,6 +83,8 @@ impl CompletionHint {
             cursor.col,
             Some(&opts),
         )?);
+
+        nvim::print!("Sowing??");
 
         Ok(())
     }

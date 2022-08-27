@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::completion_bundle::CompletionBundle;
-use crate::Client;
+use crate::{Client, CompletionBundle};
 
 /// Messages sent from the thread pool to the main thread.
 #[derive(Debug)]
@@ -15,7 +14,7 @@ pub(crate) enum MainMessage {
     HandleCompletions(CompletionBundle),
 }
 
-pub(super) fn main_cb(
+pub(crate) fn main_cb(
     client: &Client,
     receiver: &mut UnboundedReceiver<MainMessage>,
 ) -> crate::Result<()> {

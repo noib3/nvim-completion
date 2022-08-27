@@ -42,7 +42,7 @@ impl Buffer {
     #[inline]
     pub(crate) fn nvim_buf(&self) -> NvimBuffer {
         // An [`NvimBuffer`] is just a newtype around an `i32` so cloning is
-        // cheaper that returning a reference to it.
+        // cheaper than returning a reference to it.
         self.buf.clone()
     }
 }

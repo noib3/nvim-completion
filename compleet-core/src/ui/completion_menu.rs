@@ -1,2 +1,2 @@
 #[derive(Default)]
-pub(super) struct CompletionMenu;
+pub(crate) struct CompletionMenu;

@@ -1,6 +1,6 @@
 use nvim_oxi::{object, Object, ObjectKind};
 
-use crate::{autocmds, commands, hlgroups};
+use crate::{commands, hlgroups};
 use crate::{config::Config, Client, Error, Result};
 
 pub(crate) fn setup(client: &Client, preferences: Object) -> Result<()> {
@@ -21,12 +21,6 @@ pub(crate) fn setup(client: &Client, preferences: Object) -> Result<()> {
         },
     };
 
-    autocmds::setup(client)?;
     commands::setup(client)?;
-
-    client.set_config(config);
-    client.start_channel()?;
-    client.did_setup();
-
-    Ok(())
+    client.setup(config)
 }
