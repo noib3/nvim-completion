@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Instant;
 
 use futures::stream::{FuturesOrdered, StreamExt};
 use nvim_oxi::api::Buffer as NvimBuffer;
@@ -9,7 +8,8 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 
 use super::MainMessage;
-use crate::{Buffer, CompletionContext, CompletionSource};
+use crate::completion_bundle::CompletionRequest;
+use crate::{Buffer, CompletionSource};
 
 /// Messages sent from the main thread to the thread pool.
 #[derive(Debug)]
@@ -21,7 +21,7 @@ pub(crate) enum PoolMessage {
     QueryAttach(Arc<Buffer>),
 
     /// TODO: docs
-    QueryCompletions(Arc<Buffer>, Arc<CompletionContext>, Arc<Instant>),
+    QueryCompletions(Arc<CompletionRequest>),
 }
 
 /// TODO: let this thread pool own the sources which are currently stored as a
@@ -30,7 +30,7 @@ pub(crate) enum PoolMessage {
 pub(super) async fn sources_pool(
     sources: Vec<Arc<dyn CompletionSource>>,
     mut receiver: UnboundedReceiver<PoolMessage>,
-    sender: UnboundedSender<MainMessage>,
+    cb_sender: UnboundedSender<MainMessage>,
     mut cb_handle: AsyncHandle,
 ) {
     // TODO: docs
@@ -48,25 +48,24 @@ pub(super) async fn sources_pool(
 
             PoolMessage::QueryAttach(buf) => {
                 let sources =
-                    self::attach_enabled_sources(&sources, &buf).await;
+                    self::filter_enabled_sources(&sources, &buf).await;
 
                 if !sources.is_empty() {
                     buf_sources.insert(buf.nvim_buf().clone(), sources);
-                    sender.send(MainMessage::AttachBuf(buf)).unwrap();
+                    cb_sender.send(MainMessage::AttachBuf(buf)).unwrap();
                     cb_handle.send().unwrap();
                 }
             },
 
-            PoolMessage::QueryCompletions(buf, ctx, start) => {
+            PoolMessage::QueryCompletions(req) => {
                 handles.drain(..).for_each(|task| task.abort());
 
+                // We only query the sources attached to the buffer in the
+                // request.
+                let sources = buf_sources.get(&req.nvim_buf()).unwrap();
+
                 handles = self::send_completions(
-                    buf_sources.get(buf.nvim_buf()).unwrap(),
-                    buf,
-                    ctx,
-                    start,
-                    &sender,
-                    &cb_handle,
+                    sources, req, &cb_sender, &cb_handle,
                 )
                 .await;
             },
@@ -75,7 +74,7 @@ pub(super) async fn sources_pool(
 }
 
 /// TODO: docs
-async fn attach_enabled_sources(
+async fn filter_enabled_sources(
     all: &[Arc<dyn CompletionSource>],
     buf: &Arc<Buffer>,
 ) -> Vec<Arc<dyn CompletionSource>> {
@@ -103,27 +102,22 @@ async fn attach_enabled_sources(
 /// TODO: docs
 async fn send_completions(
     sources: &[Arc<dyn CompletionSource>],
-    buf: Arc<Buffer>,
-    ctx: Arc<CompletionContext>,
-    start: Arc<Instant>,
+    req: Arc<CompletionRequest>,
     sender: &UnboundedSender<MainMessage>,
     handle: &AsyncHandle,
 ) -> Vec<JoinHandle<()>> {
     sources
         .iter()
         .map(|source| {
-            let buf = Arc::clone(&buf);
-            let ctx = Arc::clone(&ctx);
-            let start = Arc::clone(&start);
             let source = Arc::clone(source);
+            let req = Arc::clone(&req);
             let sender = sender.clone();
             let mut handle = handle.clone();
 
             tokio::spawn(async move {
-                let completions = source.complete(&buf, &ctx).await;
-                sender
-                    .send(MainMessage::ShowCompletions(completions, start))
-                    .unwrap();
+                let completions = source.complete(&req.buf, &req.ctx).await;
+                let bundle = (source.name(), req, completions);
+                sender.send(MainMessage::HandleCompletions(bundle)).unwrap();
                 handle.send().unwrap();
             })
         })

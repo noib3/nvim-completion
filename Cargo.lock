@@ -143,6 +143,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
+ "memchr",
  "nvim-oxi",
  "once_cell",
  "ropey",

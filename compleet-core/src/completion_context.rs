@@ -1,3 +1,5 @@
+use nvim_oxi::{self as nvim, opts::OnBytesArgs};
+
 #[derive(Default, Debug)]
 pub struct CompletionContext {
     /// The line the cursor is currently on.
@@ -12,6 +14,7 @@ pub struct CompletionContext {
 
     /// TODO: docs
     prefix_offset: usize,
+    // id: RevId,
 }
 
 impl CompletionContext {
@@ -38,12 +41,63 @@ impl CompletionContext {
         'a'
     }
 
-    /// Initializes and returns a new completion context for a specific buffer.
+    #[inline]
     pub(crate) fn new(line: String, cursor: usize) -> Self {
         let prefix_offset = self::find_prefix(&line, cursor);
         Self { line, cursor, prefix_offset }
     }
 }
+
+impl TryFrom<&OnBytesArgs> for CompletionContext {
+    type Error = nvim::Error;
+
+    fn try_from(
+        &(
+            _,
+            ref buf,
+            _,
+            start_row,
+            start_col,
+            _,
+            _,
+            _,
+            bytes_deleted,
+            _,
+            _,
+            bytes_added,
+        ): &OnBytesArgs,
+    ) -> Result<Self, Self::Error> {
+        let col = start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
+
+        let line = buf
+            .get_lines(start_row, start_row + 1, true)?
+            .next()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+
+        Ok(CompletionContext::new(line, col))
+    }
+}
+
+/*
+
+- helix
+/helix-core/src/movement.rs -> is_word_boundary
+/helix-core/src/chars.rs -> categorize_char
+
+
+:h iskeyword
+:lua =vim.api.nvim_buf_get_option(0, "iskeyword")
+
+```lua
+-- /runtime/lua/vim/lsp/handlers.lua L291
+local line_to_cursor = "pub(crate) fn echo(msg:String"
+local textMatch = vim.fn.match(line_to_cursor, '\\k*$')
+local prefix = line_to_cursor:sub(textMatch + 1)
+print(prefix) -- `String`
+```
+*/
 
 /// TODO: docs
 const WORD_BOUNDARIES: &[u8] =

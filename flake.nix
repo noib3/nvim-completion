@@ -21,7 +21,7 @@
   };
 
   outputs = { self, ... }@inputs: with inputs;
-    flake-utils.lib.eachDefaultSystem (system: 
+    flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -36,8 +36,8 @@
           name = "nvim-compleet";
 
           packages = with pkgs; [
-              (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
-              neovim
+            (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
+            neovim
           ];
 
           commands = [

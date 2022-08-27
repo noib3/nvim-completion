@@ -16,10 +16,10 @@ pub(crate) fn setup(
     pool_receiver: UnboundedReceiver<PoolMessage>,
 ) -> crate::Result<()> {
     let handle = r#loop::new_async(move || {
-        super::main_cb(&client, &mut cb_receiver).map_err(|err| match err {
-            crate::Error::NvimError(nvim_err) => nvim_err,
-            _ => todo!(),
-        })
+        match super::main_cb(&client, &mut cb_receiver) {
+            Err(crate::Error::NvimError(err)) => Err(err),
+            _ => Ok(()),
+        }
     })?;
 
     let _ = thread::spawn(move || {

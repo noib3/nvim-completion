@@ -2,26 +2,8 @@ use std::time::Instant;
 
 use nvim_oxi::opts::{OnBytesArgs, ShouldDetach};
 
+use crate::completion_bundle::RevId;
 use crate::{Client, CompletionContext};
-
-/*
-
-- helix
-/helix-core/src/movement.rs -> is_word_boundary
-/helix-core/src/chars.rs -> categorize_char
-
-
-:h iskeyword
-:lua =vim.api.nvim_buf_get_option(0, "iskeyword")
-
-```lua
--- /runtime/lua/vim/lsp/handlers.lua L291
-local line_to_cursor = "pub(crate) fn echo(msg:String"
-local textMatch = vim.fn.match(line_to_cursor, '\\k*$')
-local prefix = line_to_cursor:sub(textMatch + 1)
-print(prefix) -- `String`
-```
-*/
 
 pub(crate) fn on_bytes(
     client: &Client,
@@ -29,12 +11,15 @@ pub(crate) fn on_bytes(
 ) -> crate::Result<ShouldDetach> {
     let start = Instant::now();
 
-    client.stop_sources();
-
     let buf = &args.1;
-    let ctx = CompletionContext::new("".into(), 0);
+    let changedtick = args.2;
 
-    client.query_completions(buf, ctx, start);
+    client.stop_sources();
+    client.set_rev_id(RevId::new(buf.clone(), changedtick));
+
+    let ctx = CompletionContext::try_from(&args)?;
+
+    client.query_completions(buf, ctx, start, changedtick);
 
     Ok(false)
 }

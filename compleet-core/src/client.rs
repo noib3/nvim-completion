@@ -16,12 +16,24 @@ use nvim_oxi::{
 };
 use tokio::sync::mpsc;
 
+use crate::completion_bundle::{CompletionRequest, RevId};
+use crate::completion_source::SourceId;
 use crate::config::{Config, SOURCE_NAMES};
+use crate::lateinit::LateInit;
 use crate::threads::{self, MainMessage, PoolMessage};
-use crate::{mappings, messages, setup};
-use crate::{Buffer, CompletionContext, CompletionSource, Error};
+use crate::{mappings, messages};
+use crate::{
+    Buffer,
+    CompletionContext,
+    CompletionItem,
+    CompletionSource,
+    Error,
+};
 
 #[derive(Default)]
+/// The client acts as a "central authority" connecting various parts of the
+/// plugin together. It also holds the current state of the world and it's the
+/// only entity able to read and modify it.
 pub struct Client {
     state: Rc<RefCell<State>>,
 }
@@ -31,19 +43,39 @@ struct State {
     /// The id of the `Compleet` augroup if currently set, `None` otherwise.
     augroup_id: Option<u32>,
 
-    /// TODO: docs
+    /// Map of attached buffers from [`nvim_oxi`]'s `Buffer`s to the `Buffer`
+    /// type defined in this crate. A buffer is considered "attached" if one or
+    /// more completion sources have attached to it.
     bufs: HashMap<nvim::api::Buffer, Arc<crate::Buffer>>,
 
-    /// TODO: docs
-    cb_sender: Option<mpsc::UnboundedSender<MainMessage>>,
+    /// Message sender used to communicate with the callback executed on the
+    /// main thread.
+    cb_sender: LateInit<mpsc::UnboundedSender<MainMessage>>,
 
-    /// TODO: docs
-    pool_sender: Option<mpsc::UnboundedSender<PoolMessage>>,
+    /// The current list of available completion items.
+    // TODO: change to a BTree?
+    completions: Vec<(CompletionItem, bool)>,
 
-    /// Whether the [`setup`](setup::setup) function has ever been called.
+    /// Message sender used to communicate with the thread pool where the
+    /// completion results are computed.
+    pool_sender: LateInit<mpsc::UnboundedSender<PoolMessage>>,
+
+    /// Whether the [`setup`](crate::setup) function has ever been called.
     did_setup: bool,
 
+    /// An identifier for the last edit in one of the attached buffers.
+    rev_id: RevId,
+
+    /// Map containing all the sources registered via
+    /// [`Client::register_source`]. The map keys are the source names, i.e.
+    /// the output of [`CompletionSource::name`].
     sources: HashMap<&'static str, Arc<dyn CompletionSource>>,
+
+    /// Map containing..
+    source_stats: HashMap<SourceId, [u16; 1024]>,
+
+    /// The UI of the plugin.
+    ui: crate::ui::Ui,
 }
 
 impl Clone for Client {
@@ -76,7 +108,7 @@ impl Client {
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.
     pub fn build_api(&self) -> Dictionary {
-        [("setup", Object::from(self.create_fn(setup::setup)))]
+        [("setup", Object::from(self.create_fn(crate::setup)))]
             .into_iter()
             .chain(mappings::setup(self))
             .chain(
@@ -95,7 +127,7 @@ impl Client {
     /// Sends a message to the thread pool.
     #[inline]
     fn send_pool_msg(&self, msg: PoolMessage) {
-        self.state.borrow().pool_sender.as_ref().unwrap().send(msg).unwrap();
+        self.state.borrow().pool_sender.send(msg).unwrap();
     }
 
     // TODO: docs
@@ -103,7 +135,7 @@ impl Client {
     pub(crate) fn query_attach(&self, buf: NvimBuffer) -> crate::Result<()> {
         let buf = {
             let state = &*self.state.borrow();
-            let sender = state.cb_sender.as_ref().unwrap().clone();
+            let sender = (*state.cb_sender).clone();
             crate::Buffer::new(buf, sender).map(Arc::new)?
         };
         self.send_pool_msg(PoolMessage::QueryAttach(buf));
@@ -117,18 +149,16 @@ impl Client {
         buf: &NvimBuffer,
         ctx: CompletionContext,
         start: Instant,
+        ct: u32,
     ) {
         // TODO: explain why we can unwrap here.
         let buf = self.state.borrow().bufs.get(buf).map(Arc::clone).unwrap();
-        self.send_pool_msg(PoolMessage::QueryCompletions(
-            buf,
-            Arc::new(ctx),
-            Arc::new(start),
-        ))
+        let req = CompletionRequest::new(buf, ctx, start, ct);
+        self.send_pool_msg(PoolMessage::QueryCompletions(Arc::new(req)))
     }
 
     /// Sends a message to the thread pool to stop any running tasks querying
-    /// completion items from an earlier request.
+    /// completion results from an earlier request.
     #[inline]
     pub(crate) fn stop_sources(&self) {
         self.send_pool_msg(PoolMessage::AbortAll);
@@ -141,11 +171,11 @@ impl Client {
     pub(crate) fn attach_buffer(&self, buf: Arc<Buffer>) -> crate::Result<()> {
         // Tell Neovim to call the [on_bytes] function on this buffer whenever
         // its contents are modified.
-        let on_bytes = self.create_fn(crate::on_bytes::on_bytes);
+        let on_bytes = self.create_fn(crate::on_bytes);
         let opts = BufAttachOpts::builder().on_bytes(on_bytes).build();
         buf.nvim_buf().attach(false, &opts)?;
 
-        // TODO: docs
+        // Add the buffer to the [bufs](Client::bufs) map.
         let state = &mut *self.state.borrow_mut();
         state.bufs.insert(buf.nvim_buf().clone(), buf);
 
@@ -165,9 +195,9 @@ impl Client {
         R: LuaPushable + Default,
         E: Into<Error>,
     {
-        let client = self.clone();
-        Function::from_fn(move |args| {
-            match fun(&client, args).map_err(Into::into) {
+        let mut client = self.clone();
+        Function::from_fn_mut(move |args| {
+            match fun(&mut client, args).map_err(Into::into) {
                 Ok(ret) => Ok(ret),
 
                 Err(err) => match err {
@@ -199,8 +229,8 @@ impl Client {
         let (pool_sender, pool_receiver) = mpsc::unbounded_channel();
 
         let state = &mut *self.state.borrow_mut();
-        state.cb_sender = Some(cb_sender.clone());
-        state.pool_sender = Some(pool_sender);
+        state.cb_sender.set(cb_sender.clone());
+        state.pool_sender.set(pool_sender);
 
         let sources =
             state.sources.values().map(Arc::clone).collect::<Vec<_>>();
@@ -212,5 +242,16 @@ impl Client {
             cb_receiver,
             pool_receiver,
         )
+    }
+
+    /// Updates the last revision seen by the client.
+    pub(crate) fn set_rev_id(&self, rev_id: RevId) {
+        (*self.state.borrow_mut()).rev_id = rev_id;
+    }
+
+    /// Returns whether the provided revision is the last one seen by the
+    /// client.
+    pub(crate) fn is_last_rev(&self, rev_id: &RevId) -> bool {
+        &(*self.state.borrow()).rev_id == rev_id
     }
 }

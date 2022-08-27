@@ -8,6 +8,7 @@ edition = "2021"
 async-trait = "0.1"
 futures = "0.3.23"
 # nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
+memchr = "2"
 nvim-oxi = { path = "../../nvim-oxi/nvim-oxi", features = ["loop"] }
 once_cell = "1.13"
 ropey = "1.5"
