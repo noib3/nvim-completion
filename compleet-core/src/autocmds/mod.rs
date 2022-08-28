@@ -1,15 +1,15 @@
 mod attach_to_buffer;
-mod buf_enter;
-mod buf_new;
-mod cursor_moved_i;
-mod insert_leave;
+mod on_buf_enter;
+mod on_buf_new;
+mod on_cursor_moved_i;
+mod on_insert_leave;
+mod on_vim_resized;
 mod setup;
-mod vim_resized;
 
 pub(crate) use attach_to_buffer::attach_to_buffer;
-use buf_enter::on_buf_enter;
-use buf_new::on_buf_new;
-use cursor_moved_i::on_cursor_moved_i;
-use insert_leave::on_insert_leave;
+use on_buf_enter::on_buf_enter;
+use on_buf_new::on_buf_new;
+use on_cursor_moved_i::on_cursor_moved_i;
+use on_insert_leave::on_insert_leave;
+use on_vim_resized::on_vim_resized;
 pub(crate) use setup::setup;
-use vim_resized::on_vim_resized;

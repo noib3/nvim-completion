@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use nvim_oxi::api::Buffer as NvimBuffer;
-use tokio::sync::mpsc::UnboundedSender;
 
-use crate::threads::MainMessage;
+use crate::MainSender;
 
 #[derive(Debug)]
 pub struct Buffer {
@@ -14,7 +13,7 @@ pub struct Buffer {
     file_path: PathBuf,
 
     /// TODO: docs
-    cb_sender: UnboundedSender<MainMessage>,
+    cb_sender: MainSender,
 }
 
 // Public API.
@@ -32,7 +31,7 @@ impl Buffer {
     #[inline]
     pub(crate) fn new(
         buf: NvimBuffer,
-        cb_sender: UnboundedSender<MainMessage>,
+        cb_sender: MainSender,
     ) -> crate::Result<Self> {
         let file_path = buf.get_name()?;
         Ok(Self { buf, file_path, cb_sender })

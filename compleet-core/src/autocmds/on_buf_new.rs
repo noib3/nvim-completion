@@ -7,7 +7,7 @@ use nvim_oxi::{
 
 use crate::Client;
 
-pub(crate) fn on_buf_new(client: &Client, buf: Buffer) -> nvim::Result<()> {
+pub(super) fn on_buf_new(client: &Client, buf: Buffer) -> nvim::Result<()> {
     let buf_enter = client.create_fn(|client, args: AutocmdCallbackArgs| {
         super::on_buf_enter(client, args.buffer)?;
         Ok::<_, nvim::Error>(false)

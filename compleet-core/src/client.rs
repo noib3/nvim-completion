@@ -23,7 +23,6 @@ use tokio::sync::mpsc;
 use crate::config::{Config, SOURCE_NAMES};
 use crate::lateinit::LateInit;
 use crate::messages::echoerr;
-use crate::threads::{MainMessage, PoolMessage};
 use crate::ui::Ui;
 use crate::{mappings, messages};
 use crate::{
@@ -33,12 +32,12 @@ use crate::{
     CompletionRequest,
     CompletionSource,
     Error,
+    MainSender,
+    PoolMessage,
+    PoolSender,
     RevId,
     SourceId,
 };
-
-pub(crate) type MainSender = mpsc::UnboundedSender<MainMessage>;
-pub(crate) type PoolSender = mpsc::UnboundedSender<PoolMessage>;
 
 #[derive(Default)]
 /// The client acts as a "central authority" connecting various parts of the
@@ -50,17 +49,19 @@ pub struct Client {
 
 #[derive(Default)]
 struct State {
-    /// The id of the `Compleet` augroup if currently set, `None` otherwise.
+    /// The id of the `Compleet` augroup.
     augroup_id: LateInit<u32>,
 
     /// Map of attached buffers from [`nvim_oxi`]'s `Buffer`s to the `Buffer`
     /// type defined in this crate. A buffer is considered "attached" if one or
     /// more completion sources have attached to it.
+    //
+    // REFACTOR: this should be rethought.
     bufs: HashMap<nvim::api::Buffer, Arc<crate::Buffer>>,
 
     /// Message sender used to communicate with the callback executed on the
     /// main thread.
-    main_sender: LateInit<mpsc::UnboundedSender<MainMessage>>,
+    main_sender: LateInit<MainSender>,
 
     /// The current list of available completion items.
     // TODO: change to a BTree?
@@ -70,7 +71,7 @@ struct State {
 
     /// Message sender used to communicate with the thread pool where the
     /// completion results are computed.
-    pool_sender: LateInit<mpsc::UnboundedSender<PoolMessage>>,
+    pool_sender: LateInit<PoolSender>,
 
     /// Whether the [`setup`](crate::setup) function has ever been called.
     did_setup: bool,
@@ -81,6 +82,8 @@ struct State {
     /// Map containing all the sources registered via
     /// [`Client::register_source`]. The map keys are the source names, i.e.
     /// the output of [`CompletionSource::name`].
+    //
+    // REFACTOR: this should be rethought. Do we need them here?
     sources: HashMap<&'static str, Arc<dyn CompletionSource>>,
 
     /// Map containing..
@@ -101,7 +104,7 @@ impl Client {
     // Public API.
 
     /// Creates a new [`Client`].
-    #[inline]
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -290,7 +293,7 @@ impl Client {
         let client = self.clone();
 
         let handle = nvim::r#loop::new_async(move || {
-            match crate::threads::main_cb(&client, &mut receiver) {
+            match crate::main_cb(&client, &mut receiver) {
                 Err(Error::NvimError(err)) => return Err(err),
                 Err(other) => echoerr!("{:?}", other),
                 Ok(_) => {},
@@ -312,12 +315,7 @@ impl Client {
         let (sender, receiver) = mpsc::unbounded_channel();
 
         let _ = thread::spawn(move || {
-            crate::threads::sources_pool(
-                sources,
-                receiver,
-                main_sender,
-                handle,
-            )
+            crate::sources_pool(sources, receiver, main_sender, handle)
         });
 
         sender

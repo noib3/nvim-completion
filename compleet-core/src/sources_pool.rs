@@ -4,11 +4,14 @@ use std::sync::Arc;
 use futures::stream::{FuturesOrdered, StreamExt};
 use nvim_oxi::api::Buffer as NvimBuffer;
 use nvim_oxi::r#loop::AsyncHandle;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
-use super::MainMessage;
+use super::{MainMessage, MainSender};
 use crate::{Buffer, CompletionRequest, CompletionSource};
+
+pub(crate) type PoolSender = mpsc::UnboundedSender<PoolMessage>;
+type PoolReceiver = mpsc::UnboundedReceiver<PoolMessage>;
 
 /// Messages sent from the main thread to the thread pool.
 #[derive(Debug)]
@@ -28,15 +31,19 @@ pub(crate) enum PoolMessage {
 #[tokio::main]
 pub(crate) async fn sources_pool(
     sources: Vec<Arc<dyn CompletionSource>>,
-    mut receiver: UnboundedReceiver<PoolMessage>,
-    cb_sender: UnboundedSender<MainMessage>,
+    mut receiver: PoolReceiver,
+    cb_sender: MainSender,
     mut cb_handle: AsyncHandle,
 ) {
     // TODO: docs
+    //
+    // REFACTOR: this should be rethought.
     let mut buf_sources =
         HashMap::<NvimBuffer, Vec<Arc<dyn CompletionSource>>>::new();
 
     // TODO: docs
+    //
+    // REFACTOR: this should be rethought.
     let mut handles = Vec::<JoinHandle<()>>::new();
 
     while let Some(msg) = receiver.recv().await {
@@ -102,7 +109,7 @@ async fn filter_enabled_sources(
 async fn send_completions(
     sources: &[Arc<dyn CompletionSource>],
     req: Arc<CompletionRequest>,
-    sender: &UnboundedSender<MainMessage>,
+    sender: &MainSender,
     handle: &AsyncHandle,
 ) -> Vec<JoinHandle<()>> {
     sources

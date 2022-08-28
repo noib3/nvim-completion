@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc;
 
 use crate::{Client, CompletionBundle};
+
+pub(crate) type MainSender = mpsc::UnboundedSender<MainMessage>;
+type MainReceiver = mpsc::UnboundedReceiver<MainMessage>;
 
 /// Messages sent from the thread pool to the main thread.
 #[derive(Debug)]
@@ -16,7 +19,7 @@ pub(crate) enum MainMessage {
 
 pub(crate) fn main_cb(
     client: &Client,
-    receiver: &mut UnboundedReceiver<MainMessage>,
+    receiver: &mut MainReceiver,
 ) -> crate::Result<()> {
     let mut bundles = Vec::<CompletionBundle>::new();
 

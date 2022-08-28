@@ -3,7 +3,7 @@ use nvim_oxi as nvim;
 
 use crate::Client;
 
-pub(crate) fn on_insert_leave(
+pub(super) fn on_insert_leave(
     client: &Client,
     mut buf: Buffer,
 ) -> nvim::Result<()> {
