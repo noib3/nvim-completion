@@ -31,19 +31,19 @@ impl Cursor {
     /// TODO: docs
     #[inline(always)]
     pub fn line_up_to_cursor(&self) -> &str {
-        &self.line[..self.len_prefix]
+        &self.line[..self.col - self.len_prefix]
     }
 
     /// TODO: docs
     #[inline(always)]
     pub fn line_from_cursor_to_end(&self) -> &str {
-        let offset = self::find_postfix(&self.line, self.col);
-        &self.line[offset..]
+        let postfix = self::find_postfix(&self.line, self.col);
+        &self.line[self.col + postfix..]
     }
 
     #[inline]
     pub(crate) fn new(row: usize, col: usize, line: String) -> Self {
-        let len_prefix = line.len() - self::find_prefix(&line, col);
+        let len_prefix = self::find_prefix(&line, col);
         Self { row, col, line, len_prefix }
     }
 
@@ -129,11 +129,11 @@ fn find_postfix(line: &str, col: usize) -> usize {
 
     for (idx, byte) in line[col..].bytes().enumerate() {
         if WORD_BOUNDARIES.contains(&byte) {
-            return col + idx;
+            return idx;
         }
     }
 
-    line.len()
+    line.len() - col
 }
 
 #[cfg(test)]
@@ -168,9 +168,9 @@ mod prefix_tests {
 #[cfg(test)]
 mod postfix_tests {
     /// See doc comment above about `prefix_tests::find_prefix`.
-    fn find_postfix(line: &str, cursor: usize) -> &str {
-        let postfix = super::find_postfix(line, cursor);
-        &line[cursor + postfix..]
+    fn find_postfix(line: &str, col: usize) -> &str {
+        let postfix = super::find_postfix(line, col);
+        &line[col + postfix..]
     }
 
     #[test]

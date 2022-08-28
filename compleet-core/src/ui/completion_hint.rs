@@ -16,7 +16,7 @@ const HINT_NAMESPACE: &str = "completion_hint";
 pub(crate) struct CompletionHint {
     namespace_id: u32,
     extmark_id: Option<u32>,
-    opts: Option<SetExtmarkOpts>,
+    opts: SetExtmarkOpts,
 }
 
 impl Default for CompletionHint {
@@ -24,11 +24,9 @@ impl Default for CompletionHint {
     fn default() -> Self {
         let namespace_id = api::create_namespace(HINT_NAMESPACE);
 
-        let opts = Some(
-            SetExtmarkOpts::builder()
-                .virt_text_pos(ExtmarkVirtTextPosition::Overlay)
-                .build(),
-        );
+        let opts = SetExtmarkOpts::builder()
+            .virt_text_pos(ExtmarkVirtTextPosition::Overlay)
+            .build();
 
         Self { namespace_id, opts, extmark_id: None }
     }
@@ -54,9 +52,9 @@ impl CompletionHint {
         completion: &CompletionItem,
     ) -> nvim::Result<()> {
         // to be removed, only for testing
-        if self.is_visible() {
-            return Ok(());
-        }
+        // if self.is_visible() {
+        //     return Ok(());
+        // }
 
         let text = match extract_hint_text(cursor, completion) {
             Some(text) => text,
@@ -65,26 +63,15 @@ impl CompletionHint {
             },
         };
 
-        // self.opts.set_id(self.extmark_id.unwrap_or(1));
-        // self.opts.set_virt_text([(text, [hlgroups::HINT])]);
-
-        // TODO: don't construct this every time we display a new hint. Build
-        // it once when `CompletionHint` gets initialized and just modify its
-        // text before calling `set_extmark`.
-        let opts = SetExtmarkOpts::builder()
-            .id(self.extmark_id.unwrap_or(1))
-            .virt_text([(text, [hlgroups::HINT])])
-            .virt_text_pos(ExtmarkVirtTextPosition::Overlay)
-            .build();
+        self.opts.set_id(self.extmark_id.unwrap_or(1));
+        self.opts.set_virt_text([(text, [hlgroups::HINT])]);
 
         self.extmark_id = Some(buf.set_extmark(
             self.namespace_id,
             cursor.row,
             cursor.col,
-            Some(&opts),
+            &self.opts,
         )?);
-
-        nvim::print!("Sowing??");
 
         Ok(())
     }
@@ -98,7 +85,20 @@ fn extract_hint_text<'a>(
     // We only display completion hints if there are no characters after the
     // cursor in the current line. Not doing so would cause either the hint to
     // overlay actual text or the text to be shifted to the right.
-    if !cursor.is_at_eol() {
+    //
+    // Also, if the completion text is shorter than the current prefix we
+    // return early. For example if the current line is `foo.barbaz|` and the
+    // completion is `bar`.
+    //
+    // This is generally not the case because the completions should have
+    // already been filtered by the time they're displayed, but we're not
+    // making this assumption here.
+    //
+    // NOTE: it might make sense to relax this constrait in the future. For
+    // example, if the current line is `foo.bar|` and the completion is `baz`
+    // we could overlay the `z` on top of the `r` for a better preview
+    // experience.
+    if !cursor.is_at_eol() || completion.text.len() < cursor.len_prefix {
         return None;
     }
 
@@ -133,9 +133,33 @@ mod tests {
     }
 
     #[test]
+    fn failing() {
+        let cursor = Cursor::new(0, 1, "e".into());
+        let comp = CompletionItem::new("lsp received a");
+        assert_eq!(
+            "sp received a",
+            extract_hint_text(&cursor, &comp).unwrap()
+        );
+    }
+
+    #[test]
     fn multiline_completion() {
         let cursor = Cursor::new(0, 3, "foo".into());
         let comp = CompletionItem::new("foobar\nbaz");
         assert_eq!("bar..", extract_hint_text(&cursor, &comp).unwrap());
+    }
+
+    #[test]
+    fn multiword_completion() {
+        let cursor = Cursor::new(0, 4, "aaaa".into());
+        let comp = CompletionItem::new("lsp received a\nbaz");
+        assert_eq!("received a..", extract_hint_text(&cursor, &comp).unwrap());
+    }
+
+    #[test]
+    fn prefix_longer_than_completion() {
+        let cursor = Cursor::new(0, 11, "foo.bar_baz".into());
+        let comp = CompletionItem::new("bar");
+        assert_eq!(None, extract_hint_text(&cursor, &comp));
     }
 }
