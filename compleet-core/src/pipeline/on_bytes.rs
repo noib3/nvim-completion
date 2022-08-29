@@ -2,8 +2,7 @@ use std::time::Instant;
 
 use nvim_oxi::opts::{OnBytesArgs, ShouldDetach};
 
-use crate::completion_bundle::RevId;
-use crate::cursor::Cursor;
+use crate::completions::{Cursor, RevId};
 use crate::{Client, CompletionContext};
 
 pub(crate) fn on_bytes(

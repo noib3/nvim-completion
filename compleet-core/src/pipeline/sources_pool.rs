@@ -8,7 +8,8 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 use super::{MainMessage, MainSender};
-use crate::{Buffer, CompletionRequest, CompletionSource};
+use crate::completions::CompletionRequest;
+use crate::{Buffer, CompletionSource};
 
 pub(crate) type PoolSender = mpsc::UnboundedSender<PoolMessage>;
 type PoolReceiver = mpsc::UnboundedReceiver<PoolMessage>;

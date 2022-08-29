@@ -1,3 +1,5 @@
+//! TODO: docs
+
 mod accept_completion;
 mod scroll_details;
 mod select_completion;

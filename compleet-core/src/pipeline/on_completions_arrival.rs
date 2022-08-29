@@ -1,5 +1,6 @@
+use crate::completions::CompletionBundle;
 use crate::messages::echoerr;
-use crate::{Client, CompletionBundle, Result};
+use crate::{Client, Result};
 
 /// Function called every time a bunch of completion results computed by the
 /// thread pool (potentially coming from different sources) are sent to the

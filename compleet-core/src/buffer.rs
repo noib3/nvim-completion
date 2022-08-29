@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use nvim_oxi::api::Buffer as NvimBuffer;
 
-use crate::MainSender;
+use crate::pipeline::MainSender;
 
 #[derive(Debug)]
 pub struct Buffer {

@@ -1,3 +1,5 @@
+//! TODO: docs
+
 mod completion_config;
 mod config;
 mod sources;

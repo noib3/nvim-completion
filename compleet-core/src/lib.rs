@@ -2,34 +2,23 @@ mod autocmds;
 mod buffer;
 mod client;
 mod commands;
-mod completion_bundle;
-mod completion_context;
-mod completion_item;
-mod completion_source;
+mod completions;
 mod config;
-mod cursor;
 mod error;
 mod hlgroups;
 mod lateinit;
-mod main_cb;
 mod mappings;
 mod messages;
-mod on_bytes;
-mod on_completions_arrival;
-mod setup;
-mod sources_pool;
+mod pipeline;
 mod ui;
+mod utils;
 
 pub use buffer::Buffer;
 pub use client::Client;
-use completion_bundle::{CompletionBundle, CompletionRequest, RevId};
-pub use completion_context::CompletionContext;
-pub use completion_item::{CompletionItem, CompletionItemBuilder};
-pub use completion_source::CompletionSource;
-use completion_source::SourceId;
+pub use completions::{
+    CompletionContext,
+    CompletionItem,
+    CompletionItemBuilder,
+    CompletionSource,
+};
 pub use error::{Error, Result};
-use main_cb::{main_cb, MainMessage, MainSender};
-use on_bytes::on_bytes;
-use on_completions_arrival::on_completions_arrival;
-use setup::setup;
-use sources_pool::{sources_pool, PoolMessage, PoolSender};

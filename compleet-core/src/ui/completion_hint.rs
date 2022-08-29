@@ -7,7 +7,7 @@ use nvim_oxi::{
     types::ExtmarkVirtTextPosition,
 };
 
-use crate::cursor::Cursor;
+use crate::completions::Cursor;
 use crate::hlgroups;
 use crate::CompletionItem;
 
@@ -51,16 +51,9 @@ impl CompletionHint {
         cursor: &Cursor,
         completion: &CompletionItem,
     ) -> nvim::Result<()> {
-        // to be removed, only for testing
-        // if self.is_visible() {
-        //     return Ok(());
-        // }
-
         let text = match extract_hint_text(cursor, completion) {
             Some(text) => text,
-            None => {
-                return Ok(());
-            },
+            None => return Ok(()),
         };
 
         self.opts.set_id(self.extmark_id.unwrap_or(1));
@@ -102,16 +95,9 @@ fn extract_hint_text<'a>(
         return None;
     }
 
-    let text = &completion.text[cursor.len_prefix..];
-
-    // TODO: we should probably check for Unicode points (i.e. `char`s) instead
-    // of raw bytes.
-    let text = match memchr::memchr(b'\n', text.as_bytes()) {
-        Some(idx) => Cow::Owned(format!("{}..", &text[..idx])),
-        None => Cow::Borrowed(text),
-    };
-
-    Some(text)
+    Some(crate::utils::single_line_display(
+        &completion.text[cursor.len_prefix..],
+    ))
 }
 
 #[cfg(test)]

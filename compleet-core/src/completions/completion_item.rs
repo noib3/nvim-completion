@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 /// TODO: docs
 #[derive(Debug)]
 pub struct CompletionItem {
@@ -8,6 +10,12 @@ impl CompletionItem {
     #[inline]
     pub(crate) fn new<T: Into<String>>(text: T) -> Self {
         Self { text: text.into() }
+    }
+
+    /// TODO: docs
+    #[inline]
+    pub(crate) fn single_line_display(&self) -> Cow<'_, str> {
+        crate::utils::single_line_display(&self.text)
     }
 }
 

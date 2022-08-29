@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc;
 
-use crate::{Client, CompletionBundle};
+use crate::completions::CompletionBundle;
+use crate::Client;
 
 pub(crate) type MainSender = mpsc::UnboundedSender<MainMessage>;
 type MainReceiver = mpsc::UnboundedReceiver<MainMessage>;
@@ -31,7 +32,7 @@ pub(crate) fn main_cb(
     }
 
     if !bundles.is_empty() {
-        crate::on_completions_arrival(client, bundles)?;
+        super::on_completions_arrival(client, bundles)?;
     }
 
     Ok(())

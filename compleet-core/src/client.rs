@@ -18,26 +18,23 @@ use nvim_oxi::{
     LuaPushable,
     Object,
 };
+use nvim_oxi::{object, ObjectKind};
 use tokio::sync::mpsc;
 
-use crate::config::{Config, SOURCE_NAMES};
-use crate::lateinit::LateInit;
-use crate::messages::echoerr;
-use crate::ui::Ui;
-use crate::{mappings, messages};
-use crate::{
-    Buffer,
+use crate::completions::{
     CompletionContext,
-    CompletionItem,
     CompletionRequest,
-    CompletionSource,
-    Error,
-    MainSender,
-    PoolMessage,
-    PoolSender,
     RevId,
     SourceId,
 };
+use crate::config::{Config, SOURCE_NAMES};
+use crate::lateinit::LateInit;
+use crate::messages::echoerr;
+use crate::pipeline::{self, MainSender, PoolMessage, PoolSender};
+use crate::ui::Ui;
+use crate::{commands, hlgroups};
+use crate::{mappings, messages};
+use crate::{Buffer, CompletionItem, CompletionSource, Error};
 
 #[derive(Default)]
 /// The client acts as a "central authority" connecting various parts of the
@@ -123,7 +120,7 @@ impl Client {
 
     /// Returns a [`Dictionary`] representing the public API of the plugin.
     pub fn build_api(&self) -> Dictionary {
-        [("setup", Object::from(self.create_fn(crate::setup)))]
+        [("setup", Object::from(self.create_fn(Self::setup)))]
             .into_iter()
             .chain(mappings::setup(self))
             .chain(
@@ -185,7 +182,7 @@ impl Client {
     pub(crate) fn attach_buffer(&self, buf: Arc<Buffer>) -> crate::Result<()> {
         let nvim_buf = buf.nvim_buf();
 
-        let on_bytes = self.create_fn(crate::on_bytes);
+        let on_bytes = self.create_fn(pipeline::on_bytes);
         let opts = BufAttachOpts::builder().on_bytes(on_bytes).build();
         nvim_buf.attach(false, &opts)?;
 
@@ -198,12 +195,6 @@ impl Client {
         state.bufs.insert(nvim_buf, buf);
 
         Ok(())
-    }
-
-    /// Returns whether the [setup] function has already been called.
-    #[inline]
-    pub(crate) fn already_setup(&self) -> bool {
-        self.state.borrow().did_setup
     }
 
     pub(crate) fn create_fn<F, A, R, E>(&self, fun: F) -> Function<A, R>
@@ -222,6 +213,7 @@ impl Client {
                     Error::NvimError(nvim) => Err(nvim),
 
                     other => {
+                        // REFACTOR
                         messages::echoerr!("{other}");
                         Ok(R::default())
                     },
@@ -250,23 +242,52 @@ impl Client {
     // Initialization
 
     /// TODO: docs
-    pub(crate) fn setup(&self, config: Config) -> crate::Result<()> {
+    fn setup(&self, preferences: Object) -> crate::Result<()> {
         let state = &mut *self.state.borrow_mut();
+
+        if state.did_setup {
+            return Err(Error::AlreadySetup);
+        }
+
+        // Set the highlight groups *before* deserializing the preferences so
+        // that error messages will be displayed with the right colors.
+        hlgroups::setup()?;
+
+        let config = match preferences.kind() {
+            ObjectKind::Nil => Config::default(),
+
+            _ => {
+                let deserializer = object::Deserializer::new(preferences);
+                serde_path_to_error::deserialize::<_, Config>(deserializer)?
+            },
+        };
 
         // Only keep the enabled sources
         state
             .sources
             .retain(|&name, _| matches!(config.sources.get(name), Some(true)));
 
-        let augroup_id = self.setup_autocmds()?;
-
+        // Register the main callback on the Neovim thread and spawn the thread
+        // pool.
         let (main_sender, pool_sender) = {
             let (ms, handle) = self.register_main_callback()?;
             let sources = state.sources.values().map(Arc::clone).collect();
-            let ps = self.start_thread_pool(sources, ms.clone(), handle);
+            let ps = self.start_sources_pool(sources, ms.clone(), handle);
             (ms, ps)
         };
 
+        // Create a new augroup and setup the needed autocommands.
+        let augroup_id = {
+            let opts = CreateAugroupOpts::builder().clear(true).build();
+            let id = api::create_augroup("completion", Some(&opts))?;
+            crate::autocmds::setup(self, id)?;
+            id
+        };
+
+        // Expose a few commands to the users.
+        commands::setup(self)?;
+
+        // Finally, update the state.
         state.augroup_id.set(augroup_id);
         state.main_sender.set(main_sender);
         state.pool_sender.set(pool_sender);
@@ -274,14 +295,6 @@ impl Client {
         state.did_setup = true;
 
         Ok(())
-    }
-
-    /// TODO: docs
-    fn setup_autocmds(&self) -> nvim::Result<u32> {
-        let opts = CreateAugroupOpts::builder().clear(true).build();
-        let id = api::create_augroup("completion", Some(&opts))?;
-        crate::autocmds::setup(self, id)?;
-        Ok(id)
     }
 
     /// TODO: docs
@@ -293,7 +306,7 @@ impl Client {
         let client = self.clone();
 
         let handle = nvim::r#loop::new_async(move || {
-            match crate::main_cb(&client, &mut receiver) {
+            match pipeline::main_cb(&client, &mut receiver) {
                 Err(Error::NvimError(err)) => return Err(err),
                 Err(other) => echoerr!("{:?}", other),
                 Ok(_) => {},
@@ -306,7 +319,7 @@ impl Client {
     }
 
     /// TODO: docs
-    fn start_thread_pool(
+    fn start_sources_pool(
         &self,
         sources: Vec<Arc<dyn CompletionSource>>,
         main_sender: MainSender,
@@ -315,7 +328,7 @@ impl Client {
         let (sender, receiver) = mpsc::unbounded_channel();
 
         let _ = thread::spawn(move || {
-            crate::sources_pool(sources, receiver, main_sender, handle)
+            pipeline::sources_pool(sources, receiver, main_sender, handle)
         });
 
         sender

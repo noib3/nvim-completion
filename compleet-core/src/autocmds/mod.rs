@@ -1,3 +1,5 @@
+//! TODO: docs
+
 mod attach_to_buffer;
 mod on_buf_enter;
 mod on_buf_new;
