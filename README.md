@@ -1,1 +1,1 @@
-# :zap: nvim-compleet
+# :zap: nvim-completion

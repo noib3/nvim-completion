@@ -138,51 +138,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compleet-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "memchr",
- "nvim-oxi",
- "once_cell",
- "serde",
- "serde_path_to_error",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "compleet-lipsum"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "compleet-core",
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "compleet-lsp"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "compleet-core",
- "nvim-oxi",
- "serde",
-]
-
-[[package]]
-name = "compleet-plugin"
-version = "0.1.0"
-dependencies = [
- "compleet-core",
- "compleet-lipsum",
- "compleet-lsp",
- "nvim-oxi",
-]
-
-[[package]]
 name = "darling"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -480,6 +435,51 @@ checksum = "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1"
 dependencies = [
  "hermit-abi",
  "libc",
+]
+
+[[package]]
+name = "nvim-completion"
+version = "0.1.0"
+dependencies = [
+ "nvim-completion-core",
+ "nvim-completion-lipsum",
+ "nvim-completion-lsp",
+ "nvim-oxi",
+]
+
+[[package]]
+name = "nvim-completion-core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "memchr",
+ "nvim-oxi",
+ "once_cell",
+ "serde",
+ "serde_path_to_error",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "nvim-completion-lipsum"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "nvim-completion-core",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "nvim-completion-lsp"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "nvim-completion-core",
+ "nvim-oxi",
+ "serde",
 ]
 
 [[package]]

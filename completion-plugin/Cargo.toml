@@ -1,0 +1,15 @@
+[package]
+name = "nvim-completion"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+nvim-completion-core = { path = "../completion-core" }
+nvim-completion-lipsum = { path = "../completion-sources/lipsum" }
+nvim-completion-lsp = { path = "../completion-sources/lsp" }
+nvim-oxi = { path = "../../nvim-oxi/nvim-oxi" }
+# nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }

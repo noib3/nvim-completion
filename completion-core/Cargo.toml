@@ -1,0 +1,18 @@
+[package]
+name = "nvim-completion-core"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1"
+futures = "0.3.23"
+# nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
+memchr = "2"
+nvim-oxi = { path = "../../nvim-oxi/nvim-oxi", features = ["loop"] }
+once_cell = "1.13"
+# ropey = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_path_to_error = "0.1"
+thiserror = "1.0"
+tokio = { version = "1.20", features = ["full"] }

@@ -1,16 +1,9 @@
 [workspace]
 
 members = [
-  "compleet-core",
-  "compleet-plugin",
-  "compleet-sources/*"
-]
-
-exclude = [
-  "compleet-client",
-  "nvim-bindings",
-  "old-compleet-sources",
-  "treesitter-highlighter",
+  "completion-core",
+  "completion-plugin",
+  "completion-sources/*"
 ]
 
 [profile.release]

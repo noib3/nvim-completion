@@ -1,0 +1,11 @@
+[package]
+name = "nvim-completion-lipsum"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1"
+nvim-completion-core = { path = "../../completion-core" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.20", features = ["full"] }

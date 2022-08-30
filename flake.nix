@@ -1,5 +1,5 @@
 {
-  description = "nvim-compleet";
+  description = "nvim-completion";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -33,7 +33,7 @@
       in
       {
         devShells.default = pkgs.devshell.mkShell {
-          name = "nvim-compleet";
+          name = "nvim-completion";
 
           packages = with pkgs; [
             (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
