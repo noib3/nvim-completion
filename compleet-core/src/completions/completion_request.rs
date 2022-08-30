@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::{CompletionContext, CompletionItem, SourceId};
+use super::{CompletionContext, CompletionItem};
+use crate::sources::SourceId;
 use crate::Result;
 
 /// Packs together a source identifier, a completion request sent to that

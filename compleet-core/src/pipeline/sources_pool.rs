@@ -7,9 +7,10 @@ use nvim_oxi::r#loop::AsyncHandle;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
-use super::{MainMessage, MainSender};
 use crate::completions::CompletionRequest;
-use crate::{Buffer, CompletionSource};
+use crate::pipeline::{MainMessage, MainSender};
+use crate::sources::{SourceBundle, SourceId, SourceMap};
+use crate::Buffer;
 
 pub(crate) type PoolSender = mpsc::UnboundedSender<PoolMessage>;
 type PoolReceiver = mpsc::UnboundedReceiver<PoolMessage>;
@@ -31,20 +32,18 @@ pub(crate) enum PoolMessage {
 /// hashmap on the UI thread?
 #[tokio::main]
 pub(crate) async fn sources_pool(
-    sources: Vec<Arc<dyn CompletionSource>>,
+    sources: SourceMap,
     mut receiver: PoolReceiver,
     cb_sender: MainSender,
     mut cb_handle: AsyncHandle,
 ) {
-    // TODO: docs
-    //
-    // REFACTOR: this should be rethought.
-    let mut buf_sources =
-        HashMap::<NvimBuffer, Vec<Arc<dyn CompletionSource>>>::new();
+    let sources = sources.into_iter().collect::<Vec<_>>();
 
-    // TODO: docs
-    //
-    // REFACTOR: this should be rethought.
+    // TODO: refactor?
+    let mut buf_bundles =
+        HashMap::<NvimBuffer, Vec<(SourceId, SourceBundle)>>::new();
+
+    // TODO: refactor?
     let mut handles = Vec::<JoinHandle<()>>::new();
 
     while let Some(msg) = receiver.recv().await {
@@ -54,11 +53,13 @@ pub(crate) async fn sources_pool(
             },
 
             PoolMessage::QueryAttach(buf) => {
-                let sources =
-                    self::filter_enabled_sources(&sources, &buf).await;
+                let bundles = self::filter_enabled_sources(
+                    &sources, &buf, &cb_sender, &cb_handle,
+                )
+                .await;
 
-                if !sources.is_empty() {
-                    buf_sources.insert(buf.nvim_buf().clone(), sources);
+                if !bundles.is_empty() {
+                    buf_bundles.insert(buf.nvim_buf().clone(), bundles);
                     cb_sender.send(MainMessage::AttachBuf(buf)).unwrap();
                     cb_handle.send().unwrap();
                 }
@@ -69,10 +70,10 @@ pub(crate) async fn sources_pool(
 
                 // We only query the sources attached to the buffer in the
                 // request.
-                let sources = buf_sources.get(&req.nvim_buf()).unwrap();
+                let bundles = buf_bundles.get(&req.nvim_buf()).unwrap();
 
                 handles = self::send_completions(
-                    sources, req, &cb_sender, &cb_handle,
+                    bundles, req, &cb_sender, &cb_handle,
                 )
                 .await;
             },
@@ -80,50 +81,57 @@ pub(crate) async fn sources_pool(
     }
 }
 
-/// TODO: docs
+/// TODO: refactor, way too much cloning.
 async fn filter_enabled_sources(
-    all: &[Arc<dyn CompletionSource>],
+    all: &[(SourceId, SourceBundle)],
     buf: &Arc<Buffer>,
-) -> Vec<Arc<dyn CompletionSource>> {
+    sender: &MainSender,
+    handle: &AsyncHandle,
+) -> Vec<(SourceId, SourceBundle)> {
     let mut results = all
         .iter()
-        .map(|source| {
-            let buf = Arc::clone(&buf);
-            let source = Arc::clone(source);
-            tokio::spawn(async move { source.should_attach(&buf).await })
+        .map(|(_, bundle)| {
+            let bundle = bundle.clone();
+            let buf = Arc::clone(buf);
+            let sender = sender.clone();
+            let mut handle = handle.clone();
+            tokio::spawn(async move {
+                bundle.should_attach(&buf, &sender, &mut handle).await
+            })
         })
         .collect::<FuturesOrdered<_>>()
         .enumerate();
 
-    let mut sources = Vec::<Arc<dyn CompletionSource>>::new();
+    let mut sources = Vec::new();
 
     while let Some((idx, res)) = results.next().await {
         if matches!(res, Ok(Ok(true))) {
-            sources.push(Arc::clone(&all[idx]));
+            sources.push(all[idx].clone());
         }
     }
 
     sources
 }
 
-/// TODO: docs
+/// TODO: refactor, way too much cloning.
 async fn send_completions(
-    sources: &[Arc<dyn CompletionSource>],
+    bundles: &[(SourceId, SourceBundle)],
     req: Arc<CompletionRequest>,
     sender: &MainSender,
     handle: &AsyncHandle,
 ) -> Vec<JoinHandle<()>> {
-    sources
+    bundles
         .iter()
-        .map(|source| {
-            let source = Arc::clone(source);
+        .map(|(name, bundle)| {
+            let name: SourceId = name;
+            let bundle = bundle.clone();
             let req = Arc::clone(&req);
             let sender = sender.clone();
             let mut handle = handle.clone();
 
             tokio::spawn(async move {
-                let completions = source.complete(&req.buf, &req.ctx).await;
-                let bundle = (source.name(), req, completions);
+                let completions = bundle.complete(&req.buf, &req.ctx).await;
+                let bundle = (name, req, completions);
                 sender.send(MainMessage::HandleCompletions(bundle)).unwrap();
                 handle.send().unwrap();
             })

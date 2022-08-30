@@ -1,9 +1,9 @@
-use crate::Client;
+use crate::{Client, Result};
 
 pub(super) fn compleet_stop(
     client: &Client,
     bang: bool,
     sources: Vec<String>,
-) -> crate::Result<()> {
+) -> Result<()> {
     Ok(())
 }

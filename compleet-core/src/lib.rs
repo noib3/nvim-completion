@@ -10,6 +10,8 @@ mod lateinit;
 mod mappings;
 mod messages;
 mod pipeline;
+mod setup;
+mod sources;
 mod ui;
 mod utils;
 
@@ -19,6 +21,7 @@ pub use completions::{
     CompletionContext,
     CompletionItem,
     CompletionItemBuilder,
-    CompletionSource,
 };
 pub use error::{Error, Result};
+pub use setup::{build_api, register_source};
+pub use sources::CompletionSource;

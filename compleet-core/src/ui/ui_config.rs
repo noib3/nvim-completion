@@ -3,7 +3,7 @@ use serde::{de, Deserialize};
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct UiConfig {
+pub(crate) struct UiConfig {
     #[serde(default)]
     pub(super) details: DetailsConfig,
 

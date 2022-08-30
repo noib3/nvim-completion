@@ -1,9 +1,10 @@
 use nvim_oxi as nvim;
+use thiserror::Error as ThisError;
 
-/// Alias for a `Result` with error type [`nvim_compleet::Error`](Error).
+/// `nvim-completion`'s result type.
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug, ThisError)]
 #[non_exhaustive]
 pub enum Error {
     #[error("can't setup more than once per session")]
@@ -13,13 +14,16 @@ pub enum Error {
     BadPreferences { option: serde_path_to_error::Path, why: String },
 
     #[error(transparent)]
-    NvimError(#[from] nvim_oxi::Error),
+    Io(#[from] std::io::Error),
 
     #[error(transparent)]
-    LoopError(#[from] nvim_oxi::r#loop::Error),
+    Loop(#[from] nvim_oxi::r#loop::Error),
 
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Nvim(#[from] nvim_oxi::Error),
+
+    #[error(transparent)]
+    OneshotRecv(#[from] tokio::sync::oneshot::error::RecvError),
 
     #[error("{0}")]
     Other(String),
@@ -38,14 +42,3 @@ impl From<serde_path_to_error::Error<nvim::Error>> for Error {
         }
     }
 }
-
-// impl Error {
-//     pub fn
-// }
-
-// impl Error {
-//     /// TODO: docs
-//     pub(crate) fn bubble_or_print(self) {
-
-//     }
-// }

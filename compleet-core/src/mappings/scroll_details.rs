@@ -1,7 +1,5 @@
-use nvim_oxi as nvim;
+use crate::{Client, Result};
 
-use crate::Client;
-
-pub(super) fn scroll_details(client: &Client, lines: i32) -> nvim::Result<()> {
+pub(super) fn scroll_details(client: &Client, lines: i32) -> Result<()> {
     Ok(())
 }

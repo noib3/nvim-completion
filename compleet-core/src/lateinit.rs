@@ -8,9 +8,9 @@ pub(crate) struct LateInit<T>(unsync::OnceCell<T>);
 
 impl<T> LateInit<T> {
     #[inline]
-    pub fn set(&mut self, value: T) {
+    pub fn set(&self, value: T) {
         if let Err(_) = self.0.set(value) {
-            panic!("couldn't set LateInit");
+            panic!("already initialized");
         }
     }
 }

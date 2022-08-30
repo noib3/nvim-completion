@@ -1,7 +1,5 @@
-use nvim_oxi as nvim;
+use crate::{Client, Result};
 
-use crate::Client;
-
-pub(super) fn show_completions(client: &Client) -> nvim::Result<()> {
+pub(super) fn show_completions(client: &Client) -> Result<()> {
     Ok(())
 }

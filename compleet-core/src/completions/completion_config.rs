@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct CompletionConfig {
+pub(crate) struct CompletionConfig {
     /// Whether to show completion results right after a completion has been
     /// accepted. If `false`, after accepting a completion new results will
     /// only be shown after typing more characters.

@@ -1,21 +1,20 @@
 use nvim_oxi::{
-    self as nvim,
     api,
     opts::CreateCommandOpts,
     types::{CommandArgs, CommandNArgs},
 };
 
-use crate::Client;
+use crate::{Client, Result};
 
-pub(crate) fn setup(client: &Client) -> nvim::Result<()> {
+pub(crate) fn setup(client: &Client) -> Result<()> {
     let stats =
-        client.create_fn(|client, _args| super::compleet_stats(client));
+        client.to_nvim_fn(|client, _args| super::compleet_stats(client));
 
-    let start = client.create_fn(|client, args: CommandArgs| {
+    let start = client.to_nvim_fn(|client, args: CommandArgs| {
         super::compleet_start(client, args.bang, args.fargs)
     });
 
-    let stop = client.create_fn(|client, args: CommandArgs| {
+    let stop = client.to_nvim_fn(|client, args: CommandArgs| {
         super::compleet_stop(client, args.bang, args.fargs)
     });
 

@@ -13,25 +13,25 @@ pub(super) enum IdentifyCompletion {
 pub(crate) fn setup(
     client: &Client,
 ) -> impl IntoIterator<Item = (&'static str, Object)> {
-    let accept_first = client.create_fn(|client, ()| {
+    let accept_first = client.to_nvim_fn(|client, ()| {
         super::accept_completion(client, IdentifyCompletion::ByIndex(0))
     });
 
-    let accept_selected = client.create_fn(|client, ()| {
+    let accept_selected = client.to_nvim_fn(|client, ()| {
         super::accept_completion(client, IdentifyCompletion::FromSelected(0))
     });
 
-    let scroll_details = client.create_fn(super::scroll_details);
+    let scroll_details = client.to_nvim_fn(super::scroll_details);
 
-    let select_next = client.create_fn(|client, ()| {
+    let select_next = client.to_nvim_fn(|client, ()| {
         super::select_completion(client, IdentifyCompletion::FromSelected(1))
     });
 
-    let select_prev = client.create_fn(|client, ()| {
+    let select_prev = client.to_nvim_fn(|client, ()| {
         super::select_completion(client, IdentifyCompletion::FromSelected(-1))
     });
 
-    let show = client.create_fn(|client, ()| super::show_completions(client));
+    let show = client.to_nvim_fn(|client, ()| super::show_completions(client));
 
     [
         ("accept_first", Object::from(accept_first)),
