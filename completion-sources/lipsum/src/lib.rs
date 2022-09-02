@@ -1,6 +1,5 @@
 mod lipsum;
 mod words;
 
+pub use lipsum::Lipsum;
 use words::WORDS;
-
-pub use crate::lipsum::Lipsum;

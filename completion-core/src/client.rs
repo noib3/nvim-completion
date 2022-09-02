@@ -16,29 +16,29 @@ use crate::completions::{
     RevId,
 };
 use crate::lateinit::LateInit;
-use crate::pipeline::{MainSender, PoolMessage, PoolSender};
+use crate::pipeline::{MainMessage, MainSender, PoolMessage, PoolSender};
 use crate::ui::UiState;
 use crate::{Buffer, Error, Result};
 
-#[derive(Default, Clone)]
-/// The client acts as a "central authority" connecting various parts of the
-/// plugin together. It also holds the current state of the world and it's the
-/// only entity able to read and modify it.
-pub struct Client {
-    augroup_id: LateInit<u32>,
+thread_local! {
+    static AUGROUP_ID: LateInit<u32> = LateInit::new();
 
     /// Message sender used to communicate with the callback executed on the
     /// main thread.
-    main_sender: LateInit<MainSender>,
+    static MAIN_SENDER: LateInit<MainSender> = LateInit::new();
 
     /// Message sender used to communicate with the thread pool where the
     /// completion results are computed.
-    pool_sender: LateInit<PoolSender>,
+    static POOL_SENDER: LateInit<PoolSender> = LateInit::new();
+}
 
+/// The client acts as a "central authority" connecting various parts of the
+/// plugin together. It also holds the current state of the world and it's the
+/// only entity able to read and modify it.
+#[derive(Default, Clone)]
+pub struct Client {
     completion_state: Rc<RefCell<CompletionState>>,
-
     misc_state: Rc<RefCell<MiscState>>,
-
     ui_state: Rc<RefCell<UiState>>,
 }
 
@@ -99,28 +99,37 @@ impl Client {
 
     #[inline]
     pub(crate) fn set_augroup_id(&self, id: u32) {
-        self.augroup_id.set(id)
+        AUGROUP_ID.with(|augroup_id| augroup_id.set(id));
     }
 
     #[inline]
     pub(crate) fn set_main_sender(&self, sender: MainSender) {
-        self.main_sender.set(sender)
+        MAIN_SENDER.with(|main_sender| main_sender.set(sender));
     }
 
     #[inline]
     pub(crate) fn set_pool_sender(&self, sender: PoolSender) {
-        self.pool_sender.set(sender)
+        POOL_SENDER.with(|pool_sender| pool_sender.set(sender));
     }
 
     // -----------------------------------------------------------------------
     // Thread pool messaging.
 
+    #[inline]
+    fn send_pool(&self, msg: PoolMessage) {
+        POOL_SENDER.with(move |sender| sender.send(msg).unwrap());
+    }
+
+    #[inline]
+    pub(crate) fn send_main(msg: MainMessage) {
+        MAIN_SENDER.with(move |sender| sender.send(msg).unwrap());
+    }
+
     // TODO: docs
     #[inline]
     pub(crate) fn query_attach(&self, buf: NvimBuffer) -> Result<()> {
-        let sender = (*self.main_sender).clone();
-        let buf = Buffer::new(buf, sender).map(Arc::new)?;
-        self.pool_sender.send(PoolMessage::QueryAttach(buf)).unwrap();
+        let buf = Buffer::new(buf).map(Arc::new)?;
+        self.send_pool(PoolMessage::QueryAttach(buf));
         Ok(())
     }
 
@@ -139,16 +148,14 @@ impl Client {
 
         let req = CompletionRequest { buf, ctx, start, rev };
 
-        self.pool_sender
-            .send(PoolMessage::QueryCompletions(Arc::new(req)))
-            .unwrap()
+        self.send_pool(PoolMessage::QueryCompletions(Arc::new(req)))
     }
 
     /// Sends a message to the thread pool to stop any running tasks querying
     /// completion results from an earlier request.
     #[inline]
     pub(crate) fn stop_sources(&self) {
-        self.pool_sender.send(PoolMessage::AbortAll).unwrap();
+        self.send_pool(PoolMessage::AbortAll);
     }
 
     // -----------------------------------------------------------------------
@@ -165,7 +172,7 @@ impl Client {
         let state = &mut *self.misc_state.borrow_mut();
         crate::autocmds::attach_to_buffer(
             self,
-            *self.augroup_id,
+            AUGROUP_ID.with(|id| **id),
             nvim_buf.clone(),
         )?;
         state.bufs.insert(nvim_buf, buf);

@@ -15,6 +15,7 @@ use super::client_capabilities::client_capabilities;
 pub struct Lsp;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 #[async_trait]

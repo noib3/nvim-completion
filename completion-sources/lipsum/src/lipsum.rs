@@ -12,6 +12,7 @@ use serde::Deserialize;
 pub struct Lipsum;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 #[async_trait]

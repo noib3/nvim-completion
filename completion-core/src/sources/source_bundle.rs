@@ -52,6 +52,11 @@ impl SourceBundle {
         self.enable.set(enable);
     }
 
+    #[inline]
+    pub(crate) fn is_initialized(&self) -> bool {
+        self.config.is_some()
+    }
+
     /// TODO: docs
     #[inline]
     pub(crate) async fn should_attach(

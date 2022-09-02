@@ -6,6 +6,7 @@ use crate::sources::SourceConfigs;
 use crate::ui::UiConfig;
 
 #[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct Config {
     #[serde(default)]
     pub(crate) ui: UiConfig,
@@ -13,7 +14,7 @@ pub(crate) struct Config {
     #[serde(default)]
     pub(crate) completion: CompletionConfig,
 
-    #[serde(default)]
+    #[serde(default, deserialize_with = "crate::sources::deserialize")]
     pub(crate) sources: SourceConfigs,
 }
 

@@ -13,12 +13,17 @@ impl<T> LateInit<T> {
             panic!("already initialized");
         }
     }
+
+    #[inline]
+    pub const fn new() -> Self {
+        Self(OnceCell::new())
+    }
 }
 
 impl<T> Default for LateInit<T> {
     #[inline]
     fn default() -> Self {
-        Self(OnceCell::default())
+        Self::new()
     }
 }
 

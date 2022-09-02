@@ -1,9 +1,11 @@
 mod completion_source;
+mod deserialize;
 mod source_bundle;
-mod sources_config;
+mod source_configs;
 
 pub use completion_source::CompletionSource;
 use completion_source::ObjectSafeCompletionSource;
+pub(crate) use deserialize::deserialize;
 use source_bundle::SourceConfigPtr;
 pub(crate) use source_bundle::{SourceBundle, SourceId, SourceMap};
-pub(crate) use sources_config::{SourceConfig, SourceConfigs, SourceEnable};
+pub(crate) use source_configs::{SourceConfig, SourceConfigs, SourceEnable};

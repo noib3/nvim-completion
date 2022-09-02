@@ -9,7 +9,7 @@ use once_cell::unsync::Lazy;
 use tokio::sync::mpsc;
 
 use crate::config::Config;
-use crate::messages::{echoerr, echowarn};
+use crate::messages::echoerr;
 use crate::pipeline::{MainSender, PoolSender};
 use crate::sources::{
     CompletionSource,
@@ -127,26 +127,21 @@ fn setup(client: &Client, preferences: Object) -> Result<()> {
 /// TODO: docs
 fn filter_enabled(
     sources: &mut SourceMap,
-    mut configs: SourceConfigs,
+    configs: SourceConfigs,
 ) -> Result<()> {
-    sources.retain(|&name, bundle| {
-        match configs
-            .remove(name)
-            .map(|SourceConfig { enable, rest }| (enable, rest))
-        {
-            None | Some((SourceEnable::Final(false), _)) => false,
+    for (name, SourceConfig { enable, rest }) in configs {
+        match enable {
+            SourceEnable::Final(false) => continue,
 
-            Some((enable, config)) => {
-                // TODO: don't unwrap
-                bundle.set_config(config).unwrap();
+            enable => {
+                let bundle = sources.get_mut(&*name).unwrap();
+                bundle.set_config(rest)?;
                 bundle.set_enable(enable);
-                true
             },
         }
-    });
+    }
 
-    // TODO: if configs is not empty it means an unregistered source was
-    // passed. Handle this case by echoing a warning.
+    sources.retain(|_, bundle| bundle.is_initialized());
 
     Ok(())
 }
@@ -196,4 +191,11 @@ fn start_sources_pool(
     });
 
     sender
+}
+
+/// TODO: docs
+pub(crate) fn registered_source_names() -> Vec<&'static str> {
+    SOURCES.with(|sources| {
+        sources.borrow().as_ref().unwrap().keys().map(|k| *k).collect()
+    })
 }
