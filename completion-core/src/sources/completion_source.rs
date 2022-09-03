@@ -68,7 +68,9 @@ where
     fn deser_config(&self, config: Object) -> Result<SourceConfigPtr> {
         let config: <Self as CompletionSource>::Config = {
             let deserializer = object::Deserializer::new(config);
-            serde_path_to_error::deserialize(deserializer)?
+
+            serde_path_to_error::deserialize(deserializer)
+                .map_err(|err| crate::Error::source_deser(err, S::NAME))?
         };
 
         Ok(SourceConfigPtr::new(config))

@@ -10,8 +10,12 @@ pub enum Error {
     #[error("can't setup more than once per session")]
     AlreadySetup,
 
-    #[error("error parsing `{option}`: {why}")]
-    BadPreferences { option: serde_path_to_error::Path, why: String },
+    #[error("error parsing `{prefix}{option}`: {why}")]
+    BadConfig {
+        prefix: String,
+        option: serde_path_to_error::Path,
+        why: String,
+    },
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -35,7 +39,26 @@ impl From<serde_path_to_error::Error<nvim::Error>> for Error {
 
         match err.into_inner() {
             nvim::Error::DeserializeError(why) => {
-                Self::BadPreferences { option, why }
+                Self::BadConfig { prefix: "".into(), option, why }
+            },
+
+            other => other.into(),
+        }
+    }
+}
+
+impl Error {
+    pub(crate) fn source_deser(
+        err: serde_path_to_error::Error<nvim::Error>,
+        name: &'static str,
+    ) -> Self {
+        let option = err.path().to_owned();
+
+        match err.into_inner() {
+            nvim::Error::DeserializeError(why) => Self::BadConfig {
+                prefix: format!("sources.{}.", name),
+                option,
+                why,
             },
 
             other => other.into(),
