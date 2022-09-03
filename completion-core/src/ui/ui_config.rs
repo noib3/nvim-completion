@@ -51,7 +51,7 @@ pub(super) struct MenuConfig {
     border: Border,
 
     #[serde(default = "seven", deserialize_with = "deser_max_height")]
-    max_height: u32,
+    pub max_height: u32,
 }
 
 impl Default for MenuConfig {

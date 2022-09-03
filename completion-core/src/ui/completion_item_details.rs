@@ -40,4 +40,14 @@ impl CompletionItemDetails {
 
         Ok(())
     }
+
+    /// Hides the completion details window if currently visible, does nothing
+    /// otherwise.
+    pub(super) fn hide(&mut self) -> nvim::Result<()> {
+        if let Some(win) = self.win.take() {
+            win.hide()?;
+        }
+
+        Ok(())
+    }
 }

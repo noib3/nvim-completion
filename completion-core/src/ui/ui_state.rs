@@ -60,9 +60,12 @@ impl UiState {
         Ok(())
     }
 
+    /// Hides the completion hint, menu and details window.
     #[inline]
-    pub(crate) fn clean_all(&mut self, buf: &mut Buffer) -> nvim::Result<()> {
-        self.hint.hide(buf)
+    pub(crate) fn hide_all(&mut self, buf: &mut Buffer) -> nvim::Result<()> {
+        self.hint.hide(buf)?;
+        self.menu.close()?;
+        self.details.hide()
     }
 
     #[inline]

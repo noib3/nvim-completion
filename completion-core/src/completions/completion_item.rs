@@ -4,6 +4,7 @@ use std::borrow::Cow;
 #[derive(Debug, Clone)]
 pub struct CompletionItem {
     pub(crate) text: String,
+    // single_line_display: SingleLineDisplay,
 }
 
 impl CompletionItem {
