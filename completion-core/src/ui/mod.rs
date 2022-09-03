@@ -5,6 +5,7 @@ mod completion_item_details;
 mod completion_menu;
 mod ui_config;
 mod ui_state;
+mod utils;
 
 use completion_hint::CompletionHint;
 use completion_item_details::CompletionItemDetails;

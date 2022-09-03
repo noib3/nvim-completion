@@ -108,6 +108,8 @@ fn setup(client: &Client, preferences: Object) -> Result<()> {
     {
         let state = &mut *client.ui();
         state.set_config(ui);
+        state.update_rows()?;
+        state.update_columns()?;
     }
 
     let augroup_id = self::setup_augroup(client)?;
