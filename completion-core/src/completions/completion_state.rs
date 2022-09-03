@@ -19,7 +19,7 @@ pub(crate) struct CompletionState {
 
 impl CompletionState {
     #[inline]
-    pub(crate) fn set_config(&mut self, config: CompletionConfig) {
+    pub(crate) fn init(&mut self, config: CompletionConfig) {
         self.config = config;
     }
 }

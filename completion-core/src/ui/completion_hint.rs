@@ -7,15 +7,24 @@ use nvim_oxi::{
     types::ExtmarkVirtTextPosition,
 };
 
+use super::ui_config::HintConfig;
 use crate::completions::Cursor;
 use crate::hlgroups;
 use crate::CompletionItem;
 
 const HINT_NAMESPACE: &str = "completion_hint";
 
+#[derive(Debug)]
 pub(crate) struct CompletionHint {
+    config: HintConfig,
+
+    /// TODO: docs
     namespace_id: u32,
+
+    /// TODO: docs
     extmark_id: Option<u32>,
+
+    /// TODO: docs
     opts: SetExtmarkOpts,
 }
 
@@ -28,11 +37,22 @@ impl Default for CompletionHint {
             .virt_text_pos(ExtmarkVirtTextPosition::Overlay)
             .build();
 
-        Self { namespace_id, opts, extmark_id: None }
+        Self {
+            namespace_id,
+            opts,
+            extmark_id: None,
+            config: HintConfig::default(),
+        }
     }
 }
 
 impl CompletionHint {
+    #[inline]
+    pub(super) fn init(&mut self, config: HintConfig) {
+        self.config = config;
+    }
+
+    #[inline]
     pub fn is_visible(&self) -> bool {
         self.extmark_id.is_some()
     }

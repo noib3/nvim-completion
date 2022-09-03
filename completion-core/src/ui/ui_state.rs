@@ -20,8 +20,6 @@ pub(crate) struct UiState {
     /// about a specific function.
     pub(crate) details: CompletionItemDetails,
 
-    config: UiConfig,
-
     /// The amount of total vertical space available for drawing our UI
     /// elements.
     ///
@@ -48,8 +46,18 @@ pub(crate) struct UiState {
 
 impl UiState {
     #[inline]
-    pub(crate) fn set_config(&mut self, config: UiConfig) {
-        self.config = config;
+    pub(crate) fn init(
+        &mut self,
+        UiConfig { menu, details, hint }: UiConfig,
+    ) -> nvim::Result<()> {
+        self.hint.init(hint);
+        self.menu.init(menu)?;
+        self.details.init(details)?;
+
+        self.update_rows()?;
+        self.update_columns()?;
+
+        Ok(())
     }
 
     #[inline]

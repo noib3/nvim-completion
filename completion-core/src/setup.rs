@@ -98,18 +98,16 @@ fn setup(client: &Client, preferences: Object) -> Result<()> {
         sources
     };
 
-    // Update the completion state with the completion config.
+    // Initialize the completion state with the completion config.
     {
         let state = &mut *client.completion();
-        state.set_config(completion);
+        state.init(completion);
     }
 
-    // Update the ui state with the ui config.
+    // Initialize the ui state with the ui config.
     {
         let state = &mut *client.ui();
-        state.set_config(ui);
-        state.update_rows()?;
-        state.update_columns()?;
+        state.init(ui)?;
     }
 
     let augroup_id = self::setup_augroup(client)?;

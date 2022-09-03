@@ -50,8 +50,8 @@ pub(super) struct MenuConfig {
     #[serde(default = "default_menu_border")]
     border: Border,
 
-    #[serde(default, deserialize_with = "deser_max_height")]
-    max_height: Option<u32>,
+    #[serde(default = "seven", deserialize_with = "deser_max_height")]
+    max_height: u32,
 }
 
 impl Default for MenuConfig {
@@ -61,7 +61,7 @@ impl Default for MenuConfig {
             anchor: MenuAnchor::default(),
             autoshow: yes(),
             border: default_menu_border(),
-            max_height: None,
+            max_height: seven(),
         }
     }
 }
@@ -102,22 +102,24 @@ fn default_menu_border() -> Border {
     }
 }
 
+fn seven() -> u32 {
+    7
+}
+
 fn yes() -> bool {
     true
 }
 
-fn deser_max_height<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+fn deser_max_height<'de, D>(deserializer: D) -> Result<u32, D::Error>
 where
     D: de::Deserializer<'de>,
 {
-    Option::<u32>::deserialize(deserializer)?
-        .map(|height| match height {
-            0 => Err(de::Error::invalid_value(
-                de::Unexpected::Unsigned(0),
-                &"a positive number",
-            )),
+    match <u32>::deserialize(deserializer)? {
+        0 => Err(de::Error::invalid_value(
+            de::Unexpected::Unsigned(0),
+            &"a positive number",
+        )),
 
-            other => Ok(other),
-        })
-        .transpose()
+        height => Ok(height),
+    }
 }
