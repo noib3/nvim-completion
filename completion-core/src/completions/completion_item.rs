@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 /// TODO: docs
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompletionItem {
     pub(crate) text: String,
 }
