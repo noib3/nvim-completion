@@ -28,14 +28,12 @@ pub(crate) enum PoolMessage {
     QueryCompletions(Arc<CompletionRequest>),
 }
 
-/// TODO: let this thread pool own the sources which are currently stored as a
-/// hashmap on the UI thread?
 #[tokio::main]
 pub(crate) async fn sources_pool(
     sources: SourceMap,
     mut receiver: PoolReceiver,
     cb_sender: MainSender,
-    mut cb_handle: AsyncHandle,
+    cb_handle: AsyncHandle,
 ) {
     let sources = sources.into_iter().collect::<Vec<_>>();
 
@@ -94,9 +92,9 @@ async fn filter_enabled_sources(
             let bundle = bundle.clone();
             let buf = Arc::clone(buf);
             let sender = sender.clone();
-            let mut handle = handle.clone();
+            let handle = handle.clone();
             tokio::spawn(async move {
-                bundle.should_attach(&buf, &sender, &mut handle).await
+                bundle.should_attach(&buf, &sender, &handle).await
             })
         })
         .collect::<FuturesOrdered<_>>()
@@ -104,8 +102,10 @@ async fn filter_enabled_sources(
 
     let mut sources = Vec::new();
 
+    // TODO: use FuturesUnordered, don't use indexes.
+
     while let Some((idx, res)) = results.next().await {
-        if matches!(res, Ok(Ok(true))) {
+        if matches!(res, Ok(true)) {
             sources.push(all[idx].clone());
         }
     }
@@ -127,7 +127,7 @@ async fn send_completions(
             let bundle = bundle.clone();
             let req = Arc::clone(&req);
             let sender = sender.clone();
-            let mut handle = handle.clone();
+            let handle = handle.clone();
 
             tokio::spawn(async move {
                 let completions = bundle.complete(&req.buf, &req.ctx).await;

@@ -167,7 +167,7 @@ fn register_main_callback(
         match crate::pipeline::main_cb(&client, &mut receiver) {
             Err(Error::Nvim(e)) => return Err(e),
 
-            Err(other) => echoerr!("{:?}", other),
+            Err(other) => echoerr!("{}", other),
 
             Ok(_) => {},
         }

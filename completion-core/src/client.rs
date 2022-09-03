@@ -16,6 +16,7 @@ use crate::completions::{
     RevId,
 };
 use crate::lateinit::LateInit;
+use crate::messages::echoerr;
 use crate::pipeline::{MainMessage, MainSender, PoolMessage, PoolSender};
 use crate::ui::UiState;
 use crate::{Buffer, Error, Result};
@@ -88,7 +89,7 @@ impl Client {
             Err(Error::Nvim(nvim)) => Err(nvim),
 
             Err(other) => {
-                crate::messages::echoerr!("{other}");
+                echoerr!("{}", other);
                 Ok(R::default())
             },
         })

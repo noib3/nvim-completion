@@ -34,9 +34,16 @@ pub(crate) fn main_cb(
     while let Ok(msg) = receiver.try_recv() {
         match msg {
             AttachBuf(buf) => client.attach_buffer(buf)?,
+
             HandleCompletions(bundle) => bundles.push(bundle),
-            QueryAttach(fun, buf, sender) => sender.send(true).unwrap(),
-            // QueryAttach(fun, buf, sender) => sender.send(fun.call(buf)?)?,
+
+            QueryAttach(fun, buf, sender) => {
+                let res = fun
+                    .call(buf)
+                    .map_err(|err| crate::Error::source_attach("??", err))?;
+
+                sender.send(res).unwrap()
+            },
         }
     }
 

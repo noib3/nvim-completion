@@ -19,7 +19,7 @@ pub(crate) fn on_completions_arrival(
             Ok(completions) => Some((name, req, completions)),
 
             Err(err) => {
-                echoerr!("{:?}", err);
+                echoerr!("{}", err);
                 None
             },
         }

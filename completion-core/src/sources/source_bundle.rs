@@ -5,7 +5,6 @@ use nvim_oxi::{r#loop::AsyncHandle, Object};
 use tokio::sync::oneshot;
 
 use super::{CompletionSource, ObjectSafeCompletionSource, SourceEnable};
-use crate::lateinit::LateInit;
 use crate::pipeline::{MainMessage, MainSender};
 use crate::{Buffer, CompletionContext, CompletionItem, Result};
 
@@ -16,22 +15,15 @@ pub(crate) type SourceMap = HashMap<SourceId, SourceBundle>;
 pub(crate) struct SourceBundle {
     source: Arc<dyn ObjectSafeCompletionSource>,
     config: Option<SourceConfigPtr>,
-    enable: LateInit<SourceEnable>,
+    enable: Option<SourceEnable>,
 }
-
-// TODO: avoid this by making a Sync version of `LateInit`.
-unsafe impl Sync for SourceBundle {}
 
 impl<S> From<S> for SourceBundle
 where
     S: CompletionSource,
 {
     fn from(source: S) -> Self {
-        SourceBundle {
-            source: Arc::new(source),
-            config: None,
-            enable: LateInit::default(),
-        }
+        SourceBundle { source: Arc::new(source), config: None, enable: None }
     }
 }
 
@@ -49,7 +41,7 @@ impl SourceBundle {
 
     #[inline]
     pub(crate) fn set_enable(&mut self, enable: SourceEnable) {
-        self.enable.set(enable);
+        self.enable = Some(enable);
     }
 
     #[inline]
@@ -63,29 +55,32 @@ impl SourceBundle {
         &self,
         buf: &Buffer,
         sender: &MainSender,
-        handle: &mut AsyncHandle,
-    ) -> Result<bool> {
-        let source =
+        handle: &AsyncHandle,
+    ) -> bool {
+        let source_enable =
             self.source.should_attach(buf, self.config.as_ref().unwrap());
 
-        let user = match &*self.enable {
-            SourceEnable::Final(true) => async { true },
+        match self.enable.as_ref().unwrap() {
+            SourceEnable::Final(true) => source_enable.await.unwrap_or(false),
 
             SourceEnable::Depends(fun) => {
-                let (s, r) = oneshot::channel();
-                let msg =
-                    MainMessage::QueryAttach(fun.clone(), buf.nvim_buf(), s);
-                sender.send(msg);
-                handle.send();
-                // let a = r.await.unwrap();
-                // async { a }
-                todo!()
+                let user_enable = {
+                    let (s, r) = oneshot::channel();
+                    let buf = buf.nvim_buf();
+                    let msg = MainMessage::QueryAttach(fun.clone(), buf, s);
+                    sender.send(msg).unwrap();
+                    handle.send().unwrap();
+                    r
+                };
+
+                matches!(
+                    futures::join!(source_enable, user_enable),
+                    (Ok(true), Ok(true))
+                )
             },
 
-            SourceEnable::Final(false) => unreachable!(),
-        };
-
-        Ok(true)
+            SourceEnable::Final(false) => unreachable! {},
+        }
     }
 
     #[inline]
