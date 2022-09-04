@@ -65,30 +65,51 @@ impl CompletionMenu {
     }
 
     #[inline]
-    fn is_open(&self) -> bool {
+    pub(crate) fn is_open(&self) -> bool {
         self.win.is_some()
     }
 
     /// TODO: docs
-    pub(super) fn open(
+    pub(crate) fn open(
         &mut self,
-        completions: &[&CompletionItem],
+        completions: &[CompletionItem],
+        start: &std::time::Instant, /* this will be removed, it's here just for
+                                     * perf testing */
     ) -> nvim::Result<()> {
         debug_assert!(!self.is_open());
 
         // Populate the buffer.
 
         let lines = completions.iter().map(|cmp| cmp.single_line_display());
-        self.buf.set_lines(0, usize::MAX, true, lines.clone())?;
+        self.buf.set_lines(0, 10, false, lines.clone())?;
+
+        nvim::print!(
+            "populating the buffer at {}ms",
+            start.elapsed().as_millis()
+        );
 
         // Open the window.
 
         let height = cmp::min(self.config.max_height, completions.len() as _);
+        nvim::print!("computed height at {}ms", start.elapsed().as_millis());
 
-        let width = lines.map(|l| l.graphemes(true).count()).max().unwrap();
+        // Computing the "correct" width in terms of grapheme clusters is
+        // around 8 times slower than using the number of code points.
+        // Tested with 30k completions, using graphemes takes 57ms vs 7ms w/
+        // code points.
+        //
+        // Code points is already a big improvement vs using raw bytes, so the
+        // marginal increase in correctness is probably not worth 8x the
+        // performance cost.
+        let width = lines.map(|l| l.chars().count()).max().unwrap();
+        // let width = lines.map(|l| l.graphemes(true).count()).max().unwrap();
+
+        nvim::print!("computed width at {}ms", start.elapsed().as_millis());
 
         let config = WindowConfig::builder()
             .relative(WindowRelativeTo::Cursor)
+            .row(1)
+            .col(0)
             .height(height)
             .width(width as u32)
             .noautocmd(true)
@@ -97,17 +118,19 @@ impl CompletionMenu {
 
         self.win = Some(api::open_win(&self.buf, false, &config)?);
 
+        nvim::print!("opened window at {}ms", start.elapsed().as_millis());
+
         Ok(())
     }
 
     /// TODO: docs
-    pub(super) fn insert(
+    pub(crate) fn insert(
         &mut self,
         completions: &[(&CompletionItem, usize)],
     ) -> nvim::Result<()> {
         debug_assert!(self.is_open());
 
-        todo!()
+        Ok(())
     }
 
     /// Removes a set of lines from the completion menu.
