@@ -3,7 +3,7 @@ use nvim_oxi::{object, Object};
 use serde::de::DeserializeOwned;
 
 use super::SourceConfigPtr;
-use crate::{Buffer, CompletionContext, CompletionItem, Result};
+use crate::{Buffer, CompletionContext, CompletionItem, GenericError};
 
 /// TODO: docs
 #[async_trait]
@@ -15,6 +15,9 @@ pub trait CompletionSource: Send + Sync + 'static {
     type Config: Sync + DeserializeOwned;
 
     /// TODO: docs
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    /// TODO: docs
     fn api() -> Object {
         Object::nil()
     }
@@ -22,9 +25,11 @@ pub trait CompletionSource: Send + Sync + 'static {
     /// TODO: docs
     async fn should_attach(
         &self,
-        buf: &Buffer,
-        config: &Self::Config,
-    ) -> Result<bool>;
+        _buf: &Buffer,
+        _config: &Self::Config,
+    ) -> Result<bool, Self::Error> {
+        Ok(true)
+    }
 
     /// TODO: docs
     async fn complete(
@@ -32,7 +37,7 @@ pub trait CompletionSource: Send + Sync + 'static {
         buf: &Buffer,
         ctx: &CompletionContext,
         config: &Self::Config,
-    ) -> Result<Vec<CompletionItem>>;
+    ) -> Result<Vec<CompletionItem>, Self::Error>;
 }
 
 /// TODO: docs
@@ -40,24 +45,25 @@ pub trait CompletionSource: Send + Sync + 'static {
 pub(crate) trait ObjectSafeCompletionSource:
     Send + Sync + 'static
 {
-    fn deser_config(&self, config: Object) -> Result<SourceConfigPtr>;
-
-    // fn id(&self) -> SourceId;
-
     fn api(&self) -> Object;
+
+    fn deser_config(
+        &self,
+        config: Object,
+    ) -> Result<SourceConfigPtr, crate::Error>;
 
     async fn should_attach(
         &self,
         buf: &Buffer,
         config: &SourceConfigPtr,
-    ) -> Result<bool>;
+    ) -> Result<bool, GenericError>;
 
     async fn complete(
         &self,
         buf: &Buffer,
         ctx: &CompletionContext,
         config: &SourceConfigPtr,
-    ) -> Result<Vec<CompletionItem>>;
+    ) -> Result<Vec<CompletionItem>, GenericError>;
 }
 
 #[async_trait]
@@ -65,7 +71,15 @@ impl<S> ObjectSafeCompletionSource for S
 where
     S: CompletionSource,
 {
-    fn deser_config(&self, config: Object) -> Result<SourceConfigPtr> {
+    #[inline]
+    fn api(&self) -> Object {
+        <Self as CompletionSource>::api()
+    }
+
+    fn deser_config(
+        &self,
+        config: Object,
+    ) -> Result<SourceConfigPtr, crate::Error> {
         let config: <Self as CompletionSource>::Config = {
             let deserializer = object::Deserializer::new(config);
 
@@ -76,24 +90,15 @@ where
         Ok(SourceConfigPtr::new(config))
     }
 
-    // #[inline]
-    // fn id(&self) -> SourceId {
-    //     <Self as CompletionSource>::NAME
-    // }
-
-    #[inline]
-    fn api(&self) -> Object {
-        <Self as CompletionSource>::api()
-    }
-
     #[inline]
     async fn should_attach(
         &self,
         buf: &Buffer,
         config: &SourceConfigPtr,
-    ) -> Result<bool> {
+    ) -> Result<bool, GenericError> {
         <Self as CompletionSource>::should_attach(self, buf, config.cast())
             .await
+            .map_err(|err| Box::new(err) as _)
     }
 
     #[inline]
@@ -102,8 +107,9 @@ where
         buf: &Buffer,
         ctx: &CompletionContext,
         config: &SourceConfigPtr,
-    ) -> Result<Vec<CompletionItem>> {
+    ) -> Result<Vec<CompletionItem>, GenericError> {
         <Self as CompletionSource>::complete(self, buf, ctx, config.cast())
             .await
+            .map_err(|err| Box::new(err) as _)
     }
 }

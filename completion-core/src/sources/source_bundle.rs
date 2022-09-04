@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use nvim_oxi::{r#loop::AsyncHandle, Object};
+use nvim_oxi::Object;
 use tokio::sync::oneshot;
 
 use super::{CompletionSource, ObjectSafeCompletionSource, SourceEnable};
 use crate::pipeline::{MainMessage, MainSender};
-use crate::{Buffer, CompletionContext, CompletionItem, Result};
+use crate::{Buffer, CompletionContext, CompletionItem, Error, GenericError};
 
 pub(crate) type SourceId = &'static str;
 pub(crate) type SourceMap = HashMap<SourceId, SourceBundle>;
+pub(crate) type SourceVec = Vec<(SourceId, SourceBundle)>;
 
 #[derive(Clone)]
 pub(crate) struct SourceBundle {
@@ -34,7 +35,7 @@ impl SourceBundle {
     }
 
     #[inline]
-    pub(crate) fn set_config(&mut self, config: Object) -> Result<()> {
+    pub(crate) fn set_config(&mut self, config: Object) -> Result<(), Error> {
         self.config = Some(self.source.deser_config(config)?);
         Ok(())
     }
@@ -55,7 +56,6 @@ impl SourceBundle {
         &self,
         buf: &Buffer,
         sender: &MainSender,
-        handle: &AsyncHandle,
     ) -> bool {
         let source_enable =
             self.source.should_attach(buf, self.config.as_ref().unwrap());
@@ -68,8 +68,7 @@ impl SourceBundle {
                     let (s, r) = oneshot::channel();
                     let buf = buf.nvim_buf();
                     let msg = MainMessage::QueryAttach(fun.clone(), buf, s);
-                    sender.send(msg).unwrap();
-                    handle.send().unwrap();
+                    sender.send(msg);
                     r
                 };
 
@@ -88,7 +87,7 @@ impl SourceBundle {
         &self,
         buf: &Buffer,
         ctx: &CompletionContext,
-    ) -> Result<Vec<CompletionItem>> {
+    ) -> Result<Vec<CompletionItem>, GenericError> {
         self.source.complete(buf, ctx, self.config.as_ref().unwrap()).await
     }
 }

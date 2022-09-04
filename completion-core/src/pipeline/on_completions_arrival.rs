@@ -1,7 +1,6 @@
 use nvim_oxi as nvim;
 
 use crate::completions::CompletionBundle;
-use crate::messages::echoerr;
 use crate::{Client, Result};
 
 /// Function called every time a bunch of completion results computed by the
@@ -18,21 +17,10 @@ pub(crate) fn on_completions_arrival(
     let client = client.clone();
 
     nvim::schedule(move |_| {
-        // First we filter out bundles coming from old revisions and errors.
-        let iter = bundles.into_iter().filter_map(|(name, req, res)| {
-            if !client.is_last_rev(&req.rev) {
-                return None;
-            }
-
-            match res {
-                Ok(completions) => Some((name, req, completions)),
-
-                Err(err) => {
-                    echoerr!("{}", err);
-                    None
-                },
-            }
-        });
+        // First we filter out bundles coming from old revisions.
+        let iter = bundles
+            .into_iter()
+            .filter(|(_, req, _)| client.is_last_rev(&req.rev));
 
         for (source_name, req, completions) in iter {
             let ui = &mut *client.ui();

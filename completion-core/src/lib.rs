@@ -22,6 +22,6 @@ pub use completions::{
     CompletionItem,
     CompletionItemBuilder,
 };
-pub use error::{Error, Result};
+use error::{Error, GenericError, Result};
 pub use setup::{build_api, register_source};
 pub use sources::CompletionSource;

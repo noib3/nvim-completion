@@ -3,12 +3,11 @@ use std::time::Instant;
 
 use super::{CompletionContext, CompletionItem};
 use crate::sources::SourceId;
-use crate::Result;
 
 /// Packs together a source identifier, a completion request sent to that
 /// source and the response it sent back (i.e. a bunch of completion items).
 pub(crate) type CompletionBundle =
-    (SourceId, Arc<CompletionRequest>, Result<Vec<CompletionItem>>);
+    (SourceId, Arc<CompletionRequest>, Vec<CompletionItem>);
 
 // TODO: docs
 #[derive(Debug)]

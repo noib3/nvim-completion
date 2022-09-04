@@ -470,6 +470,7 @@ dependencies = [
  "async-trait",
  "nvim-completion-core",
  "serde",
+ "thiserror",
  "tokio",
 ]
 
@@ -481,6 +482,7 @@ dependencies = [
  "nvim-completion-core",
  "nvim-oxi",
  "serde",
+ "thiserror",
 ]
 
 [[package]]

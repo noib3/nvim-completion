@@ -3,8 +3,7 @@
 
 use std::cell::RefCell;
 
-use nvim::{r#loop::AsyncHandle, Object};
-use nvim_oxi as nvim;
+use nvim_oxi::{self as nvim, Object};
 use once_cell::unsync::Lazy;
 use tokio::sync::mpsc;
 
@@ -112,10 +111,9 @@ fn setup(client: &Client, preferences: Object) -> Result<()> {
 
     let augroup_id = self::setup_augroup(client)?;
 
-    let (main_sender, handle) = self::register_main_callback(client.clone())?;
+    let main_sender = self::register_main_callback(client.clone())?;
 
-    let pool_sender =
-        self::start_sources_pool(sources, main_sender.clone(), handle);
+    let pool_sender = self::start_sources_pool(sources, main_sender.clone());
 
     client.set_augroup_id(augroup_id);
     client.set_main_sender(main_sender);
@@ -158,9 +156,7 @@ fn setup_augroup(client: &Client) -> Result<u32> {
 }
 
 /// TODO: docs
-fn register_main_callback(
-    client: Client,
-) -> Result<(MainSender, AsyncHandle)> {
+fn register_main_callback(client: Client) -> Result<MainSender> {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
     let handle = nvim::r#loop::new_async(move || {
@@ -175,19 +171,20 @@ fn register_main_callback(
         Ok(())
     })?;
 
-    Ok((sender, handle))
+    Ok(MainSender::new(sender, handle))
 }
 
 /// TODO: docs
 fn start_sources_pool(
     sources: SourceMap,
     main_sender: MainSender,
-    handle: AsyncHandle,
 ) -> PoolSender {
+    let sources = sources.into_iter().collect::<Vec<_>>();
+
     let (sender, receiver) = mpsc::unbounded_channel();
 
     let _ = std::thread::spawn(move || {
-        crate::pipeline::sources_pool(sources, receiver, main_sender, handle)
+        crate::pipeline::sources_pool(sources, receiver, main_sender)
     });
 
     sender

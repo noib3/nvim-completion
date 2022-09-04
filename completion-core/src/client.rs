@@ -123,7 +123,7 @@ impl Client {
 
     #[inline]
     pub(crate) fn send_main(msg: MainMessage) {
-        MAIN_SENDER.with(move |sender| sender.send(msg).unwrap());
+        MAIN_SENDER.with(move |sender| sender.send(msg));
     }
 
     // TODO: docs

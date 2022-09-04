@@ -3,12 +3,11 @@ use nvim_completion_core::{
     Buffer,
     CompletionContext,
     CompletionItem,
-    CompletionItemBuilder,
     CompletionSource,
-    Result,
 };
 use nvim_oxi::{Dictionary, Function, Object};
 use serde::Deserialize;
+use thiserror::Error as ThisError;
 
 use super::client_capabilities::client_capabilities;
 
@@ -18,11 +17,18 @@ pub struct Lsp;
 #[serde(deny_unknown_fields)]
 pub struct Config {}
 
+#[derive(Debug, ThisError)]
+#[error("{0}")]
+pub struct Error(&'static str);
+
+type Result<T> = std::result::Result<T, Error>;
+
 #[async_trait]
 impl CompletionSource for Lsp {
     const NAME: &'static str = "lsp";
 
     type Config = Config;
+    type Error = Error;
 
     fn api() -> Object {
         Dictionary::from_iter([(
@@ -46,13 +52,6 @@ impl CompletionSource for Lsp {
         ctx: &CompletionContext,
         _config: &Config,
     ) -> Result<Vec<CompletionItem>> {
-        let completions = vec![CompletionItemBuilder::new(format!(
-            "{} received {}",
-            Self::NAME,
-            ctx.ch()
-        ))
-        .build()];
-
-        Ok(completions)
+        Err(Error("AA!"))
     }
 }

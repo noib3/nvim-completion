@@ -3,14 +3,15 @@ use std::error::Error as StdError;
 use nvim_oxi as nvim;
 use thiserror::Error as ThisError;
 
-/// `nvim-completion`'s result type.
-pub type Result<T> = std::result::Result<T, Error>;
-
 use crate::sources::SourceId;
+
+pub(crate) type GenericError = Box<dyn StdError + Send + Sync + 'static>;
+
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, ThisError)]
 #[non_exhaustive]
-pub enum Error {
+pub(crate) enum Error {
     #[error("can't setup more than once per session")]
     AlreadySetup,
 

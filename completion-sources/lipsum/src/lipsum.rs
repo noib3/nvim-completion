@@ -5,9 +5,9 @@ use nvim_completion_core::{
     CompletionItem,
     CompletionItemBuilder,
     CompletionSource,
-    Result,
 };
 use serde::Deserialize;
+use thiserror::Error as ThisError;
 
 pub struct Lipsum;
 
@@ -15,11 +15,18 @@ pub struct Lipsum;
 #[serde(deny_unknown_fields)]
 pub struct Config {}
 
+#[derive(Debug, ThisError)]
+#[error("{0}")]
+pub struct Error(&'static str);
+
+type Result<T> = std::result::Result<T, Error>;
+
 #[async_trait]
 impl CompletionSource for Lipsum {
     const NAME: &'static str = "lipsum";
 
     type Config = Config;
+    type Error = Error;
 
     async fn should_attach(
         &self,
@@ -35,8 +42,6 @@ impl CompletionSource for Lipsum {
         _ctx: &CompletionContext,
         _config: &Config,
     ) -> Result<Vec<CompletionItem>> {
-        // tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
         let completions = super::WORDS
             .iter()
             .map(|word| CompletionItemBuilder::new(*word).build())
