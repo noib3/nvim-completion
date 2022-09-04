@@ -7,7 +7,6 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 nvim-completion-core = { path = "../../completion-core" }
-nvim-oxi = { path = "../../../nvim-oxi/nvim-oxi" }
-# nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"

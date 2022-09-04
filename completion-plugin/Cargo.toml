@@ -11,5 +11,4 @@ crate-type = ["cdylib"]
 nvim-completion-core = { path = "../completion-core" }
 nvim-completion-lipsum = { path = "../completion-sources/lipsum" }
 nvim-completion-lsp = { path = "../completion-sources/lsp" }
-nvim-oxi = { path = "../../nvim-oxi/nvim-oxi" }
-# nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
