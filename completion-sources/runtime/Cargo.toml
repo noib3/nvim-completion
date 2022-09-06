@@ -1,0 +1,15 @@
+[package]
+name = "nvim-completion-runtime"
+version = "0.1.0"
+authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+async-trait = "0.1"
+nvim-completion-core = { path = "../../completion-core" }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"

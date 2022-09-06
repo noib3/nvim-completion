@@ -7,7 +7,9 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 futures = "0.3.23"
+libloading = "0.7"
 memchr = "2"
+nvim-completion-derive = { path = "../completion-derive" }
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
 once_cell = "1.13"
 # ropey = "1.5"

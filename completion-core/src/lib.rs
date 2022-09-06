@@ -23,5 +23,6 @@ pub use completions::{
     CompletionItemBuilder,
 };
 use error::{Error, GenericError, Result};
+pub use nvim_completion_derive::RuntimeSource;
 pub use setup::{build_api, register_source};
-pub use sources::CompletionSource;
+pub use sources::{CompletionSource, ObjectSafeCompletionSource, SourceId};

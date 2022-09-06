@@ -8,7 +8,9 @@ use super::{CompletionSource, ObjectSafeCompletionSource, SourceEnable};
 use crate::pipeline::{MainMessage, MainSender};
 use crate::{Buffer, CompletionContext, CompletionItem, Error, GenericError};
 
-pub(crate) type SourceId = &'static str;
+#[doc(hidden)]
+pub type SourceId = &'static str;
+
 pub(crate) type SourceMap = HashMap<SourceId, SourceBundle>;
 pub(crate) type SourceVec = Vec<(SourceId, SourceBundle)>;
 
@@ -23,12 +25,24 @@ impl<S> From<S> for SourceBundle
 where
     S: CompletionSource,
 {
+    #[inline]
     fn from(source: S) -> Self {
         SourceBundle { source: Arc::new(source), config: None, enable: None }
     }
 }
 
 impl SourceBundle {
+    #[inline]
+    pub(crate) unsafe fn from_ptr(
+        source: *const dyn ObjectSafeCompletionSource,
+    ) -> Self {
+        SourceBundle {
+            source: Arc::from_raw(source),
+            config: None,
+            enable: None,
+        }
+    }
+
     #[inline]
     pub(crate) fn api(&self) -> Object {
         self.source.api()
@@ -92,8 +106,9 @@ impl SourceBundle {
     }
 }
 
+#[doc(hidden)]
 #[derive(Clone)]
-pub(crate) struct SourceConfigPtr(*const ());
+pub struct SourceConfigPtr(*const ());
 
 unsafe impl Send for SourceConfigPtr {}
 unsafe impl Sync for SourceConfigPtr {}

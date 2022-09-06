@@ -41,10 +41,9 @@ pub trait CompletionSource: Send + Sync + 'static {
 }
 
 /// TODO: docs
+#[doc(hidden)]
 #[async_trait]
-pub(crate) trait ObjectSafeCompletionSource:
-    Send + Sync + 'static
-{
+pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
     fn api(&self) -> Object;
 
     fn deser_config(

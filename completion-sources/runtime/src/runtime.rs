@@ -5,11 +5,13 @@ use nvim_completion_core::{
     CompletionItem,
     CompletionItemBuilder,
     CompletionSource,
+    RuntimeSource,
 };
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 
-pub struct Lipsum;
+#[derive(RuntimeSource)]
+pub struct Runtime;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -22,8 +24,8 @@ pub struct Error(&'static str);
 type Result<T> = std::result::Result<T, Error>;
 
 #[async_trait]
-impl CompletionSource for Lipsum {
-    const NAME: &'static str = "lipsum";
+impl CompletionSource for Runtime {
+    const NAME: &'static str = "runtime";
 
     type Config = Config;
 
@@ -35,11 +37,6 @@ impl CompletionSource for Lipsum {
         _ctx: &CompletionContext,
         _config: &Config,
     ) -> Result<Vec<CompletionItem>> {
-        let completions = super::WORDS
-            .iter()
-            .map(|word| CompletionItemBuilder::new(*word).build())
-            .collect::<Vec<_>>();
-
-        Ok(completions)
+        Ok(vec![CompletionItemBuilder::new("from dynamic").build()])
     }
 }

@@ -3,7 +3,8 @@
 
 use std::cell::RefCell;
 
-use nvim_oxi::{self as nvim, Object};
+use libloading::Library;
+use nvim_oxi::{self as nvim, Function, Object};
 use once_cell::unsync::Lazy;
 use tokio::sync::mpsc;
 
@@ -18,12 +19,19 @@ use crate::sources::{
     SourceEnable,
     SourceMap,
 };
-use crate::{Client, Error, Result};
+use crate::{Client, Error, ObjectSafeCompletionSource, Result, SourceId};
 
 /// `Lazy` is to have a heap-allocated global variable, `RefCell` is for
 /// interior mutability and `Option` allows to extract an owned `T` via
 /// `Option::take`.
 type StaticVar<T> = Lazy<RefCell<Option<T>>>;
+
+/// TODO: docs
+type SourcePtr =
+    extern "C" fn() -> (SourceId, *const dyn ObjectSafeCompletionSource);
+
+/// TODO: docs
+const RUNTIME_SOURCE_EXPORTED_SYMBOL: &str = "_nvim_completion_runtime_source";
 
 thread_local! {
     static SOURCES: StaticVar<SourceMap> =
@@ -45,6 +53,27 @@ pub fn register_source<S: CompletionSource>(source: S) {
         let sources = sources.as_mut().unwrap();
         sources.insert(S::NAME, SourceBundle::from(source));
     });
+}
+
+/// TODO: docs
+pub(crate) fn register_runtime_source(path: String) -> nvim::Result<()> {
+    let (name, bundle) = unsafe {
+        let lib = Library::new(path).unwrap();
+
+        let (name, source) = lib
+            .get::<SourcePtr>(RUNTIME_SOURCE_EXPORTED_SYMBOL.as_bytes())
+            .unwrap()();
+
+        (name, SourceBundle::from_ptr(source))
+    };
+
+    SOURCES.with(move |s| {
+        let sources = &mut *s.borrow_mut();
+        let sources = sources.as_mut().unwrap();
+        sources.insert(name, bundle);
+    });
+
+    Ok(())
 }
 
 // Returns the whole user-facing API of the plugin. The returned
@@ -69,11 +98,14 @@ pub fn build_api() -> nvim::Dictionary {
             .collect::<Vec<_>>()
     });
 
-    [("setup", Object::from(client.to_nvim_fn(self::setup)))]
-        .into_iter()
-        .chain(crate::mappings::setup(&client))
-        .chain(source_dicts)
-        .collect()
+    [
+        ("register_source", Function::from_fn(register_runtime_source).into()),
+        ("setup", client.to_nvim_fn(self::setup).into()),
+    ]
+    .into_iter()
+    .chain(crate::mappings::setup(&client))
+    .chain(source_dicts)
+    .collect()
 }
 
 /// TODO: docs

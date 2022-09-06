@@ -9,9 +9,10 @@ pub(crate) type GenericError = Box<dyn StdError + Send + Sync + 'static>;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
+#[doc(hidden)]
 #[derive(Debug, ThisError)]
 #[non_exhaustive]
-pub(crate) enum Error {
+pub enum Error {
     #[error("can't setup more than once per session")]
     AlreadySetup,
 

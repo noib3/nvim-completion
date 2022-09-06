@@ -28,6 +28,7 @@ impl CompletionSource for Lsp {
     const NAME: &'static str = "lsp";
 
     type Config = Config;
+
     type Error = Error;
 
     fn api() -> Object {
@@ -38,18 +39,10 @@ impl CompletionSource for Lsp {
         .into()
     }
 
-    async fn should_attach(
-        &self,
-        _buf: &Buffer,
-        _config: &Config,
-    ) -> Result<bool> {
-        Ok(true)
-    }
-
     async fn complete(
         &self,
         _buf: &Buffer,
-        ctx: &CompletionContext,
+        _ctx: &CompletionContext,
         _config: &Config,
     ) -> Result<Vec<CompletionItem>> {
         Err(Error("AA!"))

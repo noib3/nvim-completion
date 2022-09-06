@@ -2,9 +2,12 @@
 
 members = [
   "completion-core",
+  "completion-derive",
   "completion-plugin",
-  "completion-sources/*"
+  "completion-sources/*",
 ]
+
+exclude = [ "completion-sources/runtime" ]
 
 [profile.release]
 lto = true
