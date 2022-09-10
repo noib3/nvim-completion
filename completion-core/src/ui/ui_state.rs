@@ -2,6 +2,8 @@ use nvim::api::Buffer;
 use nvim_oxi as nvim;
 
 use super::{CompletionHint, CompletionItemDetails, CompletionMenu, UiConfig};
+use crate::completions::LineContext;
+use crate::CompletionItem;
 
 #[derive(Default)]
 pub(crate) struct UiState {
@@ -60,11 +62,27 @@ impl UiState {
         Ok(())
     }
 
+    /// TODO: docs
+    #[inline]
+    pub(crate) fn display(
+        &mut self,
+        comps: &[&CompletionItem],
+        buf: &mut Buffer,
+        cursor: &LineContext,
+    ) -> nvim::Result<()> {
+        debug_assert!(!comps.is_empty());
+
+        self.hint.show(comps[0], buf, cursor)?;
+        self.menu.display(comps, self.rows, self.columns)?;
+
+        Ok(())
+    }
+
     /// Hides the completion hint, menu and details window.
     #[inline]
     pub(crate) fn hide_all(&mut self, buf: &mut Buffer) -> nvim::Result<()> {
         self.hint.hide(buf)?;
-        self.menu.close()?;
+        self.menu.close_window()?;
         self.details.hide()
     }
 

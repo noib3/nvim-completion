@@ -1,10 +1,6 @@
-use std::ops::Deref;
-
-use nvim_oxi as nvim;
-
 #[derive(Debug)]
 pub struct CompletionContext {
-    pub(crate) cursor: Cursor,
+    pub(crate) line: LineContext,
 }
 
 impl CompletionContext {
@@ -12,21 +8,13 @@ impl CompletionContext {
         'a'
     }
 
-    pub(crate) fn new(cursor: Cursor) -> Self {
-        Self { cursor }
-    }
-}
-
-impl Deref for CompletionContext {
-    type Target = Cursor;
-
-    fn deref(&self) -> &Self::Target {
-        &self.cursor
+    pub(crate) fn new(cursor: LineContext) -> Self {
+        Self { line: cursor }
     }
 }
 
 #[derive(Debug)]
-pub struct Cursor {
+pub struct LineContext {
     /// TODO: docs
     pub(crate) row: usize,
 
@@ -46,7 +34,7 @@ pub struct Cursor {
     pub(crate) len_prefix: usize,
 }
 
-impl Cursor {
+impl LineContext {
     /// TODO: docs
     #[inline(always)]
     pub fn current_line(&self) -> &str {
@@ -76,37 +64,11 @@ impl Cursor {
     pub(crate) fn is_at_eol(&self) -> bool {
         self.line.len() == self.col
     }
-}
 
-impl TryFrom<&nvim::opts::OnBytesArgs> for Cursor {
-    type Error = nvim::Error;
-
-    fn try_from(
-        &(
-            _,
-            ref buf,
-            _,
-            start_row,
-            start_col,
-            _,
-            _,
-            _,
-            bytes_deleted,
-            _,
-            _,
-            bytes_added,
-        ): &nvim::opts::OnBytesArgs,
-    ) -> Result<Self, Self::Error> {
-        let col = start_col + if bytes_deleted != 0 { 0 } else { bytes_added };
-
-        let line = buf
-            .get_lines(start_row, start_row + 1, true)?
-            .next()
-            .unwrap()
-            .to_string_lossy()
-            .into_owned();
-
-        Ok(Cursor::new(start_row, col, line))
+    /// TODO: docs
+    #[inline(always)]
+    pub(crate) fn matched_prefix(&self) -> &str {
+        &self.line[self.col - self.len_prefix..self.col]
     }
 }
 
@@ -131,7 +93,7 @@ print(prefix) -- `String`
 
 /// TODO: docs
 fn find_prefix(line: &str, col: usize) -> usize {
-    debug_assert!(col <= line.len());
+    debug_assert!(col <= line.len(), "col is {col} but line is {line:?}");
 
     const WORD_BOUNDARIES: &[u8] =
         &[b' ', b'.', b'\'', b'"', b'\t', b'(', b')', b'[', b']', b'{', b'}'];

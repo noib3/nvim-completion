@@ -8,7 +8,7 @@ use nvim_oxi::{
 };
 
 use super::ui_config::HintConfig;
-use crate::completions::Cursor;
+use crate::completions::LineContext;
 use crate::hlgroups;
 use crate::CompletionItem;
 
@@ -65,11 +65,11 @@ impl CompletionHint {
     }
 
     /// Shows the completion hint in the provided buffer.
-    pub fn show(
+    pub(super) fn show(
         &mut self,
-        buf: &mut Buffer,
-        cursor: &Cursor,
         completion: &CompletionItem,
+        buf: &mut Buffer,
+        cursor: &LineContext,
     ) -> nvim::Result<()> {
         let text = match extract_hint_text(cursor, completion) {
             Some(text) => text,
@@ -92,7 +92,7 @@ impl CompletionHint {
 
 /// TODO: docs
 fn extract_hint_text<'a>(
-    cursor: &'a Cursor,
+    cursor: &'a LineContext,
     completion: &'a CompletionItem,
 ) -> Option<Cow<'a, str>> {
     // We only display completion hints if there are no characters after the
@@ -126,21 +126,21 @@ mod tests {
 
     #[test]
     fn cursor_not_at_eol() {
-        let cursor = Cursor::new(0, 2, "foo".into());
+        let cursor = LineContext::new(0, 2, "foo".into());
         let comp = CompletionItem::new("foobar");
         assert_eq!(None, extract_hint_text(&cursor, &comp));
     }
 
     #[test]
     fn foo_foobar() {
-        let cursor = Cursor::new(0, 3, "foo".into());
+        let cursor = LineContext::new(0, 3, "foo".into());
         let comp = CompletionItem::new("foobar");
         assert_eq!("bar", extract_hint_text(&cursor, &comp).unwrap());
     }
 
     #[test]
     fn failing() {
-        let cursor = Cursor::new(0, 1, "e".into());
+        let cursor = LineContext::new(0, 1, "e".into());
         let comp = CompletionItem::new("lsp received a");
         assert_eq!(
             "sp received a",
@@ -150,21 +150,21 @@ mod tests {
 
     #[test]
     fn multiline_completion() {
-        let cursor = Cursor::new(0, 3, "foo".into());
+        let cursor = LineContext::new(0, 3, "foo".into());
         let comp = CompletionItem::new("foobar\nbaz");
         assert_eq!("bar..", extract_hint_text(&cursor, &comp).unwrap());
     }
 
     #[test]
     fn multiword_completion() {
-        let cursor = Cursor::new(0, 4, "aaaa".into());
+        let cursor = LineContext::new(0, 4, "aaaa".into());
         let comp = CompletionItem::new("lsp received a\nbaz");
         assert_eq!("received a..", extract_hint_text(&cursor, &comp).unwrap());
     }
 
     #[test]
     fn prefix_longer_than_completion() {
-        let cursor = Cursor::new(0, 11, "foo.bar_baz".into());
+        let cursor = LineContext::new(0, 11, "foo.bar_baz".into());
         let comp = CompletionItem::new("bar");
         assert_eq!(None, extract_hint_text(&cursor, &comp));
     }

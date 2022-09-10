@@ -4,6 +4,9 @@ pub(crate) fn setup() -> nvim::Result<()> {
     let mut opts = SetHighlightOpts::builder();
     opts.default(true);
 
+    api::set_hl(0, MENU_MATCHING, Some(&opts.bold(true).build()))?;
+    opts.bold(false);
+
     api::set_hl(0, BAD_OPTION_PATH, Some(&opts.link("Statement").build()))?;
     api::set_hl(0, ERROR_MSG_TAG, Some(&opts.link("ErrorMsg").build()))?;
     api::set_hl(0, INFO_MSG_TAG, Some(&opts.link("Question").build()))?;
@@ -15,7 +18,6 @@ pub(crate) fn setup() -> nvim::Result<()> {
     api::set_hl(0, HINT, Some(&opts.link("Comment").build()))?;
     api::set_hl(0, MENU, Some(&opts.link("NormalFloat").build()))?;
     api::set_hl(0, MENU_BORDER, Some(&opts.link("FloatBorder").build()))?;
-    api::set_hl(0, MENU_MATCHING, Some(&opts.bold(true).build()))?;
     api::set_hl(0, MENU_SELECTED, Some(&opts.link("PmenuSel").build()))?;
 
     Ok(())

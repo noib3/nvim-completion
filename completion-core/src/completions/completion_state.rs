@@ -8,8 +8,8 @@ type CompletionTimes = [u16; 1024];
 /// TODO: docs
 #[derive(Default)]
 pub(crate) struct CompletionState {
-    completions: Vec<(CompletionItem, bool)>,
-
+    completions: HashMap<SourceId, Vec<CompletionItem>>,
+    // displayed_completions: Vec<(SourceId, )
     config: CompletionConfig,
 
     selected_idx: Option<usize>,

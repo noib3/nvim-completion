@@ -51,7 +51,7 @@ pub(super) struct MenuConfig {
     border: Border,
 
     #[serde(default = "seven", deserialize_with = "deser_max_height")]
-    pub max_height: u32,
+    pub max_height: u16,
 }
 
 impl Default for MenuConfig {
@@ -102,7 +102,7 @@ fn default_menu_border() -> Border {
     }
 }
 
-fn seven() -> u32 {
+fn seven() -> u16 {
     7
 }
 
@@ -110,11 +110,11 @@ fn yes() -> bool {
     true
 }
 
-fn deser_max_height<'de, D>(deserializer: D) -> Result<u32, D::Error>
+fn deser_max_height<'de, D>(deserializer: D) -> Result<u16, D::Error>
 where
     D: de::Deserializer<'de>,
 {
-    match <u32>::deserialize(deserializer)? {
+    match <u16>::deserialize(deserializer)? {
         0 => Err(de::Error::invalid_value(
             de::Unexpected::Unsigned(0),
             &"a positive number",

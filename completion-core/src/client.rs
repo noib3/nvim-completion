@@ -138,19 +138,28 @@ impl Client {
     #[inline]
     pub(crate) fn query_completions(
         &self,
-        buf: &NvimBuffer,
-        ctx: CompletionContext,
         start: Instant,
+        ctx: CompletionContext,
         rev: RevId,
     ) {
+        self.set_rev_id(rev.clone());
+
         // TODO: explain why we can unwrap here.
-        let buf =
-            self.misc_state.borrow().bufs.get(buf).map(Arc::clone).unwrap();
+        let buf = self
+            .misc_state
+            .borrow()
+            .bufs
+            .get(&rev.buf)
+            .map(Arc::clone)
+            .unwrap();
 
         let req = CompletionRequest { buf, ctx, start, rev };
 
         self.send_pool(PoolMessage::QueryCompletions(Arc::new(req)))
     }
+
+    // -----------------------------------------------------------------------
+    // Misc.
 
     /// Sends a message to the thread pool to stop any running tasks querying
     /// completion results from an earlier request.
@@ -158,9 +167,6 @@ impl Client {
     pub(crate) fn stop_sources(&self) {
         self.send_pool(PoolMessage::AbortAll);
     }
-
-    // -----------------------------------------------------------------------
-    // Misc.
 
     /// Attaches a buffer by...
     pub(crate) fn attach_buffer(&self, buf: Arc<Buffer>) -> Result<()> {
@@ -182,7 +188,7 @@ impl Client {
     }
 
     /// Updates the last revision seen by the client.
-    pub(crate) fn set_rev_id(&self, rev_id: RevId) {
+    fn set_rev_id(&self, rev_id: RevId) {
         (*self.misc_state.borrow_mut()).rev_id = rev_id;
     }
 

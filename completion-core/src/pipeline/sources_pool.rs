@@ -39,12 +39,12 @@ pub(crate) async fn sources_pool(
     let mut buf_sources = HashMap::<NvimBuffer, SourceVec>::new();
 
     // Holds the handles of the tasks currently computing the completions.
-    let mut handles = Vec::<JoinHandle<()>>::new();
+    let mut fetch_handles = Vec::<JoinHandle<()>>::new();
 
     while let Some(msg) = receiver.recv().await {
         match msg {
             PoolMessage::AbortAll => {
-                handles.drain(..).for_each(|task| task.abort());
+                fetch_handles.drain(..).for_each(|task| task.abort());
             },
 
             PoolMessage::QueryAttach(buf) => {
@@ -58,11 +58,13 @@ pub(crate) async fn sources_pool(
             },
 
             PoolMessage::QueryCompletions(req) => {
+                fetch_handles.drain(..).for_each(|task| task.abort());
+
                 // We only query the bundles attached to the buffer in the
                 // request. We can always unwrap because..
                 let sources = buf_sources.get(&req.nvim_buf()).unwrap();
 
-                handles = sources
+                fetch_handles = sources
                     .iter()
                     .map(|(id, bundle)| {
                         let id: SourceId = id;
@@ -120,7 +122,7 @@ async fn query_completions(
     req: Arc<CompletionRequest>,
     sender: &MainSender,
 ) {
-    let completions = match bundle.complete(&req.buf, &req.ctx).await {
+    let mut completions = match bundle.complete(&req.buf, &req.ctx).await {
         Ok(completions) => completions,
 
         Err(err) => {
@@ -133,6 +135,11 @@ async fn query_completions(
         },
     };
 
-    let msg = MainMessage::HandleCompletions((source, req, completions));
+    let sorted =
+        super::fuzzy_find(req.ctx.line.matched_prefix(), &mut completions);
+
+    let msg =
+        MainMessage::HandleCompletions((source, req, completions, sorted));
+
     sender.send(msg);
 }

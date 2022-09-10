@@ -7,7 +7,7 @@ use crate::sources::SourceId;
 /// Packs together a source identifier, a completion request sent to that
 /// source and the response it sent back (i.e. a bunch of completion items).
 pub(crate) type CompletionBundle =
-    (SourceId, Arc<CompletionRequest>, Vec<CompletionItem>);
+    (SourceId, Arc<CompletionRequest>, Vec<CompletionItem>, Vec<usize>);
 
 // TODO: docs
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl CompletionRequest {
 /// Uniquely identifies an edit into a buffer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct RevId {
-    buf: nvim_oxi::api::Buffer,
+    pub(crate) buf: nvim_oxi::api::Buffer,
     changedtick: u32,
 }
 

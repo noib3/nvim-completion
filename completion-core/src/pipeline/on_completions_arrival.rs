@@ -1,7 +1,7 @@
 use nvim_oxi as nvim;
 
 use crate::completions::CompletionBundle;
-use crate::{Client, Result};
+use crate::Client;
 
 /// Function called every time a bunch of completion results computed by the
 /// thread pool (potentially coming from different sources) are sent to the
@@ -9,53 +9,46 @@ use crate::{Client, Result};
 pub(crate) fn on_completions_arrival(
     client: &Client,
     bundles: Vec<CompletionBundle>,
-) -> Result<()> {
-    // NOTE: all UI-related Neovim API calls cannot be executed directly at
-    // this time or they may cause segfaults. Instead they have to be scheduled
-    // to be executed on the next tick of the event loop.
+) -> nvim::Result<()> {
+    // First we filter out bundles coming from old revisions.
+    let mut iter = bundles
+        .into_iter()
+        .filter(|(_, req, _, _)| client.is_last_rev(&req.rev));
 
-    let client = client.clone();
+    let (source_name, req, completions, sorted) = match iter.next() {
+        Some(b) => b,
+        None => return Ok(()),
+    };
 
-    nvim::schedule(move |_| {
-        // First we filter out bundles coming from old revisions.
-        let iter = bundles
-            .into_iter()
-            .filter(|(_, req, _)| client.is_last_rev(&req.rev));
+    if source_name != "lipsum" {
+        return Ok(());
+    }
 
-        for (source_name, req, completions) in iter {
-            let ui = &mut *client.ui();
+    nvim::print!(
+        "arrived {} completion{} from {} in {:?}ms",
+        completions.len(),
+        if completions.len() != 1 { "s" } else { "" },
+        source_name,
+        req.start.elapsed().as_millis(),
+    );
 
-            nvim::print!(
-                "arrived {} completion{} from {} in {:?}ms",
-                completions.len(),
-                if completions.len() != 1 { "s" } else { "" },
-                source_name,
-                req.start.elapsed().as_millis(),
-            );
+    let ciao = sorted.iter().map(|idx| &completions[*idx]).collect::<Vec<_>>();
 
-            ui.hint.show(
-                &mut req.nvim_buf(),
-                &(*req).ctx.cursor,
-                &completions[0],
-            )?;
+    if ciao.is_empty() {
+        return Ok(());
+    }
 
-            if !ui.menu.is_open() && completions.len() > 1 {
-                ui.menu.open(&completions, &req.start)?;
-            } else {
-                // ui.menu.insert(&[(completions, 0)])?;
-            }
+    client.ui().display(&*ciao, &mut req.nvim_buf(), &req.ctx.line)?;
 
-            nvim::print!(
-                "displayed {} completion{} from {} in {:?}ms",
-                completions.len(),
-                if completions.len() != 1 { "s" } else { "" },
-                source_name,
-                req.start.elapsed().as_millis(),
-            );
-        }
+    nvim::print!(
+        "displayed {} completion{} from {} in {:?}ms",
+        completions.len(),
+        if completions.len() != 1 { "s" } else { "" },
+        source_name,
+        req.start.elapsed().as_millis(),
+    );
 
-        Ok(())
-    });
+    nvim::print!("-------");
 
     Ok(())
 }

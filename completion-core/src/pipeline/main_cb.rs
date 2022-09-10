@@ -91,7 +91,15 @@ pub(crate) fn main_cb(
     }
 
     if !bundles.is_empty() {
-        super::on_completions_arrival(client, bundles)?;
+        // NOTE: all UI-related Neovim API calls cannot be executed directly at
+        // this time or they may cause segfaults. Instead they have to be
+        // scheduled to be executed on the next tick of the event loop.
+
+        let client = client.clone();
+
+        nvim::schedule(move |_| {
+            super::on_completions_arrival(&client, bundles)
+        });
     }
 
     Ok(())

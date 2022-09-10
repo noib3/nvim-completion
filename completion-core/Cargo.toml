@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 futures = "0.3.23"
+fuzzy-matcher = "0.3"
 libloading = "0.7"
 memchr = "2"
 nvim-completion-derive = { path = "../completion-derive" }

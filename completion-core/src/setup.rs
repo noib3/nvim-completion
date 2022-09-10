@@ -21,17 +21,17 @@ use crate::sources::{
 };
 use crate::{Client, Error, ObjectSafeCompletionSource, Result, SourceId};
 
-/// `Lazy` is to have a heap-allocated global variable, `RefCell` is for
-/// interior mutability and `Option` allows to extract an owned `T` via
-/// `Option::take`.
-type StaticVar<T> = Lazy<RefCell<Option<T>>>;
-
 /// TODO: docs
 type SourcePtr =
     extern "C" fn() -> (SourceId, *const dyn ObjectSafeCompletionSource);
 
 /// TODO: docs
 const RUNTIME_SOURCE_EXPORTED_SYMBOL: &str = "_nvim_completion_runtime_source";
+
+/// `Lazy` is to have a heap-allocated global variable, `RefCell` is for
+/// interior mutability and `Option` allows to extract an owned `T` via
+/// `Option::take`.
+type StaticVar<T> = Lazy<RefCell<Option<T>>>;
 
 thread_local! {
     static SOURCES: StaticVar<SourceMap> =
