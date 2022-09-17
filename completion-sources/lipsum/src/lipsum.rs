@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use nvim_completion_core::{
-    Buffer,
-    CompletionContext,
-    CompletionItem,
+use completion_types::{
     CompletionItemBuilder,
+    CompletionList,
     CompletionSource,
+    Document,
+    Position,
 };
 use serde::Deserialize;
 use thiserror::Error as ThisError;
@@ -29,17 +29,21 @@ impl CompletionSource for Lipsum {
 
     type Error = Error;
 
+    async fn enable(&self, _doc: &Document, _config: &Config) -> Result<bool> {
+        Ok(true)
+    }
+
     async fn complete(
         &self,
-        _buf: &Buffer,
-        _ctx: &CompletionContext,
+        _doc: &Document,
+        _pos: &Position,
         _config: &Config,
-    ) -> Result<Vec<CompletionItem>> {
+    ) -> Result<CompletionList> {
         let completions = super::WORDS
             .iter()
             .map(|word| CompletionItemBuilder::new(*word).build())
             .collect::<Vec<_>>();
 
-        Ok(completions)
+        Ok(CompletionList { items: completions, is_complete: true })
     }
 }

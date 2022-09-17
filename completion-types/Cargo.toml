@@ -1,0 +1,16 @@
+[package]
+name = "completion-types"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+ui = []
+core = []
+
+[dependencies]
+async-trait = "0.1"
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_path_to_error = "0.1"
+tokio = { version = "1.20", features = ["sync"] }
+visibility = "0.0.1"

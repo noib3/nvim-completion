@@ -6,4 +6,5 @@ lua/
 /completion-sources/lipsum/src/words.rs
 
 /TODO.md
+/FAQ.md
 /config.lua

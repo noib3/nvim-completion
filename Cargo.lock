@@ -119,7 +119,7 @@ checksum = "fe6837df1d5cba2397b835c8530f51723267e16abbf83892e9e5af4f0e5dd10a"
 dependencies = [
  "glob",
  "libc",
- "libloading 0.5.2",
+ "libloading",
 ]
 
 [[package]]
@@ -135,6 +135,67 @@ dependencies = [
  "textwrap",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "completion-client"
+version = "0.1.0"
+dependencies = [
+ "completion-core",
+ "completion-types",
+ "memchr",
+ "nvim-oxi",
+ "once_cell",
+ "serde",
+ "serde_path_to_error",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "completion-core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "completion-types",
+ "futures",
+ "fuzzy-matcher",
+ "nvim-oxi",
+ "tokio",
+]
+
+[[package]]
+name = "completion-lipsum"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "completion-types",
+ "serde",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "completion-lsp"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "completion-types",
+ "nvim-oxi",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "completion-types"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "nvim-oxi",
+ "serde",
+ "serde_path_to_error",
+ "tokio",
+ "visibility",
 ]
 
 [[package]]
@@ -379,16 +440,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libloading"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
-dependencies = [
- "cfg-if 1.0.0",
- "winapi",
-]
-
-[[package]]
 name = "libuv-sys2"
 version = "1.43.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -460,29 +511,10 @@ dependencies = [
 name = "nvim-completion"
 version = "0.1.0"
 dependencies = [
- "nvim-completion-core",
- "nvim-completion-lipsum",
- "nvim-completion-lsp",
+ "completion-client",
+ "completion-lipsum",
+ "completion-lsp",
  "nvim-oxi",
-]
-
-[[package]]
-name = "nvim-completion-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "fuzzy-matcher",
- "libloading 0.7.3",
- "memchr",
- "nvim-completion-derive",
- "nvim-oxi",
- "once_cell",
- "serde",
- "serde_path_to_error",
- "thiserror",
- "tokio",
- "unicode-segmentation",
 ]
 
 [[package]]
@@ -491,28 +523,6 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn",
-]
-
-[[package]]
-name = "nvim-completion-lipsum"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "nvim-completion-core",
- "serde",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "nvim-completion-lsp"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "nvim-completion-core",
- "nvim-oxi",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -855,12 +865,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4f5b37a154999a8f3f98cc23a628d850e154479cd94decf3414696e12e31aaf"
 
 [[package]]
-name = "unicode-segmentation"
-version = "1.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
-
-[[package]]
 name = "unicode-width"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -877,6 +881,17 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "visibility"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8881d5cc0ae34e3db2f1de5af81e5117a420d2f937506c2dc20d6f4cfb069051"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "wasi"

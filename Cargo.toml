@@ -1,10 +1,12 @@
 [workspace]
 
 members = [
+  "completion-client",
   "completion-core",
   "completion-derive",
   "completion-plugin",
   "completion-sources/*",
+  "completion-types",
 ]
 
 exclude = [ "completion-sources/runtime" ]

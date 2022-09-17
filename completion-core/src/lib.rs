@@ -1,28 +1,7 @@
-mod autocmds;
-mod buffer;
-mod client;
-mod commands;
-mod completions;
-mod config;
-mod error;
-mod hlgroups;
-mod lateinit;
-mod mappings;
-mod messages;
-mod pipeline;
-mod setup;
-mod sources;
-mod ui;
-mod utils;
+mod source_bundle_ext;
+mod start;
+mod state;
 
-pub use buffer::Buffer;
-pub use client::Client;
-pub use completions::{
-    CompletionContext,
-    CompletionItem,
-    CompletionItemBuilder,
-};
-use error::{Error, GenericError, Result};
-pub use nvim_completion_derive::RuntimeSource;
-pub use setup::{build_api, register_source};
-pub use sources::{CompletionSource, ObjectSafeCompletionSource, SourceId};
+use source_bundle_ext::SourceBundleExt;
+pub use start::start;
+use state::State;

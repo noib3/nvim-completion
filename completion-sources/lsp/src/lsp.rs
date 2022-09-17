@@ -1,10 +1,5 @@
 use async_trait::async_trait;
-use nvim_completion_core::{
-    Buffer,
-    CompletionContext,
-    CompletionItem,
-    CompletionSource,
-};
+use completion_types::{CompletionList, CompletionSource, Document, Position};
 use nvim_oxi::{Dictionary, Function, Object};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
@@ -39,12 +34,16 @@ impl CompletionSource for Lsp {
         .into()
     }
 
+    async fn enable(&self, _doc: &Document, _config: &Config) -> Result<bool> {
+        Ok(true)
+    }
+
     async fn complete(
         &self,
-        _buf: &Buffer,
-        _ctx: &CompletionContext,
+        _doc: &Document,
+        _pos: &Position,
         _config: &Config,
-    ) -> Result<Vec<CompletionItem>> {
+    ) -> Result<CompletionList> {
         Err(Error("AA!"))
     }
 }

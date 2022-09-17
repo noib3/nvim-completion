@@ -8,7 +8,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-nvim-completion-core = { path = "../completion-core" }
-nvim-completion-lipsum = { path = "../completion-sources/lipsum" }
-nvim-completion-lsp = { path = "../completion-sources/lsp" }
+completion-client = { path = "../completion-client" }
+completion-lipsum = { path = "../completion-sources/lipsum" }
+completion-lsp = { path = "../completion-sources/lsp" }
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
