@@ -7,6 +7,7 @@ mod core_message;
 mod document;
 mod position;
 mod revision;
+mod scored_completion;
 mod source_bundle;
 mod source_enable;
 
@@ -19,6 +20,7 @@ pub use core_message::{CoreMessage, CoreReceiver, CoreSender};
 pub use document::Document;
 pub use position::Position;
 pub use revision::Revision;
+pub use scored_completion::ScoredCompletion;
 pub use source_bundle::{SourceBundle, SourceId};
 pub use source_enable::SourceEnable;
 

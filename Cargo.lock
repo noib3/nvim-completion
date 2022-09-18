@@ -172,7 +172,6 @@ dependencies = [
  "completion-types",
  "serde",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -184,6 +183,7 @@ dependencies = [
  "nvim-oxi",
  "serde",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

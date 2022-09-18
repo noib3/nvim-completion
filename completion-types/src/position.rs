@@ -4,7 +4,7 @@ pub struct Position {
     pub row: u32,
 
     // TODO: docs
-    pub character: u32,
+    pub col: usize,
 
     // offset: u32,
 
@@ -18,6 +18,6 @@ impl Position {
     where
         L: Into<String>,
     {
-        Self { row, character, line: line.into() }
+        Self { row, col: character as _, line: line.into() }
     }
 }

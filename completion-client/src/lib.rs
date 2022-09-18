@@ -13,6 +13,7 @@ mod position_ext;
 mod setup;
 mod source_bundle_ext;
 mod ui;
+mod utils;
 
 use client::Client;
 use completion_item_ext::CompletionItemExt;

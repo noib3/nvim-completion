@@ -5,6 +5,7 @@ mod completion_hint;
 mod completion_menu;
 mod config;
 mod geometry;
+mod ui_state;
 mod utils;
 
 pub(crate) use completion_details::CompletionItemDetails;
@@ -16,3 +17,4 @@ use completion_menu::MenuConfig;
 use config::Border;
 pub(crate) use config::UiConfig;
 use geometry::*;
+pub(crate) use ui_state::UiState;

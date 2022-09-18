@@ -2,6 +2,8 @@ use completion_types::Position;
 use nvim_oxi::{self as nvim, api::Buffer};
 
 pub(crate) trait PositionExt: Sized {
+    fn is_at_eol(&self) -> bool;
+
     fn current() -> nvim::Result<Self> {
         let row = 0;
         let col = 1;
@@ -18,6 +20,10 @@ pub(crate) trait PositionExt: Sized {
 }
 
 impl PositionExt for Position {
+    fn is_at_eol(&self) -> bool {
+        self.col == self.line.len()
+    }
+
     fn current() -> nvim::Result<Self> {
         todo!()
     }
@@ -34,6 +40,6 @@ impl PositionExt for Position {
             .to_string_lossy()
             .to_string();
 
-        Ok(Self { row: row as _, character: col as _, line })
+        Ok(Self { row: row as _, col: col as _, line })
     }
 }

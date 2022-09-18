@@ -8,8 +8,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use completion_types::{
-    ClientSender,
     CompletionSource,
+    CoreSender,
     SourceBundle,
     SourceEnable,
     SourceId,
@@ -159,7 +159,7 @@ fn filter_enabled(
 }
 
 /// TODO: docs
-fn register_main_callback(client: Client) -> Result<ClientSender> {
+fn register_main_callback(client: Client) -> Result<CoreSender> {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
     let handle = nvim::r#loop::new_async(move || {
@@ -172,7 +172,7 @@ fn register_main_callback(client: Client) -> Result<ClientSender> {
         Ok(())
     })?;
 
-    Ok(ClientSender::new(sender, handle))
+    Ok(CoreSender::new(sender, handle))
 }
 
 /// Returns a vector containing the names of the completion sources that have

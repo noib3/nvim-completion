@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use completion_types::{
-    ClientSender,
     CompletionList,
+    CoreSender,
     Document,
     GenericError,
     Position,
@@ -14,7 +14,7 @@ pub(crate) trait SourceBundleExt {
     async fn enable(
         &self,
         doc: &Document,
-        sender: &ClientSender,
+        sender: &CoreSender,
     ) -> Result<bool, GenericError>;
 
     async fn complete(
@@ -29,7 +29,7 @@ impl SourceBundleExt for SourceBundle {
     async fn enable(
         &self,
         doc: &Document,
-        sender: &ClientSender,
+        sender: &CoreSender,
     ) -> Result<bool, GenericError> {
         let config = self.config.as_ref().unwrap();
         let source_enable = self.source.enable(doc, config);

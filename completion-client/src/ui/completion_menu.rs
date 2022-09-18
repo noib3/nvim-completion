@@ -1,6 +1,6 @@
 use std::cmp;
 
-use completion_types::CompletionItem;
+use completion_types::ScoredCompletion;
 use nvim::api::{self, Buffer, Window};
 use nvim::opts::SetExtmarkOpts;
 use nvim::types::{WindowBorder, WindowConfig, WindowRelativeTo};
@@ -119,7 +119,7 @@ impl CompletionMenu {
     /// TODO: docs
     pub(super) fn display(
         &mut self,
-        comps: &[CompletionItem],
+        comps: &[ScoredCompletion],
         drawable_rows: u16,
         drawable_columns: u16,
     ) -> nvim::Result<()> {
@@ -136,11 +136,12 @@ impl CompletionMenu {
         // performance cost.
         let desired_width = comps
             .iter()
+            .take(desired_height as _)
             // .map(|c| {
             //     use unicode_segmentation::UnicodeSegmentation;
             //     c.menu_display().graphemes(true).count()
             // })
-            .map(|c| c.menu_display().chars().count())
+            .map(|c| c.item.menu_display().chars().count())
             .max()
             .unwrap();
 
@@ -151,7 +152,7 @@ impl CompletionMenu {
             drawable_columns,
         );
 
-        self.set_contents(comps)?;
+        self.set_contents(&comps[..desired_height as _])?;
 
         if self.is_open() {
             self.move_window(geometry)?;
@@ -164,31 +165,34 @@ impl CompletionMenu {
 
     /// Fills the menu's buffer with the new completions and highlights each
     /// completion according to its highlight ranges.
-    fn set_contents(&mut self, comps: &[CompletionItem]) -> nvim::Result<()> {
-        let lines = comps.iter().map(|cmp| cmp.menu_display());
+    fn set_contents(
+        &mut self,
+        comps: &[ScoredCompletion],
+    ) -> nvim::Result<()> {
+        let lines = comps.iter().map(|cmp| cmp.item.menu_display());
         self.buf.set_lines(0, u32::MAX as _, false, lines)?;
 
-        // Highlight each completion in the menu.
-        for (row, comp) in comps.iter().enumerate() {
-            for (byte_range, hl_group) in &comp.highlight_ranges() {
-                let opts = SetExtmarkOpts::builder()
-                    .end_row(row)
-                    .end_col(*byte_range.end())
-                    .hl_group(hl_group)
-                    .priority(100)
-                    .build();
+        // // Highlight each completion in the menu.
+        // for (row, comp) in comps.iter().enumerate() {
+        //     for (byte_range, hl_group) in &comp.highlight_ranges() {
+        //         let opts = SetExtmarkOpts::builder()
+        //             .end_row(row)
+        //             .end_col(*byte_range.end())
+        //             .hl_group(hl_group)
+        //             .priority(100)
+        //             .build();
 
-                if let Err(err) = self.buf.set_extmark(
-                    self.namespace_id,
-                    row,
-                    *byte_range.start(),
-                    &opts,
-                ) {
-                    nvim::print!("ERR: {:?}, {:?}", comp, byte_range);
-                    return Err(err);
-                };
-            }
-        }
+        //         if let Err(err) = self.buf.set_extmark(
+        //             self.namespace_id,
+        //             row,
+        //             *byte_range.start(),
+        //             &opts,
+        //         ) {
+        //             nvim::print!("ERR: {:?}, {:?}", comp, byte_range);
+        //             return Err(err);
+        //         };
+        //     }
+        // }
 
         Ok(())
     }

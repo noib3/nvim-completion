@@ -1,65 +1,105 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use completion_types::{
-    ClientMessage,
-    ClientSender,
     Clock,
     CompletionItem,
     CompletionList,
+    CoreMessage,
+    CoreSender,
     Document,
+    GenericError,
     Position,
     Revision,
+    ScoredCompletion,
     SourceBundle,
+    SourceId,
 };
 use futures::stream::{FuturesUnordered, StreamExt};
 use nvim_oxi::api::Buffer;
-use tokio::task::JoinHandle;
 
 use crate::SourceBundleExt;
 
-type RecomputeHandle = JoinHandle<()>;
+type RecomputeHandle = tokio::task::JoinHandle<()>;
+
+pub(crate) struct Core {
+    state: Arc<Mutex<State>>,
+}
+
+impl Clone for Core {
+    fn clone(&self) -> Self {
+        Self { state: Arc::clone(&self.state) }
+    }
+}
 
 pub(crate) struct State {
     /// The enabled sources sent from the client.
     sources: Vec<Arc<SourceBundle>>,
 
+    /// A message sender used to communicate with the client.
+    sender: CoreSender,
+
     /// Map from [`Buffer`]s to completion sources enabled for that buffer.
     buffer_sources: HashMap<Buffer, Vec<Arc<SourceBundle>>>,
-
-    /// Handles to the tasks recomputing the current completions.
-    recompute_tasks: Vec<RecomputeHandle>,
 
     /// The last revision sent from the client.
     revision: Revision,
 
-    /// A message sender used to communicate with the client.
-    client_sender: ClientSender,
+    ///
+    recompute_tasks: Vec<RecomputeHandle>,
 
     /// Whether..
     is_sending_completions: bool,
 
     ///
-    completions: Vec<Arc<CompletionItem>>,
+    completions: HashMap<SourceId, Vec<Arc<CompletionItem>>>,
 }
 
-impl State {
+// impl Completions {
+//     #[inline]
+//     fn new(ids: &[SourceId]) -> Self {
+//         let by_source = ids
+//             .into_iter()
+//             .map(|id| (*id, Vec::new()))
+//             .collect::<HashMap<_, _>>();
+
+//         Self { by_source }
+//     }
+
+//     fn clear(&mut self) {
+//         self.by_source.values_mut().for_each(|vec| vec.clear());
+//     }
+// }
+
+impl Core {
     #[inline]
-    pub(crate) fn new(
-        sources: Vec<SourceBundle>,
-        client_sender: ClientSender,
-    ) -> Self {
+    pub(crate) fn new(sources: Vec<SourceBundle>, sender: CoreSender) -> Self {
+        let mut completions = HashMap::new();
+
+        for source in &sources {
+            completions.insert(source.id, Vec::new());
+        }
+
+        // let completions = sources
+        //     .iter()
+        //     .map(|bundle| (bundle.id, Vec::new()))
+        //     .collect::<HashMap<_, _>>();
+
+        // panic!("completions: {}", completions.len());
+
         let sources = sources.into_iter().map(Arc::new).collect();
 
-        Self {
+        let state = State {
             sources,
+            sender,
             buffer_sources: HashMap::new(),
-            recompute_tasks: Vec::new(),
             revision: Revision::default(),
-            client_sender,
+            recompute_tasks: Vec::new(),
             is_sending_completions: false,
-            completions: Vec::new(),
-        }
+            completions,
+        };
+
+        Self { state: Arc::new(Mutex::new(state)) }
     }
 
     /// Queries all the sources to check if they want to attach to `document`.
@@ -67,16 +107,18 @@ impl State {
     /// If at least one source wants to attach it sends a
     /// [`UiMessage::AttachDocument`](completion_types::UiMessage::AttachDocument)
     /// message to the client.
-    pub(crate) async fn query_attach(&mut self, document: Document) {
+    pub(crate) async fn query_attach(&self, document: Document) {
         let document = Arc::new(document);
 
-        let mut tasks = self
+        let state = &mut *self.state.lock().unwrap();
+
+        let mut tasks = state
             .sources
             .iter()
             .map(|bundle| {
                 let bundle = Arc::clone(bundle);
                 let doc = Arc::clone(&document);
-                let sender = self.client_sender.clone();
+                let sender = state.sender.clone();
 
                 tokio::spawn(async move {
                     let res = bundle.enable(&doc, &sender).await;
@@ -92,12 +134,10 @@ impl State {
                 Ok((bundle, Ok(true))) => enabled.push(bundle),
 
                 Ok((bundle, Err(error))) => {
-                    self.client_sender.send(
-                        ClientMessage::SourceEnableFailed {
-                            source: bundle.id,
-                            error,
-                        },
-                    );
+                    state.sender.send(CoreMessage::SourceEnableFailed {
+                        source: bundle.id,
+                        error,
+                    });
                 },
 
                 _ => {},
@@ -105,134 +145,171 @@ impl State {
         }
 
         if !enabled.is_empty() {
-            self.buffer_sources.insert(document.buffer(), enabled);
-            self.client_sender
-                .send(ClientMessage::AttachDocument { document });
+            state.buffer_sources.insert(document.buffer(), enabled);
+            state.sender.send(CoreMessage::AttachDocument { document });
         }
     }
 
-    pub(crate) async fn recompute_completions(
-        &mut self,
+    pub(crate) fn recompute_completions(
+        &self,
         document: Arc<Document>,
         position: Position,
         revision: Revision,
         clock: Clock,
     ) {
-        assert_ne!(self.revision, revision);
-        self.revision = revision;
+        let state = &mut *self.state.lock().unwrap();
 
-        self.recompute_tasks.drain(..).for_each(|task| task.abort());
+        assert_ne!(state.revision, revision);
 
-        let sources = self.buffer_sources.get(&document.buffer()).unwrap();
+        state.revision = revision;
+        state.is_sending_completions = true;
+        state.recompute_tasks.drain(..).for_each(|task| task.abort());
+        state.completions.clear();
+
+        let sources = state.buffer_sources.get(&document.buffer()).unwrap();
 
         let position = Arc::new(position);
 
-        let mut tasks = sources
+        state.recompute_tasks = sources
             .iter()
             .map(|bundle| {
+                let core = self.clone();
                 let bundle = Arc::clone(bundle);
                 let doc = Arc::clone(&document);
                 let pos = Arc::clone(&position);
                 let clk = clock.clone();
 
                 tokio::spawn(async move {
-                    let res = bundle.complete(&doc, &pos).await;
-                    (res, bundle, revision, clk)
+                    match bundle.complete(&doc, &pos).await {
+                        Ok(list) => core.on_completions_recomputed(
+                            list, bundle, doc, revision, pos, clk,
+                        ),
+
+                        Err(err) => core.complete_failed(bundle.id, err),
+                    }
                 })
             })
-            .collect::<FuturesUnordered<_>>();
-
-        while let Some(out) = tasks.next().await {
-            match out {
-                Ok((Ok(list), bundle, revision, clock)) => {
-                    self.on_completions_recomputed(
-                        list, bundle, revision, clock,
-                    )
-                    .await
-                },
-
-                Ok((Err(error), bundle, _, _)) => {
-                    self.client_sender.send(
-                        ClientMessage::SourceCompleteFailed {
-                            source: bundle.id,
-                            error,
-                        },
-                    );
-                },
-
-                Err(_) => {},
-            }
-        }
-    }
-
-    pub(crate) fn send_completions(
-        &self,
-        revision: Revision,
-        from: std::ops::Bound<u32>,
-        to: std::ops::Bound<u32>,
-    ) {
-        assert_eq!(self.revision, revision);
-
-        use std::ops::Bound::*;
-
-        let start = match from {
-            Excluded(i) => i as _,
-            Included(i) => i.saturating_sub(1) as _,
-            Unbounded => 0,
-        };
-
-        let end = match to {
-            Excluded(i) => i as _,
-            Included(i) => i.saturating_sub(1) as _,
-            Unbounded => self.completions.len().saturating_sub(1),
-        };
-
-        assert!(start <= end);
-
-        let completions = self.completions[start..end]
-            .iter()
-            .map(Arc::clone)
             .collect::<Vec<_>>();
-
-        if !completions.is_empty() {
-            self.client_sender.send(ClientMessage::Completions {
-                items: completions,
-                from: start as _,
-                to: end as _,
-                revision,
-                clock: Clock::start(),
-            })
-        }
     }
 
-    pub(crate) fn stop_sending(&mut self, revision: Revision) {
-        assert_eq!(self.revision, revision);
-        self.is_sending_completions = false;
+    // pub(crate) fn send_completions(
+    //     &self,
+    //     revision: Revision,
+    //     from: std::ops::Bound<u32>,
+    //     to: std::ops::Bound<u32>,
+    // ) {
+    //     // assert_eq!(self.revision, revision);
+
+    //     // use std::ops::Bound::*;
+
+    //     // let start = match from {
+    //     //     Excluded(i) => i as _,
+    //     //     Included(i) => i.saturating_sub(1) as _,
+    //     //     Unbounded => 0,
+    //     // };
+
+    //     // let end = match to {
+    //     //     Excluded(i) => i as _,
+    //     //     Included(i) => i.saturating_sub(1) as _,
+    //     //     Unbounded => self.completions.len().saturating_sub(1),
+    //     // };
+
+    //     // assert!(start <= end);
+
+    //     // let completions = self.completions[start..end]
+    //     //     .iter()
+    //     //     .map(Arc::clone)
+    //     //     .collect::<Vec<_>>();
+
+    //     // if !completions.is_empty() {
+    //     //     self.client_sender.send(CoreMessage::Completions {
+    //     //         items: completions,
+    //     //         from: start as _,
+    //     //         to: end as _,
+    //     //         revision,
+    //     //         clock: Clock::start(),
+    //     //     })
+    //     // }
+    // }
+
+    pub(crate) fn stop_sending(&self, revision: Revision) {
+        let state = &mut *self.state.lock().unwrap();
+
+        assert_eq!(state.revision, revision);
+        state.is_sending_completions = false;
+        state.recompute_tasks.drain(..).for_each(|task| task.abort());
     }
 
-    async fn on_completions_recomputed(
-        &mut self,
+    fn on_completions_recomputed(
+        &self,
         list: CompletionList,
         bundle: Arc<SourceBundle>,
+        document: Arc<Document>,
         revision: Revision,
-        clock: Clock,
+        position: Arc<Position>,
+        mut clock: Clock,
     ) {
-        if self.revision != revision {
+        clock.time_source();
+
+        let state = &mut *self.state.lock().unwrap();
+
+        if revision != state.revision {
             return;
         };
 
-        let items = list.items.into_iter().map(Arc::new).collect::<Vec<_>>();
+        // panic!("{}, {}", state.completions.len(), bundle.id);
 
-        let items = vec![Arc::new(CompletionItem {
-            text: format!("got {} from {}", items.len(), bundle.id),
-        })];
+        *state.completions.entry(bundle.id).or_default() =
+            list.items.into_iter().map(Arc::new).collect();
 
-        self.client_sender.send(ClientMessage::Completions {
-            items,
-            from: 0,
-            to: 1,
-            revision,
-            clock,
-        })
+        // let old = state.completions.get_mut(&bundle.id).unwrap();
+        // *old = list.items.into_iter().map(Arc::new).collect();
+
+        let all =
+            state.completions.values().flatten().cloned().collect::<Vec<_>>();
+
+        let core = self.clone();
+
+        let _ = std::thread::spawn(move || {
+            let sorted =
+                crate::sort(all, Arc::clone(&document), Arc::clone(&position));
+
+            core.on_completions_sorted(
+                sorted,
+                revision,
+                document.buffer(),
+                position,
+                clock,
+            );
+        });
+    }
+
+    fn on_completions_sorted(
+        &self,
+        items: Vec<ScoredCompletion>,
+        revision: Revision,
+        buffer: Buffer,
+        position: Arc<Position>,
+        mut clock: Clock,
+    ) {
+        clock.time_sorting();
+
+        let state = &*self.state.lock().unwrap();
+
+        if revision == state.revision {
+            state.sender.send(CoreMessage::Completions {
+                items,
+                revision,
+                buffer,
+                position,
+                clock,
+            });
+        }
+    }
+
+    #[inline]
+    fn complete_failed(&self, source: SourceId, error: GenericError) {
+        let state = &*self.state.lock().unwrap();
+        state.sender.send(CoreMessage::SourceCompleteFailed { source, error })
     }
 }

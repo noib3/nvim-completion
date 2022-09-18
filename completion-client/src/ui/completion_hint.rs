@@ -7,9 +7,8 @@ use nvim::types::ExtmarkVirtTextPosition;
 use nvim_oxi as nvim;
 use serde::Deserialize;
 
-// use super::ui_config::HintConfig;
 use crate::hlgroups;
-use crate::CompletionItemExt;
+use crate::PositionExt;
 
 const HINT_NAMESPACE: &str = "completion_hint";
 
@@ -88,7 +87,7 @@ impl CompletionHint {
         self.extmark_id = Some(buf.set_extmark(
             self.namespace_id,
             cursor.row as _,
-            cursor.character as _,
+            cursor.col as _,
             &self.opts,
         )?);
 
@@ -121,10 +120,11 @@ fn extract_hint_text<'a>(
     //     return None;
     // }
 
-    todo!()
     // Some(crate::utils::single_line_display(
     //     &completion.text[cursor.len_prefix..],
     // ))
+
+    todo!()
 }
 
 // #[cfg(test)]

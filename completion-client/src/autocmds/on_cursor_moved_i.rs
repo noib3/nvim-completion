@@ -7,7 +7,7 @@ pub(super) fn on_cursor_moved_i(
     client: &Client,
     buf: Buffer,
 ) -> nvim::Result<()> {
-    client.stop_sending();
+    // client.stop_sending();
 
     Ok(())
 }

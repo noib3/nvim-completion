@@ -10,3 +10,4 @@ completion-types = { path = "../../completion-types" }
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
+tokio = { version = "1.20", features = ["full"] }

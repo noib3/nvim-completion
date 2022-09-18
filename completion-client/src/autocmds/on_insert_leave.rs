@@ -8,6 +8,5 @@ pub(super) fn on_insert_leave(
     mut buf: Buffer,
 ) -> nvim::Result<()> {
     client.stop_sending();
-    Ok(())
-    // client.ui().hide_all(&mut buf)
+    client.ui_mut().hide_all(&mut buf)
 }

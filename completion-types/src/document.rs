@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use nvim::api::Buffer;
 use nvim_oxi as nvim;
 
-use crate::ClientSender;
+use crate::CoreSender;
 
 /// TODO: docs
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub struct Document {
 
     /// TODO: docs
     // #[cfg_attr(feature = "ui", visibility::make(pub))]
-    pub client_sender: ClientSender,
+    pub client_sender: CoreSender,
 }
 
 impl Document {
