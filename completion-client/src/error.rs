@@ -1,15 +1,13 @@
 // use std::error::Error as StdError;
 
-use completion_types::SourceId;
+use completion_types::{ClientMessage, GenericError, SourceId};
 use nvim_oxi as nvim;
 use thiserror::Error as ThisError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-#[doc(hidden)]
 #[derive(Debug, ThisError)]
-#[non_exhaustive]
-pub enum Error {
+pub(crate) enum Error {
     #[error("can't setup more than once per session")]
     AlreadySetup,
 
@@ -20,15 +18,18 @@ pub enum Error {
         why: String,
     },
 
+    #[error("core returned with error: {0}")]
+    CoreFailed(GenericError),
+
+    #[error("{0}")]
+    CorePanicked(String),
+
     // For some reason I can't use `source` as a name field??
     #[error("error trying to attach source `{sauce}`: {why}")]
     SourceCompleteFailed { sauce: SourceId, why: String },
 
     #[error("source `{sauce}` failed to compute completions: {why}")]
     SourceEnableFailed { sauce: SourceId, why: String },
-
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
 
     #[error(transparent)]
     Loop(#[from] nvim_oxi::r#loop::Error),
@@ -38,6 +39,9 @@ pub enum Error {
 
     #[error(transparent)]
     OneshotRecv(#[from] tokio::sync::oneshot::error::RecvError),
+
+    #[error(transparent)]
+    SendError(#[from] tokio::sync::mpsc::error::SendError<ClientMessage>),
 }
 
 impl From<serde_path_to_error::Error<nvim::Error>> for Error {
@@ -54,30 +58,32 @@ impl From<serde_path_to_error::Error<nvim::Error>> for Error {
     }
 }
 
-// impl Error {
-//     /// TODO: docs
-//     pub(crate) fn source_attach<E: StdError>(
-//         source: SourceId,
-//         err: E,
-//     ) -> Self {
-//         Self::SourceEnableFailed { sauce: source, why: format!("{}", err) }
-//     }
+impl Error {
+    #[inline]
+    pub(crate) fn is_fatal(&self) -> bool {
+        matches!(
+            self,
+            Self::CoreFailed(_) | Self::Loop(_) | Self::SendError(_)
+        )
+    }
 
-//     /// TODO: docs
-//     pub(crate) fn source_deser(
-//         err: serde_path_to_error::Error<nvim::Error>,
-//         name: &'static str,
-//     ) -> Self {
-//         let option = err.path().to_owned();
+    pub(crate) fn core_panicked(
+        thread_name: &str,
+        message: Option<&str>,
+        location: Option<(u32, u32, String)>,
+    ) -> Self {
+        let message = message.map(|msg| format!(" at '{}'", msg));
 
-//         match err.into_inner() {
-//             nvim::Error::DeserializeError(why) => Self::BadConfig {
-//                 prefix: format!("sources.{}.", name),
-//                 option,
-//                 why,
-//             },
+        let location = location
+            .map(|(line, _, filename)| format!(": {}:L{}", filename, line));
 
-//             other => other.into(),
-//         }
-//     }
-// }
+        let msg = format!(
+            "core panicked on thread '{}'{}{}",
+            thread_name,
+            message.unwrap_or_default(),
+            location.unwrap_or_default()
+        );
+
+        Self::CorePanicked(msg)
+    }
+}

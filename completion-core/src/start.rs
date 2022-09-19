@@ -1,36 +1,68 @@
+use std::{panic, thread};
+
 use completion_types::{
     ClientMessage,
     ClientReceiver,
-    ClientSender,
+    CoreMessage,
     CoreSender,
     SourceBundle,
 };
-use tokio::sync::mpsc;
 
-use crate::Core;
+use crate::{Core, Result};
 
-/// Starts the completion core on a new thread, returning a [`CoreSender`]
-/// which can be used to send messages to the core.
+/// Starts the completion core on a new thread.
 pub fn start(
     sources: Vec<SourceBundle>,
-    client_sender: CoreSender,
-) -> ClientSender {
-    let (core_sender, core_receiver) = mpsc::unbounded_channel();
+    core_sender: CoreSender,
+    client_receiver: ClientReceiver,
+) {
+    let sender = core_sender.clone();
 
-    let _handle = std::thread::spawn(move || {
-        let core = Core::new(sources, client_sender);
-        r#loop(core, core_receiver)
+    panic::set_hook(Box::new(move |infos| {
+        let thread_name =
+            thread::current().name().unwrap_or("<unnamed>").to_owned();
+
+        let message = match infos.payload().downcast_ref::<&'static str>() {
+            Some(s) => Some((*s).to_owned()),
+
+            None => match infos.payload().downcast_ref::<String>() {
+                Some(s) => Some(s.to_owned()),
+                None => None,
+            },
+        };
+
+        let location = infos.location().map(|location| {
+            (location.line(), location.column(), location.file().to_owned())
+        });
+
+        sender.send(CoreMessage::CorePanicked {
+            thread_name,
+            message,
+            location,
+        });
+    }));
+
+    thread::spawn(move || {
+        let core = Core::new(sources, core_sender.clone());
+
+        match self::event_loop(core, client_receiver) {
+            Err(error) => {
+                core_sender.send(CoreMessage::CoreFailed(Box::new(error) as _))
+            },
+
+            Ok(()) => unreachable!(
+                "we only exit the event loop if an error is returned"
+            ),
+        }
     });
-
-    core_sender
 }
 
 #[tokio::main]
-async fn r#loop(core: Core, mut receiver: ClientReceiver) {
+async fn event_loop(core: Core, mut receiver: ClientReceiver) -> Result<()> {
     while let Some(msg) = receiver.recv().await {
         match msg {
             ClientMessage::QueryAttach { document } => {
-                core.query_attach(document).await
+                core.query_attach(document).await?
             },
 
             ClientMessage::RecomputeCompletions {
@@ -38,16 +70,14 @@ async fn r#loop(core: Core, mut receiver: ClientReceiver) {
                 position,
                 revision,
                 clock,
-            } => {
-                core.recompute_completions(document, position, revision, clock)
-            },
+            } => core
+                .recompute_completions(document, position, revision, clock)?,
 
-            // ClientMessage::SendCompletions { revision, from, to } => {
-            //     core.send_completions(revision, from, to)
-            // },
             ClientMessage::StopSending { revision } => {
-                core.stop_sending(revision)
+                core.stop_sending(revision)?
             },
         }
     }
+
+    Ok(())
 }

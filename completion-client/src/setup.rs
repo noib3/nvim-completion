@@ -127,11 +127,12 @@ fn setup(client: &Client, preferences: Object) -> Result<()> {
 
     let augroup_id = autocmds::setup(client)?;
 
-    let client_sender = self::register_main_callback(client.clone())?;
+    let core_sender = self::register_main_callback(client.clone())?;
 
-    let core_sender = completion_core::start(sources, client_sender.clone());
+    let (client_sender, client_receiver) = mpsc::unbounded_channel();
+    completion_core::start(sources, core_sender.clone(), client_receiver);
 
-    client.init(augroup_id, client_sender, core_sender, completion, ui);
+    client.init(augroup_id, core_sender, client_sender, completion, ui)?;
 
     Ok(())
 }
@@ -163,12 +164,18 @@ fn register_main_callback(client: Client) -> Result<CoreSender> {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
     let handle = nvim::r#loop::new_async(move || {
-        match client.handle_core_message(&mut receiver) {
-            Err(Error::Nvim(err)) => return Err(err),
-            Err(other) => nvim::schedule(move |_| Ok(echoerr!("{}", other))),
-            Ok(_) => {},
-        }
+        if let Err(error) = client.handle_core_message(&mut receiver) {
+            match error {
+                Error::Nvim(e) => return Err(e),
 
+                err if err.is_fatal() => nvim::schedule(move |_| {
+                    echoerr!("FATAL: {}", err);
+                    Ok(())
+                }),
+
+                other => nvim::schedule(move |_| Ok(echoerr!("{}", other))),
+            }
+        }
         Ok(())
     })?;
 

@@ -75,6 +75,22 @@ pub enum CoreMessage {
     AttachDocument { document: Arc<Document> },
 
     /// TODO: docs
+    CoreFailed(GenericError),
+
+    /// TODO: docs
+    CorePanicked {
+        /// The name of the thread that panicked.
+        thread_name: String,
+
+        /// An optional message explaining the cause of the panic.
+        message: Option<String>,
+
+        /// A `(line, column, filename)` tuple with information about where the
+        /// panicked occured.
+        location: Option<(u32, u32, String)>,
+    },
+
+    /// TODO: docs
     ExecuteLuaFunction {
         fun: Box<dyn FnOnce(()) -> Result<(), nvim::Error> + Send>,
     },

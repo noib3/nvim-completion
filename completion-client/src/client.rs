@@ -89,17 +89,16 @@ impl Client {
     // Messages sent to the core.
 
     #[inline]
-    fn send_core(&self, msg: ClientMessage) {
-        CORE_SENDER.with(move |sender| sender.send(msg).unwrap());
+    fn send_core(&self, msg: ClientMessage) -> Result<()> {
+        CORE_SENDER.with(move |sender| sender.send(msg)).map_err(Into::into)
     }
 
     /// TODO: docs
     #[inline]
     pub(crate) fn query_attach(&self, buffer: Buffer) -> Result<()> {
-        Document::new(buffer, CLIENT_SENDER.with(|sender| (**sender).clone()))
-            .map(|document| ClientMessage::QueryAttach { document })
-            .map(|msg| self.send_core(msg))
-            .map_err(Into::into)
+        let client_sender = CLIENT_SENDER.with(|sender| (**sender).clone());
+        let document = Document::new(buffer, client_sender)?;
+        self.send_core(ClientMessage::QueryAttach { document })
     }
 
     /// TODO: docs
@@ -108,7 +107,7 @@ impl Client {
         buffer: Buffer,
         position: Position,
         clock: Clock,
-    ) {
+    ) -> Result<()> {
         let state = &mut *self.state.borrow_mut();
         state.revision.advance();
         state.is_accepting_completions = true;
@@ -122,19 +121,19 @@ impl Client {
             clock,
         };
 
-        self.send_core(msg);
+        self.send_core(msg)
     }
 
     /// Notifies the core to stop sending completion items for the current
     /// revision even if better results become available.
     #[inline]
-    pub(crate) fn stop_sending(&self) {
+    pub(crate) fn stop_sending(&self) -> Result<()> {
         let state = &mut *self.state.borrow_mut();
         state.is_accepting_completions = false;
 
         let msg = ClientMessage::StopSending { revision: state.revision };
 
-        self.send_core(msg);
+        self.send_core(msg)
     }
 
     // Messages coming from the core.
@@ -177,7 +176,7 @@ impl Client {
 
         let position = Position::from_row_col_buf(start_row, col, &buffer)?;
 
-        self.recompute_completions(buffer, position, clock);
+        self.recompute_completions(buffer, position, clock)?;
 
         Ok(false)
     }
@@ -222,6 +221,22 @@ impl Client {
                     if self.is_last_revision(revision) && !items.is_empty() {
                         completions = Some((items, buffer, position, clock));
                     }
+                },
+
+                CoreMessage::CoreFailed(why) => {
+                    return Err(Error::CoreFailed(why))
+                },
+
+                CoreMessage::CorePanicked {
+                    thread_name,
+                    message,
+                    location,
+                } => {
+                    return Err(Error::core_panicked(
+                        &thread_name,
+                        message.as_ref().map(|s| &**s),
+                        location,
+                    ))
                 },
             }
         }
