@@ -1,5 +1,3 @@
-// use std::error::Error as StdError;
-
 use completion_types::{ClientMessage, GenericError, SourceId};
 use nvim_oxi as nvim;
 use thiserror::Error as ThisError;
@@ -32,7 +30,7 @@ pub(crate) enum Error {
     SourceEnableFailed { sauce: SourceId, why: String },
 
     #[error(transparent)]
-    Loop(#[from] nvim_oxi::r#loop::Error),
+    NvimLoop(#[from] nvim_oxi::r#loop::Error),
 
     #[error(transparent)]
     Nvim(#[from] nvim_oxi::Error),
@@ -41,7 +39,9 @@ pub(crate) enum Error {
     OneshotRecv(#[from] tokio::sync::oneshot::error::RecvError),
 
     #[error(transparent)]
-    SendError(#[from] tokio::sync::mpsc::error::SendError<ClientMessage>),
+    ClientSendError(
+        #[from] tokio::sync::mpsc::error::SendError<ClientMessage>,
+    ),
 }
 
 impl From<serde_path_to_error::Error<nvim::Error>> for Error {
@@ -63,7 +63,10 @@ impl Error {
     pub(crate) fn is_fatal(&self) -> bool {
         matches!(
             self,
-            Self::CoreFailed(_) | Self::Loop(_) | Self::SendError(_)
+            Self::CoreFailed(_)
+                | Self::CorePanicked(_)
+                | Self::NvimLoop(_)
+                | Self::ClientSendError(_)
         )
     }
 

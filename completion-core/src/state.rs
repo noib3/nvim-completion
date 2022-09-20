@@ -15,24 +15,18 @@ use completion_types::{
     SourceBundle,
     SourceId,
 };
-use futures::stream::{FuturesUnordered, StreamExt};
 use nvim_oxi::api::Buffer;
 
 use crate::{Result, SourceBundleExt};
 
 type RecomputeHandle = tokio::task::JoinHandle<Result<()>>;
 
+#[derive(Clone)]
 pub(crate) struct Core {
     state: Arc<Mutex<State>>,
 }
 
-impl Clone for Core {
-    fn clone(&self) -> Self {
-        Self { state: Arc::clone(&self.state) }
-    }
-}
-
-pub struct State {
+pub(crate) struct State {
     /// The enabled sources sent from the client.
     sources: Vec<Arc<SourceBundle>>,
 
@@ -86,53 +80,53 @@ impl Core {
         Self { state: Arc::new(Mutex::new(state)) }
     }
 
-    /// Queries all the sources to check if they want to attach to `document`.
-    ///
-    /// If at least one source wants to attach it sends a
-    /// [`UiMessage::AttachDocument`](completion_types::UiMessage::AttachDocument)
-    /// message to the client.
-    pub(crate) async fn query_attach(&self, document: Document) -> Result<()> {
-        // TODO: this blocks until all the sources replied. Do it in the
-        // background.
+    /// TODO: docs
+    pub(crate) fn query_attach(&self, document: Document) -> Result<()> {
         let document = Arc::new(document);
 
-        let state = &mut *self.state.lock()?;
+        let state = &*self.state.lock()?;
 
-        let mut tasks = state
-            .sources
-            .iter()
-            .map(|bundle| {
-                let bundle = Arc::clone(bundle);
-                let doc = Arc::clone(&document);
-                let sender = state.sender.clone();
+        for source in state.sources.iter().map(Arc::clone) {
+            let core = self.clone();
+            let doc = Arc::clone(&document);
+            let sender = state.sender.clone();
 
-                tokio::spawn(async move {
-                    let res = bundle.enable(&doc, &sender).await;
-                    (bundle, res)
-                })
-            })
-            .collect::<FuturesUnordered<_>>();
+            tokio::spawn(async move {
+                match source.enable(&doc, &sender).await {
+                    Ok(true) => core.source_attached(source, doc).unwrap(),
 
-        let mut enabled = Vec::new();
+                    Ok(false) => {},
 
-        while let Some(out) = tasks.next().await {
-            match out {
-                Ok((bundle, Ok(true))) => enabled.push(bundle),
-
-                Ok((bundle, Err(error))) => {
-                    state.sender.send(CoreMessage::SourceEnableFailed {
-                        source: bundle.id,
-                        error,
-                    });
-                },
-
-                _ => {},
-            }
+                    Err(error) => {
+                        sender.send(CoreMessage::SourceEnableFailed {
+                            source: source.id,
+                            error,
+                        });
+                    },
+                }
+            });
         }
 
-        if !enabled.is_empty() {
-            state.buffer_sources.insert(document.buffer(), enabled);
-            state.sender.send(CoreMessage::AttachDocument { document });
+        Ok(())
+    }
+
+    /// TODO: docs
+    fn source_attached(
+        &self,
+        source: Arc<SourceBundle>,
+        document: Arc<Document>,
+    ) -> Result<()> {
+        let state = &mut *self.state.lock()?;
+        let sources = &mut state.buffer_sources;
+        let buffer = document.buffer();
+
+        match sources.get_mut(&buffer) {
+            Some(sources) => sources.push(source),
+
+            None => {
+                sources.insert(buffer, vec![source]);
+                state.sender.send(CoreMessage::AttachDocument { document });
+            },
         }
 
         Ok(())

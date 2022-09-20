@@ -9,18 +9,19 @@ use completion_types::{
     SourceEnable,
 };
 
+/// Extension trait for [`SourceBundle`]s.
 #[async_trait]
 pub(crate) trait SourceBundleExt {
     async fn enable(
         &self,
-        doc: &Document,
+        document: &Document,
         sender: &CoreSender,
     ) -> Result<bool, GenericError>;
 
     async fn complete(
         &self,
-        doc: &Document,
-        pos: &Position,
+        document: &Document,
+        position: &Position,
     ) -> Result<CompletionList, GenericError>;
 }
 
@@ -28,11 +29,11 @@ pub(crate) trait SourceBundleExt {
 impl SourceBundleExt for SourceBundle {
     async fn enable(
         &self,
-        doc: &Document,
+        document: &Document,
         sender: &CoreSender,
     ) -> Result<bool, GenericError> {
         let config = self.config.as_ref().unwrap();
-        let source_enable = self.source.enable(doc, config);
+        let source_enable = self.source.enable(document, config);
 
         match self.enable.as_ref().unwrap() {
             SourceEnable::Bool(true) => source_enable.await,
@@ -40,8 +41,8 @@ impl SourceBundleExt for SourceBundle {
             SourceEnable::Function(fun) => {
                 let user_enable = {
                     let fun = fun.clone();
-                    let buf = doc.buffer();
-                    sender.on_nvim_thread(move || fun.call(buf))
+                    let buffer = document.buffer();
+                    sender.on_nvim_thread(move || fun.call(buffer))
                 };
 
                 match futures::join!(source_enable, user_enable) {
@@ -62,10 +63,10 @@ impl SourceBundleExt for SourceBundle {
     #[inline]
     async fn complete(
         &self,
-        doc: &Document,
-        pos: &Position,
+        document: &Document,
+        position: &Position,
     ) -> Result<CompletionList, GenericError> {
         let config = self.config.as_ref().unwrap();
-        self.source.complete(doc, pos, config).await
+        self.source.complete(document, position, config).await
     }
 }

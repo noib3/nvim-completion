@@ -62,7 +62,7 @@ async fn event_loop(core: Core, mut receiver: ClientReceiver) -> Result<()> {
     while let Some(msg) = receiver.recv().await {
         match msg {
             ClientMessage::QueryAttach { document } => {
-                core.query_attach(document).await?
+                core.query_attach(document)?
             },
 
             ClientMessage::RecomputeCompletions {
