@@ -26,7 +26,7 @@ impl SourceBundleExt for SourceBundle {
 
     #[inline]
     fn set_config(&mut self, config: nvim::Object) -> Result<()> {
-        self.config = Some(self.source.deser_config(config)?);
+        self.config = Some(self.source.deserialize_config(config)?);
         Ok(())
     }
 

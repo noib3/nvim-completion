@@ -3,7 +3,13 @@ use nvim_oxi::{object, Object};
 use serde::de::DeserializeOwned;
 
 use crate::source_bundle::SourceConfigPtr;
-use crate::{CompletionList, Document, GenericError, Position};
+use crate::{
+    CompletionItem,
+    CompletionList,
+    Document,
+    GenericError,
+    Position,
+};
 
 /// TODO: docs
 #[async_trait]
@@ -30,6 +36,13 @@ pub trait CompletionSource: Send + Sync + 'static {
     ) -> Result<bool, Self::Error>;
 
     /// TODO: docs
+    async fn trigger_characters(
+        &self,
+        document: &Document,
+        config: &Self::Config,
+    ) -> Result<Vec<char>, Self::Error>;
+
+    /// TODO: docs
     async fn complete(
         &self,
         document: &Document,
@@ -37,13 +50,15 @@ pub trait CompletionSource: Send + Sync + 'static {
         config: &Self::Config,
     ) -> Result<CompletionList, Self::Error>;
 
-    // /// TODO: docs
-    // async fn resolve(
-    //     &self,
-    //     document: &Document,
-    //     item: &mut CompletionItem,
-    //     config: &Self::Config,
-    // ) -> Result<(), Self::Error>;
+    /// TODO: docs
+    async fn resolve_completion(
+        &self,
+        _document: &Document,
+        _item: &CompletionItem,
+        _config: &Self::Config,
+    ) -> Result<Option<u8> /* TODO */, Self::Error> {
+        Ok(None)
+    }
 }
 
 /// TODO: docs
@@ -51,7 +66,7 @@ pub trait CompletionSource: Send + Sync + 'static {
 pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
     fn api(&self) -> Object;
 
-    fn deser_config(
+    fn deserialize_config(
         &self,
         config: Object,
     ) -> Result<SourceConfigPtr, serde_path_to_error::Error<nvim_oxi::Error>>;
@@ -62,12 +77,25 @@ pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
         config: &SourceConfigPtr,
     ) -> Result<bool, GenericError>;
 
+    async fn trigger_characters(
+        &self,
+        document: &Document,
+        config: &SourceConfigPtr,
+    ) -> Result<Vec<char>, GenericError>;
+
     async fn complete(
         &self,
         document: &Document,
         position: &Position,
         config: &SourceConfigPtr,
     ) -> Result<CompletionList, GenericError>;
+
+    async fn resolve_completion(
+        &self,
+        document: &Document,
+        item: &CompletionItem,
+        config: &SourceConfigPtr,
+    ) -> Result<Option<u8>, GenericError>;
 }
 
 #[async_trait]
@@ -77,21 +105,19 @@ where
 {
     #[inline]
     fn api(&self) -> Object {
-        <Self as CompletionSource>::api()
+        S::api()
     }
 
-    fn deser_config(
+    #[inline]
+    fn deserialize_config(
         &self,
         config: Object,
     ) -> Result<SourceConfigPtr, serde_path_to_error::Error<nvim_oxi::Error>>
     {
-        let config: <Self as CompletionSource>::Config = {
-            let deserializer = object::Deserializer::new(config);
-            serde_path_to_error::deserialize(deserializer)?
-            // .map_err(|err| crate::Error::source_deser(err, S::NAME))?
-        };
+        let deserializer = object::Deserializer::new(config);
 
-        Ok(SourceConfigPtr::new(config))
+        serde_path_to_error::deserialize::<_, S::Config>(deserializer)
+            .map(SourceConfigPtr::new)
     }
 
     #[inline]
@@ -103,7 +129,21 @@ where
         // Safety: TODO.
         let config: &S::Config = unsafe { config.cast() };
 
-        <Self as CompletionSource>::enable(self, document, config)
+        S::enable(self, document, config)
+            .await
+            .map_err(|err| Box::new(err) as _)
+    }
+
+    #[inline]
+    async fn trigger_characters(
+        &self,
+        document: &Document,
+        config: &SourceConfigPtr,
+    ) -> Result<Vec<char>, GenericError> {
+        // Safety: see above.
+        let config: &S::Config = unsafe { config.cast() };
+
+        S::trigger_characters(self, document, config)
             .await
             .map_err(|err| Box::new(err) as _)
     }
@@ -115,10 +155,25 @@ where
         position: &Position,
         config: &SourceConfigPtr,
     ) -> Result<CompletionList, GenericError> {
-        // Safety: TODO.
+        // Safety: see above.
         let config: &S::Config = unsafe { config.cast() };
 
-        <Self as CompletionSource>::complete(self, document, position, config)
+        S::complete(self, document, position, config)
+            .await
+            .map_err(|err| Box::new(err) as _)
+    }
+
+    #[inline]
+    async fn resolve_completion(
+        &self,
+        document: &Document,
+        item: &CompletionItem,
+        config: &SourceConfigPtr,
+    ) -> Result<Option<u8>, GenericError> {
+        // Safety: see above.
+        let config: &S::Config = unsafe { config.cast() };
+
+        S::resolve_completion(self, document, item, config)
             .await
             .map_err(|err| Box::new(err) as _)
     }

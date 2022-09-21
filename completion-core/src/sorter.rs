@@ -1,6 +1,12 @@
 use std::sync::Arc;
 
-use completion_types::{CompletionItem, Document, Position, ScoredCompletion};
+use completion_types::{
+    CompletionItem,
+    CompletionRequest,
+    Document,
+    Position,
+    ScoredCompletion,
+};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 
@@ -13,26 +19,27 @@ const ITEMS_NUM_THRESHOLD: usize = 1024;
 
 pub(crate) fn sort(
     items: Vec<Arc<CompletionItem>>,
-    document: Arc<Document>,
-    position: Arc<Position>,
+    request: Arc<CompletionRequest>,
+    // document: Arc<Document>,
+    // position: Arc<Position>,
 ) -> Vec<ScoredCompletion> {
     let matcher = Arc::new(SkimMatcherV2::default());
 
-    let mut compls = Vec::new();
+    let mut completions = Vec::new();
 
     let mut handles = items
         .chunks(ITEMS_NUM_THRESHOLD)
         .map(|chunk| {
             let chunk = chunk.to_vec();
             let mach = Arc::clone(&matcher);
-            let doc = Arc::clone(&document);
-            let pos = Arc::clone(&position);
-            std::thread::spawn(move || score_chunk(&chunk, &doc, &pos, &*mach))
+            let req = Arc::clone(&request);
+            // let pos = Arc::clone(&position);
+            std::thread::spawn(move || score_chunk(&chunk, &req, &*mach))
         })
         .collect::<Vec<_>>();
 
     while let Some(handle) = handles.pop() {
-        compls.extend(handle.join().unwrap());
+        completions.extend(handle.join().unwrap());
     }
 
     // while !handles.is_empty() {
@@ -53,22 +60,25 @@ pub(crate) fn sort(
     //     })
     //     .collect::<Vec<_>>();
 
-    compls.sort_by(|a, b| b.score.cmp(&a.score));
+    completions.sort_by(|a, b| b.score.cmp(&a.score));
 
-    compls
+    completions
 }
 
 fn score_chunk<M: FuzzyMatcher>(
     chunk: &[Arc<CompletionItem>],
-    document: &Document,
-    position: &Position,
+    request: &CompletionRequest,
     matcher: &M,
 ) -> Vec<ScoredCompletion> {
     chunk
         .iter()
         .filter_map(|completion| {
-            let (score, matched_bytes) =
-                score_completion(completion, document, position, matcher)?;
+            let (score, matched_bytes) = score_completion(
+                completion,
+                &request.document,
+                &request.position,
+                matcher,
+            )?;
 
             Some(ScoredCompletion {
                 item: Arc::clone(&completion),

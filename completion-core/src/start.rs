@@ -8,7 +8,7 @@ use completion_types::{
     SourceBundle,
 };
 
-use crate::{Core, Result};
+use crate::{Result, State};
 
 /// Starts the completion core on a new thread.
 pub fn start(
@@ -43,7 +43,7 @@ pub fn start(
     }));
 
     thread::spawn(move || {
-        let core = Core::new(sources, core_sender.clone());
+        let core = State::new(sources, core_sender.clone());
 
         match self::event_loop(core, client_receiver) {
             Err(error) => {
@@ -58,22 +58,18 @@ pub fn start(
 }
 
 #[tokio::main]
-async fn event_loop(core: Core, mut receiver: ClientReceiver) -> Result<()> {
+async fn event_loop(core: State, mut receiver: ClientReceiver) -> Result<()> {
     while let Some(msg) = receiver.recv().await {
         match msg {
             ClientMessage::QueryAttach { document } => {
                 core.query_attach(document)?
             },
 
-            ClientMessage::RecomputeCompletions {
-                document,
-                position,
-                revision,
-                clock,
-            } => core
-                .recompute_completions(document, position, revision, clock)?,
+            ClientMessage::CompletionRequest { request } => {
+                core.recompute_completions(request)?
+            },
 
-            ClientMessage::StopSending { revision } => {
+            ClientMessage::CancelRequest { revision } => {
                 core.stop_sending(revision)?
             },
         }

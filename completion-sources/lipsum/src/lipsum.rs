@@ -33,6 +33,14 @@ impl CompletionSource for Lipsum {
         Ok(true)
     }
 
+    async fn trigger_characters(
+        &self,
+        _doc: &Document,
+        _config: &Config,
+    ) -> Result<Vec<char>> {
+        Ok(Vec::new())
+    }
+
     async fn complete(
         &self,
         _doc: &Document,

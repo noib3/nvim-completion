@@ -8,11 +8,13 @@ use completion_types::{
     ClientMessage,
     ClientSender,
     Clock,
+    CompletionRequest,
     CoreMessage,
     CoreReceiver,
     CoreSender,
     Document,
     Position,
+    RequestKind,
     Revision,
     ScoredCompletion,
 };
@@ -114,14 +116,15 @@ impl Client {
 
         let document = state.documents.get(&buffer).map(Arc::clone).unwrap();
 
-        let msg = ClientMessage::RecomputeCompletions {
-            revision: state.revision,
+        let request = CompletionRequest {
+            id: state.revision,
             document,
             position,
             clock,
+            kind: RequestKind::TypedCharacter('a'),
         };
 
-        self.send_core(msg)
+        self.send_core(ClientMessage::CompletionRequest { request })
     }
 
     /// Notifies the core to stop sending completion items for the current
@@ -131,7 +134,7 @@ impl Client {
         let state = &mut *self.state.borrow_mut();
         state.is_accepting_completions = false;
 
-        let msg = ClientMessage::StopSending { revision: state.revision };
+        let msg = ClientMessage::CancelRequest { revision: state.revision };
 
         self.send_core(msg)
     }
@@ -213,13 +216,19 @@ impl Client {
 
                 CoreMessage::Completions {
                     items,
-                    revision,
-                    buffer,
-                    position,
-                    clock,
+                    request,
+                    // revision,
+                    // buffer,
+                    // position,
+                    // clock,
                 } => {
-                    if self.is_last_revision(revision) && !items.is_empty() {
-                        completions = Some((items, buffer, position, clock));
+                    if self.is_last_revision(request.id) && !items.is_empty() {
+                        completions = Some((
+                            items,
+                            request.document.buffer(),
+                            request.position.clone(),
+                            request.clock.clone(),
+                        ));
                     }
                 },
 
@@ -244,7 +253,12 @@ impl Client {
         if let Some((items, buffer, position, clock)) = completions {
             let client = self.clone();
             nvim::schedule(move |_| {
-                client.update_completions(items, buffer, position, clock)
+                client.update_completions(
+                    items,
+                    buffer,
+                    Arc::new(position),
+                    clock,
+                )
             })
         }
 

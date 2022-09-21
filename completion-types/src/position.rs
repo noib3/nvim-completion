@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone /* TODO: remove Clone */)]
 pub struct Position {
     // TODO: docs
     pub row: u32,

@@ -11,7 +11,13 @@ mod scored_completion;
 mod source_bundle;
 mod source_enable;
 
-pub use client_message::{ClientMessage, ClientReceiver, ClientSender};
+pub use client_message::{
+    ClientMessage,
+    ClientReceiver,
+    ClientSender,
+    CompletionRequest,
+    RequestKind,
+};
 pub use clock::Clock;
 pub use completion_item::{CompletionItem, CompletionItemBuilder};
 pub use completion_list::CompletionList;

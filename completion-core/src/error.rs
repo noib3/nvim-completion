@@ -2,7 +2,7 @@ use std::sync::{MutexGuard, PoisonError};
 
 use thiserror::Error as ThisError;
 
-use crate::State;
+use crate::StateInner;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -13,8 +13,8 @@ pub enum Error {
 }
 
 // Only keeping the error message to not have to deal w/ lifetimes.
-impl From<PoisonError<MutexGuard<'_, State>>> for Error {
-    fn from(err: PoisonError<MutexGuard<'_, State>>) -> Self {
+impl From<PoisonError<MutexGuard<'_, StateInner>>> for Error {
+    fn from(err: PoisonError<MutexGuard<'_, StateInner>>) -> Self {
         Self::StateMutexPoisoned(err.to_string())
     }
 }

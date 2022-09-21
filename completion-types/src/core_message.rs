@@ -1,17 +1,14 @@
 use std::sync::Arc;
 
 use nvim_oxi as nvim;
-use nvim_oxi::api::Buffer;
 use nvim_oxi::r#loop::AsyncHandle;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 
 use crate::{
-    Clock,
+    CompletionRequest,
     Document,
     GenericError,
-    Position,
-    Revision,
     ScoredCompletion,
     SourceId,
 };
@@ -106,9 +103,10 @@ pub enum CoreMessage {
     /// TODO: docs
     Completions {
         items: Vec<ScoredCompletion>,
-        revision: Revision,
-        buffer: Buffer,
-        position: Arc<Position>,
-        clock: Clock,
+        request: Arc<CompletionRequest>,
+        // revision: Revision,
+        // buffer: Buffer,
+        // position: Arc<Position>,
+        // clock: Clock,
     },
 }

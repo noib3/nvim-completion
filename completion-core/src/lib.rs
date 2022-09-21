@@ -11,4 +11,4 @@ use position_ext::PositionExt;
 use sorter::sort;
 use source_bundle_ext::SourceBundleExt;
 pub use start::start;
-use state::{Core, State};
+use state::{State, StateInner};

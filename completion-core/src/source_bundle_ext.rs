@@ -18,6 +18,11 @@ pub(crate) trait SourceBundleExt {
         sender: &CoreSender,
     ) -> Result<bool, GenericError>;
 
+    async fn trigger_characters(
+        &self,
+        document: &Document,
+    ) -> Result<Vec<char>, GenericError>;
+
     async fn complete(
         &self,
         document: &Document,
@@ -60,7 +65,14 @@ impl SourceBundleExt for SourceBundle {
         }
     }
 
-    #[inline]
+    async fn trigger_characters(
+        &self,
+        document: &Document,
+    ) -> Result<Vec<char>, GenericError> {
+        let config = self.config.as_ref().unwrap();
+        self.source.trigger_characters(document, config).await
+    }
+
     async fn complete(
         &self,
         document: &Document,
