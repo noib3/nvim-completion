@@ -1,28 +1,59 @@
 use std::time::Instant;
 
+/// A clock used to measure the performance of the various stages of the
+/// completion pipeline.
 #[derive(Clone, Debug)]
 pub struct Clock {
-    times: [u128; 3],
-    start: Instant,
+    /// There are 3 separate time measurements that we care about, in
+    /// chronological order:
+    ///
+    /// - from the user editing the buffer to a completion source sending back
+    ///   its results;
+    /// - the time spent resorting the completions (old + new);
+    /// - from the client receiving the new sorted completions to the UI being
+    ///   updated.
+    ///
+    /// The first 2 happen core-side, while the client is responsible for the
+    /// last one. 3 deltas => 4 ticks.
+    times: [Option<Instant>; 4],
 }
 
 impl Clock {
+    #[cfg(feature = "client")]
     pub fn start() -> Self {
-        Self { times: [0; 3], start: Instant::now() }
+        Self { times: [Some(Instant::now()), None, None, None] }
     }
 
-    pub fn time_source(&mut self) {
-        let from_start = self.start.elapsed().as_millis();
-        self.times[0] = from_start;
+    #[cfg(feature = "core")]
+    pub fn time_source_finished(&mut self) {
+        debug_assert!(self.times[1..].iter().all(Option::is_none));
+        self.times[1] = Some(Instant::now());
     }
 
-    pub fn time_sorting(&mut self) {
-        let from_start = self.start.elapsed().as_millis();
-        self.times[1] = from_start - self.times[0];
+    #[cfg(feature = "core")]
+    pub fn time_completions_sorted(&mut self) {
+        debug_assert!(self.times[..=1].iter().all(Option::is_some));
+        debug_assert!(self.times[2..].iter().all(Option::is_none));
+        self.times[2] = Some(Instant::now());
     }
 
-    pub fn time_displaying(&mut self) {
-        let from_start = self.start.elapsed().as_millis();
-        self.times[2] = from_start - self.times[1] - self.times[0];
+    #[cfg(feature = "client")]
+    pub fn time_ui_updated(&mut self) {
+        debug_assert!(self.times[..=2].iter().all(Option::is_some));
+        debug_assert!(self.times[3].is_none());
+        self.times[3] = Some(Instant::now());
+    }
+
+    #[cfg(feature = "client")]
+    pub fn report(&self) -> [u64; 3] {
+        debug_assert!(self.times[..].iter().all(Option::is_some));
+        match self.times {
+            [Some(start), Some(source), Some(sort), Some(ui)] => [
+                (source - start).as_millis() as _,
+                (sort - source).as_millis() as _,
+                (ui - sort).as_millis() as _,
+            ],
+            _ => unreachable!(),
+        }
     }
 }

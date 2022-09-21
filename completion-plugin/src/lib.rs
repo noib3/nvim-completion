@@ -7,7 +7,7 @@ use nvim_oxi::{self as nvim, Dictionary};
 fn nvim_completion() -> nvim::Result<Dictionary> {
     client::register_source(lsp::Lsp);
 
-    #[cfg(debug_assertions)]
+    // #[cfg(debug_assertions)]
     client::register_source(lipsum::Lipsum);
 
     Ok(client::build_api())

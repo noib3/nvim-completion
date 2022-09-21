@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use completion_types::{
+    Clock,
     CompletionItem,
     CompletionList,
     CompletionRequest,
@@ -188,11 +189,14 @@ impl State {
         }
 
         if !cached_completions.is_empty() {
+            let mut clock = request.clock.clone();
+            clock.time_source_finished();
+
             let state = self.clone();
             let _ = std::thread::spawn(move || {
                 let sorted =
                     crate::sort(cached_completions, Arc::clone(&request));
-                state.on_completions_sorted(sorted, request).unwrap();
+                state.on_completions_sorted(sorted, request, clock).unwrap();
             });
         }
 
@@ -206,7 +210,8 @@ impl State {
         source: SourceId,
         request: Arc<CompletionRequest>,
     ) -> Result<()> {
-        // clock.time_source();
+        let mut clock = request.clock.clone();
+        clock.time_source_finished();
 
         let state = &mut *self.inner.lock()?;
 
@@ -236,7 +241,7 @@ impl State {
 
         let _ = std::thread::spawn(move || {
             let sorted = crate::sort(completions, Arc::clone(&request));
-            state.on_completions_sorted(sorted, request).unwrap();
+            state.on_completions_sorted(sorted, request, clock).unwrap();
         });
 
         Ok(())
@@ -247,13 +252,18 @@ impl State {
         &self,
         items: Vec<ScoredCompletion>,
         request: Arc<CompletionRequest>,
+        mut clock: Clock,
     ) -> Result<()> {
-        // clock.time_sorting();
+        clock.time_completions_sorted();
 
         let state = &*self.inner.lock()?;
 
         if request.id == state.revision && state.is_sending_completions {
-            state.sender.send(CoreMessage::Completions { items, request });
+            state.sender.send(CoreMessage::Completions {
+                items,
+                request,
+                clock,
+            });
         }
 
         Ok(())

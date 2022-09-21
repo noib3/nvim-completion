@@ -6,6 +6,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 
 use crate::{
+    Clock,
     CompletionRequest,
     Document,
     GenericError,
@@ -104,9 +105,6 @@ pub enum CoreMessage {
     Completions {
         items: Vec<ScoredCompletion>,
         request: Arc<CompletionRequest>,
-        // revision: Revision,
-        // buffer: Buffer,
-        // position: Arc<Position>,
-        // clock: Clock,
+        clock: Clock,
     },
 }

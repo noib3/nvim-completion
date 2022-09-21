@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-completion-types = { path = "../completion-types", features = ["ui"] }
+completion-types = { path = "../completion-types", features = ["client"] }
 completion-core = { path = "../completion-core" }
 memchr = "2"
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }

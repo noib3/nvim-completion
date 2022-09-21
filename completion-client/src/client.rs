@@ -214,20 +214,13 @@ impl Client {
                     })
                 },
 
-                CoreMessage::Completions {
-                    items,
-                    request,
-                    // revision,
-                    // buffer,
-                    // position,
-                    // clock,
-                } => {
+                CoreMessage::Completions { items, request, clock } => {
                     if self.is_last_revision(request.id) && !items.is_empty() {
                         completions = Some((
                             items,
                             request.document.buffer(),
                             request.position.clone(),
-                            request.clock.clone(),
+                            clock,
                         ));
                     }
                 },
@@ -276,13 +269,26 @@ impl Client {
         position: Arc<Position>,
         mut clock: Clock,
     ) -> nvim::Result<()> {
+        let len = completions.len();
+
         if self.state.borrow().is_accepting_completions {
             let ui_state = &mut *self.ui_state.borrow_mut();
             ui_state.update_completions(completions, buffer, position)?;
         }
 
-        clock.time_displaying();
-        nvim::print!("{:?}", clock);
+        clock.time_ui_updated();
+
+        let [fetched, sorted, ui] = clock.report();
+
+        // #[cfg(debug_assertions)]
+        nvim::print!(
+            "{} completions fetched in {}ms, sorted in {}ms, updated ui in \
+             {}ms",
+            len,
+            fetched,
+            sorted,
+            ui
+        );
 
         Ok(())
     }
