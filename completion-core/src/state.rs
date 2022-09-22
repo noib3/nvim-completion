@@ -194,8 +194,7 @@ impl State {
 
             let state = self.clone();
             let _ = std::thread::spawn(move || {
-                let sorted =
-                    crate::sort(cached_completions, Arc::clone(&request));
+                let sorted = crate::sort(cached_completions, &request);
                 state.on_completions_sorted(sorted, request, clock).unwrap();
             });
         }
@@ -240,7 +239,7 @@ impl State {
         let state = self.clone();
 
         let _ = std::thread::spawn(move || {
-            let sorted = crate::sort(completions, Arc::clone(&request));
+            let sorted = crate::sort(completions, &request);
             state.on_completions_sorted(sorted, request, clock).unwrap();
         });
 
