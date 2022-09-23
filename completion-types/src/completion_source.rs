@@ -9,6 +9,7 @@ use crate::{
     Document,
     GenericError,
     Position,
+    ResolvedProperties,
 };
 
 /// TODO: docs
@@ -54,9 +55,9 @@ pub trait CompletionSource: Send + Sync + 'static {
     async fn resolve_completion(
         &self,
         _document: &Document,
-        _item: &CompletionItem,
+        _completion: &CompletionItem,
         _config: &Self::Config,
-    ) -> Result<Option<u8> /* TODO */, Self::Error> {
+    ) -> Result<Option<ResolvedProperties>, Self::Error> {
         Ok(None)
     }
 }
@@ -95,7 +96,7 @@ pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
         document: &Document,
         item: &CompletionItem,
         config: &SourceConfigPtr,
-    ) -> Result<Option<u8>, GenericError>;
+    ) -> Result<Option<ResolvedProperties>, GenericError>;
 }
 
 #[async_trait]
@@ -167,13 +168,13 @@ where
     async fn resolve_completion(
         &self,
         document: &Document,
-        item: &CompletionItem,
+        completion: &CompletionItem,
         config: &SourceConfigPtr,
-    ) -> Result<Option<u8>, GenericError> {
+    ) -> Result<Option<ResolvedProperties>, GenericError> {
         // Safety: see above.
         let config: &S::Config = unsafe { config.cast() };
 
-        S::resolve_completion(self, document, item, config)
+        S::resolve_completion(self, document, completion, config)
             .await
             .map_err(|err| Box::new(err) as _)
     }

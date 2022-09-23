@@ -69,6 +69,13 @@ async fn event_loop(core: State, mut receiver: ClientReceiver) -> Result<()> {
                 core.recompute_completions(request)?
             },
 
+            ClientMessage::ResolveCompletion {
+                document,
+                item,
+                source,
+                id,
+            } => core.resolve_completion(document, item, source, id)?,
+
             ClientMessage::CancelRequest { revision } => {
                 core.stop_sending(revision)?
             },

@@ -225,6 +225,8 @@ impl Client {
                     }
                 },
 
+                CoreMessage::ResolvedCompletion { .. } => {},
+
                 CoreMessage::CoreFailed(why) => {
                     return Err(Error::CoreFailed(why))
                 },

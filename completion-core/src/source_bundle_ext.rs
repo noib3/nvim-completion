@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 use completion_types::{
+    CompletionItem,
     CompletionList,
     CoreSender,
     Document,
     GenericError,
     Position,
+    ResolvedProperties,
     SourceBundle,
     SourceEnable,
 };
@@ -28,6 +30,12 @@ pub(crate) trait SourceBundleExt {
         document: &Document,
         position: &Position,
     ) -> Result<CompletionList, GenericError>;
+
+    async fn resolve_completion(
+        &self,
+        document: &Document,
+        completion: &CompletionItem,
+    ) -> Result<Option<ResolvedProperties>, GenericError>;
 }
 
 #[async_trait]
@@ -80,5 +88,14 @@ impl SourceBundleExt for SourceBundle {
     ) -> Result<CompletionList, GenericError> {
         let config = self.config.as_ref().unwrap();
         self.source.complete(document, position, config).await
+    }
+
+    async fn resolve_completion(
+        &self,
+        document: &Document,
+        completion: &CompletionItem,
+    ) -> Result<Option<ResolvedProperties>, GenericError> {
+        let config = self.config.as_ref().unwrap();
+        self.source.resolve_completion(document, completion, config).await
     }
 }

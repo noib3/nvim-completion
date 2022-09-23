@@ -11,6 +11,7 @@ use completion_types::{
     Document,
     GenericError,
     RequestKind,
+    ResolvedProperties,
     Revision,
     ScoredCompletion,
     SourceBundle,
@@ -24,6 +25,7 @@ type IsComplete = bool;
 type TriggerCharacters = Vec<char>;
 type AttachedSource = (Arc<SourceBundle>, TriggerCharacters);
 type RecomputeHandle = tokio::task::JoinHandle<Result<()>>;
+type ResolveHandle = tokio::task::JoinHandle<Result<()>>;
 
 #[derive(Clone)]
 pub(crate) struct State {
@@ -45,6 +47,9 @@ pub(crate) struct StateInner {
 
     /// TODO: docs
     recompute_tasks: Vec<RecomputeHandle>,
+
+    /// TODO: docs
+    resolve_tasks: Vec<ResolveHandle>,
 
     /// Whether..
     is_sending_completions: bool,
@@ -75,6 +80,7 @@ impl State {
             buffer_sources: HashMap::new(),
             revision: Revision::default(),
             recompute_tasks: Vec::new(),
+            resolve_tasks: Vec::new(),
             is_sending_completions: false,
             completions,
         };
@@ -153,6 +159,7 @@ impl State {
         state.revision = request.id;
         state.is_sending_completions = true;
         state.recompute_tasks.drain(..).for_each(|task| task.abort());
+        state.resolve_tasks.drain(..).for_each(|task| task.abort());
 
         let mut cached_completions = Vec::new();
 
@@ -269,6 +276,67 @@ impl State {
     }
 
     /// TODO: docs
+    pub(crate) fn resolve_completion(
+        &self,
+        document: Arc<Document>,
+        item: Arc<CompletionItem>,
+        source_id: SourceId,
+        revision: Revision,
+    ) -> Result<()> {
+        let state = &mut *self.inner.lock()?;
+
+        assert_eq!(state.revision, revision);
+
+        let source = state
+            .buffer_sources
+            .get(&document.buffer())
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find_map(|(source, _trigger_chars)| {
+                (source.id == source_id).then_some(source)
+            })
+            .map(Arc::clone)
+            .unwrap();
+
+        let cloned = self.clone();
+
+        let resolve_handle = tokio::spawn(async move {
+            match source.resolve_completion(&document, &item).await {
+                Ok(Some(properties)) => {
+                    cloned.resolved_completion(properties, item, revision)
+                },
+                Ok(None) => Ok(()),
+                Err(err) => cloned.resolve_failed(source.id, err),
+            }
+        });
+
+        state.resolve_tasks.push(resolve_handle);
+
+        Ok(())
+    }
+
+    /// TODO: docs
+    fn resolved_completion(
+        &self,
+        properties: ResolvedProperties,
+        item: Arc<CompletionItem>,
+        id: Revision,
+    ) -> Result<()> {
+        let state = &*self.inner.lock()?;
+
+        if id == state.revision {
+            state.sender.send(CoreMessage::ResolvedCompletion {
+                properties,
+                item,
+                id,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// TODO: docs
     pub(crate) fn stop_sending(&self, revision: Revision) -> Result<()> {
         let state = &mut *self.inner.lock().unwrap();
 
@@ -281,6 +349,17 @@ impl State {
 
     /// TODO: docs
     fn complete_failed(
+        &self,
+        source: SourceId,
+        error: GenericError,
+    ) -> Result<()> {
+        let state = &*self.inner.lock()?;
+        state.sender.send(CoreMessage::SourceCompleteFailed { source, error });
+        Ok(())
+    }
+
+    /// TODO: docs
+    fn resolve_failed(
         &self,
         source: SourceId,
         error: GenericError,

@@ -7,9 +7,12 @@ use tokio::sync::oneshot;
 
 use crate::{
     Clock,
+    CompletionItem,
     CompletionRequest,
     Document,
     GenericError,
+    ResolvedProperties,
+    Revision,
     ScoredCompletion,
     SourceId,
 };
@@ -89,6 +92,20 @@ pub enum CoreMessage {
     },
 
     /// TODO: docs
+    Completions {
+        items: Vec<ScoredCompletion>,
+        request: Arc<CompletionRequest>,
+        clock: Clock,
+    },
+
+    /// TODO: docs
+    ResolvedCompletion {
+        item: Arc<CompletionItem>,
+        properties: ResolvedProperties,
+        id: Revision,
+    },
+
+    /// TODO: docs
     ExecuteLuaFunction {
         fun: Box<dyn FnOnce(()) -> Result<(), nvim::Error> + Send>,
     },
@@ -100,11 +117,4 @@ pub enum CoreMessage {
     /// A completion source returned an error while executing its
     /// [`complete`](crate::CompletionSource::complete) implementation.
     SourceCompleteFailed { source: SourceId, error: GenericError },
-
-    /// TODO: docs
-    Completions {
-        items: Vec<ScoredCompletion>,
-        request: Arc<CompletionRequest>,
-        clock: Clock,
-    },
 }

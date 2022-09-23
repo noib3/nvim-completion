@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-use crate::{Clock, Document, Position, Revision};
+use crate::{Clock, CompletionItem, Document, Position, Revision, SourceId};
 
 pub type ClientReceiver = UnboundedReceiver<ClientMessage>;
 pub type ClientSender = UnboundedSender<ClientMessage>;
@@ -15,6 +15,13 @@ pub enum ClientMessage {
 
     /// Tells the core to recompute its completions...
     CompletionRequest { request: CompletionRequest },
+
+    ResolveCompletion {
+        document: Arc<Document>,
+        item: Arc<CompletionItem>,
+        source: SourceId,
+        id: Revision,
+    },
 
     /// TODO: docs
     CancelRequest { revision: Revision },
