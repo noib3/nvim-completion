@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use completion_types::{
-    CompletionItemBuilder,
+    CompletionItem,
     CompletionList,
     CompletionSource,
     Document,
@@ -49,7 +49,7 @@ impl CompletionSource for Lipsum {
     ) -> Result<CompletionList> {
         let completions = super::WORDS
             .iter()
-            .map(|word| CompletionItemBuilder::new(*word).build())
+            .map(|word| CompletionItem::builder().text(*word).build())
             .collect::<Vec<_>>();
 
         Ok(CompletionList { items: completions, is_complete: true })

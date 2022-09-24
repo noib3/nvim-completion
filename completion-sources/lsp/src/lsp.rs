@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use completion_types::{
-    CompletionItemBuilder,
+    CompletionItem,
     CompletionList,
     CompletionSource,
     Document,
@@ -61,9 +61,8 @@ impl CompletionSource for Lsp {
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         let completions =
-            vec![CompletionItemBuilder::new("hey from LSP").build()];
+            vec![CompletionItem::builder().text("hey from LSP").build()];
 
         Ok(CompletionList { items: completions, is_complete: true })
-        // Err(Error("AA!"))
     }
 }

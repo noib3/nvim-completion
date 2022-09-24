@@ -18,6 +18,7 @@ use completion_types::{
     SourceId,
 };
 use nvim_oxi::api::Buffer;
+use rayon::prelude::*;
 
 use crate::{Result, SourceBundleExt};
 
@@ -200,6 +201,7 @@ impl State {
             clock.time_source_finished();
 
             let state = self.clone();
+
             let _ = std::thread::spawn(move || {
                 let sorted = crate::sort(cached_completions, &request);
                 state.on_completions_sorted(sorted, request, clock).unwrap();
@@ -216,9 +218,6 @@ impl State {
         source: SourceId,
         request: Arc<CompletionRequest>,
     ) -> Result<()> {
-        let mut clock = request.clock.clone();
-        clock.time_source_finished();
-
         let state = &mut *self.inner.lock()?;
 
         if request.id != state.revision {
@@ -230,7 +229,7 @@ impl State {
 
         *is_complete = list.is_complete;
         *revision = request.id;
-        *current = list.items.into_iter().map(Arc::new).collect();
+        *current = list.items.into_par_iter().map(Arc::new).collect();
 
         let completions = state
             .completions
@@ -242,6 +241,9 @@ impl State {
             })
             .map(Arc::clone)
             .collect::<Vec<_>>();
+
+        let mut clock = request.clock.clone();
+        clock.time_source_finished();
 
         let state = self.clone();
 
