@@ -20,7 +20,7 @@
     };
   };
 
-  outputs = { self, ... }@inputs: with inputs;
+  outputs = inputs: with inputs;
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
