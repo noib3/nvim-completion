@@ -3,11 +3,23 @@ name = "completion-client"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+neovim-0-8 = [
+  "completion-core/neovim-0-8",
+  "completion-types/neovim-0-8",
+  "nvim-oxi/neovim-0-8"
+]
+neovim-nightly = [
+  "completion-core/neovim-nightly",
+  "completion-types/neovim-nightly",
+  "nvim-oxi/neovim-nightly"
+]
+
 [dependencies]
-completion-types = { path = "../completion-types", features = ["client"] }
 completion-core = { path = "../completion-core" }
+completion-types = { path = "../completion-types", features = ["client"] }
 memchr = "2"
-nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["libuv"] }
 once_cell = "1.13"
 serde = { version = "1.0", features = ["derive"] }
 serde_path_to_error = "0.1"

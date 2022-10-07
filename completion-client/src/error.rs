@@ -30,10 +30,16 @@ pub(crate) enum Error {
     SourceEnableFailed { sauce: SourceId, why: String },
 
     #[error(transparent)]
-    NvimLoop(#[from] nvim_oxi::r#loop::Error),
+    NvimLoop(#[from] nvim_oxi::libuv::Error),
 
     #[error(transparent)]
     Nvim(#[from] nvim_oxi::Error),
+
+    #[error(transparent)]
+    NvimApi(#[from] nvim_oxi::api::Error),
+
+    #[error(transparent)]
+    NvimSerde(#[from] nvim_oxi::serde::Error),
 
     #[error(transparent)]
     OneshotRecv(#[from] tokio::sync::oneshot::error::RecvError),
@@ -44,16 +50,12 @@ pub(crate) enum Error {
     ),
 }
 
-impl From<serde_path_to_error::Error<nvim::Error>> for Error {
-    fn from(err: serde_path_to_error::Error<nvim::Error>) -> Self {
-        let option = err.path().to_owned();
-
-        match err.into_inner() {
-            nvim::Error::DeserializeError(why) => {
-                Self::BadConfig { prefix: "".into(), option, why }
-            },
-
-            other => other.into(),
+impl From<serde_path_to_error::Error<nvim::serde::Error>> for Error {
+    fn from(err: serde_path_to_error::Error<nvim::serde::Error>) -> Self {
+        Self::BadConfig {
+            prefix: "".into(),
+            option: err.path().to_owned(),
+            why: err.into_inner().to_string(),
         }
     }
 }

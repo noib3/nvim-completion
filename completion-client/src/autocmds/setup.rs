@@ -1,6 +1,8 @@
-use nvim_oxi::api;
-use nvim_oxi::opts::{CreateAugroupOpts, CreateAutocmdOpts};
-use nvim_oxi::types::AutocmdCallbackArgs;
+use nvim_oxi::api::{
+    self,
+    opts::{CreateAugroupOpts, CreateAutocmdOpts},
+    types::AutocmdCallbackArgs,
+};
 
 use crate::{Client, Result};
 
@@ -9,7 +11,7 @@ const AUGROUP_NAME: &str = "nvim-completion";
 pub(crate) fn setup(client: &Client) -> Result<u32> {
     let augroup_id = {
         let opts = CreateAugroupOpts::builder().clear(true).build();
-        api::create_augroup(AUGROUP_NAME, Some(&opts))?
+        api::create_augroup(AUGROUP_NAME, &opts)?
     };
 
     let on_buf_new = client.to_nvim_fn(|client, args: AutocmdCallbackArgs| {

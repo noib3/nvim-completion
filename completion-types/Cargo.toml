@@ -4,12 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
+default = ["neovim-0-8"]
 client = []
 core = []
+neovim-0-8 = ["nvim-oxi/neovim-0-8"]
+neovim-nightly = ["nvim-oxi/neovim-nightly"]
 
 [dependencies]
 async-trait = "0.1"
-nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["libuv"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_path_to_error = "0.1"
 tokio = { version = "1.20", features = ["sync"] }

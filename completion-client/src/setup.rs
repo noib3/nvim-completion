@@ -8,13 +8,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use completion_types::{
-    CompletionSource,
-    CoreSender,
-    SourceBundle,
-    SourceEnable,
-    SourceId,
+    CompletionSource, CoreSender, SourceBundle, SourceEnable, SourceId,
 };
-use nvim_oxi::{self as nvim, Object};
+use nvim_oxi::{self as nvim, libuv::AsyncHandle, Object};
 use once_cell::unsync::Lazy;
 use tokio::sync::mpsc;
 
@@ -163,7 +159,7 @@ fn filter_enabled(
 fn register_main_callback(client: Client) -> Result<CoreSender> {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
-    let handle = nvim::r#loop::new_async(move || {
+    let handle = AsyncHandle::new(move || {
         if let Err(error) = client.handle_core_message(&mut receiver) {
             match error {
                 Error::Nvim(e) => return Err(e),

@@ -5,21 +5,14 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use completion_types::{
-    ClientMessage,
-    ClientSender,
-    Clock,
-    CompletionRequest,
-    CoreMessage,
-    CoreReceiver,
-    CoreSender,
-    Document,
-    Position,
-    RequestKind,
-    Revision,
+    ClientMessage, ClientSender, Clock, CompletionRequest, CoreMessage,
+    CoreReceiver, CoreSender, Document, Position, RequestKind, Revision,
     ScoredCompletion,
 };
-use nvim::api::Buffer;
-use nvim::opts::{BufAttachOpts, OnBytesArgs, ShouldDetach};
+use nvim::api::{
+    opts::{BufAttachOpts, OnBytesArgs, ShouldDetach},
+    Buffer,
+};
 use nvim_oxi as nvim;
 
 use crate::autocmds;
@@ -332,8 +325,8 @@ impl Client {
     pub(crate) fn to_nvim_fn<F, A, R>(&self, fun: F) -> nvim::Function<A, R>
     where
         F: Fn(&Self, A) -> Result<R> + 'static,
-        A: nvim::LuaPoppable,
-        R: nvim::LuaPushable + Default,
+        A: nvim::lua::Poppable,
+        R: nvim::lua::Pushable + Default,
     {
         let client = self.clone();
 

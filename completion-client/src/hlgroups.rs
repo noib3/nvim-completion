@@ -1,24 +1,27 @@
-use nvim_oxi::{self as nvim, api, opts::SetHighlightOpts};
+use nvim_oxi::{
+    self as nvim,
+    api::{self, opts::SetHighlightOpts},
+};
 
 pub(crate) fn setup() -> nvim::Result<()> {
     let mut opts = SetHighlightOpts::builder();
     opts.default(true);
 
-    api::set_hl(0, MENU_MATCHING, Some(&opts.bold(true).build()))?;
+    api::set_hl(0, MENU_MATCHING, &opts.bold(true).build())?;
     opts.bold(false);
 
-    api::set_hl(0, BAD_OPTION_PATH, Some(&opts.link("Statement").build()))?;
-    api::set_hl(0, ERROR_MSG_TAG, Some(&opts.link("ErrorMsg").build()))?;
-    api::set_hl(0, INFO_MSG_TAG, Some(&opts.link("Question").build()))?;
-    api::set_hl(0, MSG_DQUOTED, Some(&opts.link("Special").build()))?;
-    api::set_hl(0, WARNING_MSG_TAG, Some(&opts.link("WarningMsg").build()))?;
+    api::set_hl(0, BAD_OPTION_PATH, &opts.link("Statement").build())?;
+    api::set_hl(0, ERROR_MSG_TAG, &opts.link("ErrorMsg").build())?;
+    api::set_hl(0, INFO_MSG_TAG, &opts.link("Question").build())?;
+    api::set_hl(0, MSG_DQUOTED, &opts.link("Special").build())?;
+    api::set_hl(0, WARNING_MSG_TAG, &opts.link("WarningMsg").build())?;
 
-    api::set_hl(0, DETAILS, Some(&opts.link("NormalFloat").build()))?;
-    api::set_hl(0, DETAILS_BORDER, Some(&opts.link("FloatBorder").build()))?;
-    api::set_hl(0, HINT, Some(&opts.link("Comment").build()))?;
-    api::set_hl(0, MENU, Some(&opts.link("NormalFloat").build()))?;
-    api::set_hl(0, MENU_BORDER, Some(&opts.link("FloatBorder").build()))?;
-    api::set_hl(0, MENU_SELECTED, Some(&opts.link("PmenuSel").build()))?;
+    api::set_hl(0, DETAILS, &opts.link("NormalFloat").build())?;
+    api::set_hl(0, DETAILS_BORDER, &opts.link("FloatBorder").build())?;
+    api::set_hl(0, HINT, &opts.link("Comment").build())?;
+    api::set_hl(0, MENU, &opts.link("NormalFloat").build())?;
+    api::set_hl(0, MENU_BORDER, &opts.link("FloatBorder").build())?;
+    api::set_hl(0, MENU_SELECTED, &opts.link("PmenuSel").build())?;
 
     Ok(())
 }

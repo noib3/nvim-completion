@@ -1,6 +1,4 @@
-use nvim::api::{self, Buffer};
-use nvim::opts::*;
-use nvim::types::AutocmdCallbackArgs;
+use nvim::api::{self, opts::*, types::AutocmdCallbackArgs, Buffer};
 use nvim_oxi as nvim;
 
 use crate::{Client, Result};

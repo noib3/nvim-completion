@@ -4,12 +4,17 @@ version = "0.1.0"
 authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 
+[features]
+default = ["neovim-0-8"]
+neovim-0-8 = ["nvim-oxi/neovim-0-8", "completion-types/neovim-0-8"]
+neovim-nightly = ["nvim-oxi/neovim-nightly", "completion-types/neovim-nightly"]
+
 [dependencies]
 async-trait = "0.1"
 futures = "0.3.23"
 fuzzy-matcher = "0.3"
 completion-types = { path = "../completion-types", features = ["core"] }
-nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["loop"] }
+nvim-oxi = { git = "https://github.com/noib3/nvim-oxi" }
 rayon = "1.5"
 thiserror = "1.0"
 tokio = { version = "1.20", features = ["full"] }

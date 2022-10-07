@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use nvim_oxi::{object, Object};
+use nvim_oxi::Object;
 use serde::de::DeserializeOwned;
 
 use crate::source_bundle::SourceConfigPtr;
@@ -70,7 +70,10 @@ pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
     fn deserialize_config(
         &self,
         config: Object,
-    ) -> Result<SourceConfigPtr, serde_path_to_error::Error<nvim_oxi::Error>>;
+    ) -> Result<
+        SourceConfigPtr,
+        serde_path_to_error::Error<nvim_oxi::serde::Error>,
+    >;
 
     async fn enable(
         &self,
@@ -113,10 +116,11 @@ where
     fn deserialize_config(
         &self,
         config: Object,
-    ) -> Result<SourceConfigPtr, serde_path_to_error::Error<nvim_oxi::Error>>
-    {
-        let deserializer = object::Deserializer::new(config);
-
+    ) -> Result<
+        SourceConfigPtr,
+        serde_path_to_error::Error<nvim_oxi::serde::Error>,
+    > {
+        let deserializer = nvim_oxi::serde::Deserializer::new(config);
         serde_path_to_error::deserialize::<_, S::Config>(deserializer)
             .map(SourceConfigPtr::new)
     }

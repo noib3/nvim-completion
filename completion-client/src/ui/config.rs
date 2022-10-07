@@ -1,4 +1,4 @@
-use nvim_oxi::types::WindowBorder;
+use nvim_oxi::api::types::WindowBorder;
 use serde::Deserialize;
 
 use super::{DetailsConfig, HintConfig, MenuConfig};

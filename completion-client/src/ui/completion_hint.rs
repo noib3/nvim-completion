@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
 use completion_types::{CompletionItem, Position};
-use nvim::api::{self, Buffer};
-use nvim::opts::SetExtmarkOpts;
-use nvim::types::ExtmarkVirtTextPosition;
+use nvim::api::{
+    self, opts::SetExtmarkOpts, types::ExtmarkVirtTextPosition, Buffer,
+};
 use nvim_oxi as nvim;
 use serde::Deserialize;
 

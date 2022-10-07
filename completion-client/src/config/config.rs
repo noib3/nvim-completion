@@ -1,4 +1,4 @@
-use nvim_oxi::{object, Object, ObjectKind};
+use nvim_oxi::{serde::Deserializer, Object, ObjectKind};
 use serde::Deserialize;
 
 use super::{CompletionConfig, SourcesConfig};
@@ -25,7 +25,7 @@ impl TryFrom<Object> for Config {
             ObjectKind::Nil => Ok(Self::default()),
 
             _ => {
-                let deserializer = object::Deserializer::new(preferences);
+                let deserializer = Deserializer::new(preferences);
                 serde_path_to_error::deserialize::<_, Self>(deserializer)
                     .map_err(Into::into)
             },

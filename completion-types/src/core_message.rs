@@ -1,20 +1,13 @@
 use std::sync::Arc;
 
 use nvim_oxi as nvim;
-use nvim_oxi::r#loop::AsyncHandle;
+use nvim_oxi::libuv::AsyncHandle;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 
 use crate::{
-    Clock,
-    CompletionItem,
-    CompletionRequest,
-    Document,
-    GenericError,
-    ResolvedProperties,
-    Revision,
-    ScoredCompletion,
-    SourceId,
+    Clock, CompletionItem, CompletionRequest, Document, GenericError,
+    ResolvedProperties, Revision, ScoredCompletion, SourceId,
 };
 
 pub type CoreReceiver = UnboundedReceiver<CoreMessage>;

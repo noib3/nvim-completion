@@ -1,9 +1,12 @@
 use std::cmp;
 
 use completion_types::ScoredCompletion;
-use nvim::api::{self, Buffer, Window};
-use nvim::opts::SetExtmarkOpts;
-use nvim::types::{WindowBorder, WindowConfig, WindowRelativeTo};
+use nvim::api::{
+    self,
+    opts::SetExtmarkOpts,
+    types::{WindowBorder, WindowConfig, WindowRelativeTo},
+    Buffer, Window,
+};
 use nvim_oxi as nvim;
 use serde::{de, Deserialize};
 

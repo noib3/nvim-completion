@@ -2,20 +2,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use completion_types::{
-    Clock,
-    CompletionItem,
-    CompletionList,
-    CompletionRequest,
-    CoreMessage,
-    CoreSender,
-    Document,
-    GenericError,
-    RequestKind,
-    ResolvedProperties,
-    Revision,
-    ScoredCompletion,
-    SourceBundle,
-    SourceId,
+    Clock, CompletionItem, CompletionList, CompletionRequest, CoreMessage,
+    CoreSender, Document, GenericError, RequestKind, ResolvedProperties,
+    Revision, ScoredCompletion, SourceBundle, SourceId,
 };
 use nvim_oxi::api::Buffer;
 use rayon::prelude::*;

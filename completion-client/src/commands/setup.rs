@@ -1,5 +1,5 @@
-use nvim_oxi::{
-    api,
+use nvim_oxi::api::{
+    self,
     opts::CreateCommandOpts,
     types::{CommandArgs, CommandNArgs},
 };
@@ -23,9 +23,9 @@ pub(crate) fn setup(client: &Client) -> Result<()> {
         .nargs(CommandNArgs::Any)
         .build();
 
-    api::create_user_command("CompletionStats", stats, None)?;
-    api::create_user_command("CompletionStart", start, Some(&opts))?;
-    api::create_user_command("CompletionStop", stop, Some(&opts))?;
+    api::create_user_command("CompletionStats", stats, &Default::default())?;
+    api::create_user_command("CompletionStart", start, &opts)?;
+    api::create_user_command("CompletionStop", stop, &opts)?;
 
     Ok(())
 }

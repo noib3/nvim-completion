@@ -7,6 +7,18 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+neovim-0-8 = [
+  "completion-client/neovim-0-8",
+  "completion-lsp/neovim-0-8",
+  "nvim-oxi/neovim-0-8"
+]
+neovim-nightly = [
+  "completion-client/neovim-nightly",
+  "completion-lsp/neovim-nightly",
+  "nvim-oxi/neovim-nightly"
+]
+
 [dependencies]
 completion-client = { path = "../completion-client" }
 completion-lipsum = { path = "../completion-sources/lipsum" }

@@ -4,6 +4,11 @@ version = "0.1.0"
 authors = ["Riccardo Mazzarini <riccardo.mazzarini@pm.me>"]
 edition = "2021"
 
+[features]
+default = ["neovim-0-8"]
+neovim-0-8 = ["completion-types/neovim-0-8", "nvim-oxi/neovim-0-8"]
+neovim-nightly = ["completion-types/neovim-nightly", "nvim-oxi/neovim-nightly"]
+
 [dependencies]
 async-trait = "0.1"
 completion-types = { path = "../../completion-types" }

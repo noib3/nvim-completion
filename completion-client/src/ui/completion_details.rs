@@ -1,6 +1,5 @@
-use nvim::api::{self, Buffer, Window};
+use nvim::api::{self, types::WindowBorder, Buffer, Window};
 use nvim_oxi as nvim;
-use nvim_oxi::types::WindowBorder;
 use serde::Deserialize;
 
 use super::Border;
