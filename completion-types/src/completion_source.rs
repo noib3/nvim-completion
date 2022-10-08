@@ -65,6 +65,8 @@ pub trait CompletionSource: Send + Sync + 'static {
 /// TODO: docs
 #[async_trait]
 pub trait ObjectSafeCompletionSource: Send + Sync + 'static {
+    fn name(&self) -> &'static str;
+
     fn api(&self) -> Object;
 
     fn deserialize_config(
@@ -107,6 +109,11 @@ impl<S> ObjectSafeCompletionSource for S
 where
     S: CompletionSource,
 {
+    #[inline]
+    fn name(&self) -> &'static str {
+        S::NAME
+    }
+
     #[inline]
     fn api(&self) -> Object {
         S::api()

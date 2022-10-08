@@ -18,6 +18,8 @@ neovim-nightly = [
 [dependencies]
 completion-core = { path = "../completion-core" }
 completion-types = { path = "../completion-types", features = ["client"] }
+
+libloading = "0.7"
 memchr = "2"
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["libuv"] }
 once_cell = "1.13"

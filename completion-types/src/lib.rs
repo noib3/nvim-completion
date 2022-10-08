@@ -20,6 +20,7 @@ pub use client_message::{
     RequestKind,
 };
 pub use clock::Clock;
+pub use completion_derive::RuntimeSource;
 pub use completion_item::{CompletionItem, CompletionItemBuilder};
 pub use completion_list::CompletionList;
 pub use completion_source::{CompletionSource, ObjectSafeCompletionSource};

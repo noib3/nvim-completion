@@ -8,9 +8,15 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use completion_types::{
-    CompletionSource, CoreSender, SourceBundle, SourceEnable, SourceId,
+    CompletionSource,
+    CoreSender,
+    ObjectSafeCompletionSource,
+    SourceBundle,
+    SourceEnable,
+    SourceId,
 };
-use nvim_oxi::{self as nvim, libuv::AsyncHandle, Object};
+use libloading::{Library, Symbol};
+use nvim_oxi::{self as nvim, libuv::AsyncHandle, Function, Object};
 use once_cell::unsync::Lazy;
 use tokio::sync::mpsc;
 
@@ -47,26 +53,26 @@ pub fn register_source<S: CompletionSource>(source: S) {
     });
 }
 
-// /// TODO: docs
-// pub(crate) fn register_runtime_source(path: String) -> nvim::Result<()> {
-//     let (name, bundle) = unsafe {
-//         let lib = Library::new(path).unwrap();
+/// TODO: docs
+pub(crate) fn register_runtime_source(path: String) -> Result<()> {
+    let source = unsafe {
+        let lib = Library::new(path)?;
 
-//         let (name, source) = lib
-//             .get::<SourcePtr>(RUNTIME_SOURCE_EXPORTED_SYMBOL.as_bytes())
-//             .unwrap()();
+        let func: Symbol<
+            extern "C" fn() -> Box<dyn ObjectSafeCompletionSource>,
+        > = lib.get(b"_nvim_completion_runtime_source")?;
 
-//         (name, SourceBundle::from_ptr(source))
-//     };
+        func()
+    };
 
-//     SOURCES.with(move |s| {
-//         let sources = &mut *s.borrow_mut();
-//         let sources = sources.as_mut().unwrap();
-//         sources.insert(name, bundle);
-//     });
+    SOURCES.with(move |s| {
+        let sources = &mut *s.borrow_mut();
+        let sources = sources.as_mut().unwrap();
+        sources.insert(source.name(), SourceBundle::from(source));
+    });
 
-//     Ok(())
-// }
+    Ok(())
+}
 
 // Returns the whole user-facing API of the plugin. The returned
 // [`Dictionary`] is the Lua table users see when they inspect the plugin via:
@@ -91,7 +97,7 @@ pub fn build_api() -> nvim::Dictionary {
     });
 
     [
-        // ("register_source", Function::from_fn(register_runtime_source).into()),
+        ("register_source", Function::from_fn(register_runtime_source).into()),
         ("setup", client.to_nvim_fn(self::setup).into()),
     ]
     .into_iter()

@@ -48,6 +48,9 @@ pub(crate) enum Error {
     ClientSendError(
         #[from] tokio::sync::mpsc::error::SendError<ClientMessage>,
     ),
+
+    #[error(transparent)]
+    Loading(#[from] libloading::Error),
 }
 
 impl From<serde_path_to_error::Error<nvim::serde::Error>> for Error {

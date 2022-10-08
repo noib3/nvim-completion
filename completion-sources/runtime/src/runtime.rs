@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use nvim_completion_core::{
-    Buffer,
-    CompletionContext,
+use completion_types::{
     CompletionItem,
-    CompletionItemBuilder,
+    CompletionList,
     CompletionSource,
+    Document,
+    Position,
     RuntimeSource,
 };
 use serde::Deserialize;
@@ -31,12 +31,27 @@ impl CompletionSource for Runtime {
 
     type Error = Error;
 
+    async fn enable(&self, _doc: &Document, _config: &Config) -> Result<bool> {
+        Ok(true)
+    }
+
+    async fn trigger_characters(
+        &self,
+        _doc: &Document,
+        _config: &Config,
+    ) -> Result<Vec<char>> {
+        Ok(Vec::new())
+    }
+
     async fn complete(
         &self,
-        _buf: &Buffer,
-        _ctx: &CompletionContext,
+        _doc: &Document,
+        _pos: &Position,
         _config: &Config,
-    ) -> Result<Vec<CompletionItem>> {
-        Ok(vec![CompletionItemBuilder::new("from dynamic").build()])
+    ) -> Result<CompletionList> {
+        let completions =
+            vec![CompletionItem::builder().text("hey from runtime").build()];
+
+        Ok(CompletionList { items: completions, is_complete: true })
     }
 }

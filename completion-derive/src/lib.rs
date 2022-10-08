@@ -10,16 +10,9 @@ pub fn derive_runtime_source(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         #[no_mangle]
-        pub extern "C" fn _nvim_completion_runtime_source() -> (
-            ::nvim_completion_core::SourceId,
-            *const dyn ::nvim_completion_core::ObjectSafeCompletionSource,
-        ) {
-            let name =
-                <#struct_name as ::nvim_completion_core::CompletionSource>::NAME;
-
-            let ptr = Box::into_raw(Box::new(#struct_name {})) as *const _;
-
-            (name, ptr)
+        pub extern "C" fn _nvim_completion_runtime_source(
+        ) -> Box<dyn ::completion_types::ObjectSafeCompletionSource> {
+            Box::new(#struct_name {})
         }
     })
 }

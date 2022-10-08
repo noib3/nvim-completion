@@ -11,6 +11,8 @@ neovim-0-8 = ["nvim-oxi/neovim-0-8"]
 neovim-nightly = ["nvim-oxi/neovim-nightly"]
 
 [dependencies]
+completion-derive = { path = "../completion-derive" }
+
 async-trait = "0.1"
 nvim-oxi = { git = "https://github.com/noib3/nvim-oxi", features = ["libuv"] }
 serde = { version = "1.0", features = ["derive"] }

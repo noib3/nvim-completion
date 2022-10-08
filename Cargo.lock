@@ -119,7 +119,7 @@ checksum = "fe6837df1d5cba2397b835c8530f51723267e16abbf83892e9e5af4f0e5dd10a"
 dependencies = [
  "glob",
  "libc",
- "libloading",
+ "libloading 0.5.2",
 ]
 
 [[package]]
@@ -143,6 +143,7 @@ version = "0.1.0"
 dependencies = [
  "completion-core",
  "completion-types",
+ "libloading 0.7.3",
  "memchr",
  "nvim-oxi",
  "once_cell",
@@ -164,6 +165,14 @@ dependencies = [
  "rayon",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "completion-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -193,6 +202,7 @@ name = "completion-types"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "completion-derive",
  "nvim-oxi",
  "serde",
  "serde_path_to_error",
@@ -491,6 +501,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "libloading"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
+dependencies = [
+ "cfg-if 1.0.0",
+ "winapi",
+]
+
+[[package]]
 name = "libuv-bindings"
 version = "0.1.0"
 source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
@@ -608,14 +628,6 @@ dependencies = [
  "completion-lipsum",
  "completion-lsp",
  "nvim-oxi",
-]
-
-[[package]]
-name = "nvim-completion-derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]
