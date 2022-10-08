@@ -9,9 +9,16 @@ PRJ_ROOT="${PRJ_ROOT:-$(git rev-parse --show-toplevel)}"
 PROFILE="${1:-debug}"
 
 if [ $PROFILE != "debug" ] && [ $PROFILE != "release" ]; then
-  echo "Invalid argument \"$PROFILE\": profile should either be \"debug\" or \"release\""
+  echo "Invalid profile \"$PROFILE\": profile should either be \"debug\" or \"release\""
   exit 1
 fi
+
+case "$OSTYPE" in
+  linux*|bsd*|solaris*) OS="linux" ;;
+  msys*|cygwin*) OS="windows" ;;
+  darwin*) OS="macos" ;;
+  *) echo "Unknown OS type \"$OSTYPE\"" && exit 1 ;;
+esac
 
 cargo_build() {
   if ! command -v cargo &>/dev/null; then
@@ -19,29 +26,23 @@ cargo_build() {
     return 1
   fi
   profile=$([ $PROFILE == debug ] && echo "" || echo --release)
-  # Nightly is needed to compile (rustup toolchain install nightly) until https://github.com/rust-lang/rust/issues/79524 is merged.
-  cargo +nightly build $profile &>/dev/null
+  cargo build $profile &>/dev/null
   return 0
 }
 
-copy_stuff() {
-  # TODO: extension is `.so` on linux, `.dylib` on macOS and `.dll` on Windows
-  library_extension=$(\
-    [ -f $PRJ_ROOT/target/$PROFILE/libcompleet_client.so ] \
-      && echo so \
-      || echo dylib \
-  )
+symlink_dll() {
+  case "$OS" in
+    linux) dll_prefix="lib" && dll_suffix="so" && target_suffix="so" ;;
+    macos) dll_prefix="lib" && dll_suffix="dylib" && target_suffix="so" ;;
+    windows) dll_prefix="" && dll_suffix="dll" && target_suffix="dll" ;;
+  esac
 
-  # Place the compiled library where Neovim can find it.
-  mkdir -p $PRJ_ROOT/lua
-  cp \
-    "$PRJ_ROOT/target/$PROFILE/libcompleet_client.$library_extension" \
-    $PRJ_ROOT/lua/compleet.so
+  mkdir -p "$PRJ_ROOT/lua"
 
-  # I'm not sure if copying all of the compiled library's dependencies is
-  # actually needed.
-  mkdir -p $PRJ_ROOT/lua/deps
-  cp $PRJ_ROOT/target/$PROFILE/deps/*.rlib $PRJ_ROOT/lua/deps
+  # Link the dll where Neovim can find it.
+  ln -sf \
+    "$PRJ_ROOT/target/$PROFILE/${dll_prefix}nvim_completion.${dll_suffix}" \
+    "$PRJ_ROOT/lua/nvim_completion.${target_suffix}"
 }
 
-cargo_build && copy_stuff
+cargo_build && symlink_dll
