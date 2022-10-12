@@ -486,9 +486,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.134"
+version = "0.2.135"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
+checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
 
 [[package]]
 name = "libloading"
@@ -513,7 +513,7 @@ dependencies = [
 [[package]]
 name = "libuv-bindings"
 version = "0.1.0"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "libuv-sys2",
  "luajit-bindings",
@@ -554,7 +554,7 @@ dependencies = [
 [[package]]
 name = "luajit-bindings"
 version = "0.1.0"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "once_cell",
  "thiserror",
@@ -610,7 +610,7 @@ dependencies = [
 [[package]]
 name = "nvim-api"
 version = "0.1.0"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "derive_builder",
  "luajit-bindings",
@@ -633,7 +633,7 @@ dependencies = [
 [[package]]
 name = "nvim-oxi"
 version = "0.1.3"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "libuv-bindings",
  "luajit-bindings",
@@ -647,7 +647,7 @@ dependencies = [
 [[package]]
 name = "nvim-types"
 version = "0.1.1"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "luajit-bindings",
  "serde",
@@ -663,7 +663,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "oxi-module"
 version = "0.1.0"
-source = "git+https://github.com/noib3/nvim-oxi#86c6c71d5838518d49cdf4fc3204e5ca4d244b48"
+source = "git+https://github.com/noib3/nvim-oxi#2ea657d5ef719016c17391c384c8bca2ace4cda3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -986,9 +986,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.4"
+version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcc811dc4066ac62f84f11307873c4850cb653bfa9b1719cee2bd2204a4bc5dd"
+checksum = "6ceab39d59e4c9499d4e5a8ee0e2735b891bb7308ac83dfb4e80cad195c9f6f3"
 
 [[package]]
 name = "unicode-width"
