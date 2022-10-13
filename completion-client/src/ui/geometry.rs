@@ -1,7 +1,7 @@
 /// The possible ways the completion menu could be placed on the screen
 /// relative to the current cursor position.
 ///
-/// ```
+/// ```ignore
 ///          +------+------+
 ///          +------+------+
 ///          +--NW--+--NE--+
