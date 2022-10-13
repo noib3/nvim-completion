@@ -1,20 +1,316 @@
 use std::cmp;
+use std::ops::{Bound, Range, RangeBounds, RangeInclusive};
+use std::slice::SliceIndex;
 
-use completion_types::ScoredCompletion;
+use completion_types::{CompletionItem, ScoredCompletion};
 use nvim::api::{
     self,
     opts::SetExtmarkOpts,
     types::{WindowBorder, WindowConfig, WindowRelativeTo},
-    Buffer, Window,
+    Buffer,
+    Window,
 };
 use nvim_oxi as nvim;
 use serde::{de, Deserialize};
 
 use super::config::Border;
 use super::MenuGeometry;
+use crate::hlgroups;
 use crate::CompletionItemExt;
 
 const MENU_NAMESPACE: &str = "completion_menu";
+
+#[derive(Debug)]
+pub(crate) struct CompletionMenu {
+    /// The Neovim buffer used to display the rendered completion items.
+    buf: Buffer,
+
+    /// The current completion items.
+    completions: Vec<ScoredCompletion>,
+
+    /// Config set by the user.
+    config: MenuConfig,
+
+    /// The height of the completion menu in terminal rows.
+    height: u16,
+
+    /// The currently rendered range of completions.
+    ///
+    /// When new completion items arrive they have to be "rendered" to be
+    /// displayed in this menu.
+    ///
+    /// By "rendering" I mean going from a [`CompletionItem`] to its single
+    /// line string representation, highlighting the resulting string and
+    /// highlighting the matched characters.
+    ///
+    /// If there are lots of completions rendering all of them at once right
+    /// when they arrive can be quite expensive, and also unnecessary since the
+    /// total number of completions can be much larger than the height of this
+    /// menu.
+    ///
+    /// We instead only render the first `n` completions, where `n` is some
+    /// small multiple of the menu height, and render the rest lazily when the
+    /// user scrolls down.
+    ///
+    /// This range contains the indices of the completion items that have been
+    /// rendered.
+    ///
+    /// # Invariants:
+    ///
+    /// - the end of the range is always `<= completions.len() - 1`;
+    ///
+    /// - the index in `selected_completion`, if set, is always contained in
+    ///   this range.
+    rendered_range: RangeInclusive<usize>,
+
+    /// The id of the Neovim namespace used to ...
+    namespace_id: u32,
+
+    /// The index of the currently selected completion item, if any.
+    ///
+    /// # Invariants
+    ///
+    /// - it's always a valid index into `completions`, i.e. always between `0`
+    ///   and `completions.len() - 1`.
+    selected_completion: Option<usize>,
+
+    /// The width of the completion menu in terminal cells.
+    width: u16,
+
+    /// The Neovim floating window used to hold the buffer, or `None` if the
+    /// completion menu is currently closed.
+    win: Option<Window>,
+}
+
+impl Default for CompletionMenu {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            buf: 0.into(),
+            completions: Vec::new(),
+            config: MenuConfig::default(),
+            height: 0,
+            namespace_id: api::create_namespace(MENU_NAMESPACE),
+            rendered_range: RangeInclusive::new(0, 0),
+            selected_completion: None,
+            width: 0,
+            win: None,
+        }
+    }
+}
+
+impl CompletionMenu {
+    #[inline]
+    pub(super) fn init(&mut self, config: MenuConfig) -> nvim::Result<()> {
+        self.config = config;
+        self.buf = api::create_buf(false, true)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn is_open(&self) -> bool {
+        self.win.is_some()
+    }
+
+    pub(crate) fn set_completions(
+        &mut self,
+        completions: Vec<ScoredCompletion>,
+        drawable_rows: u16,
+        drawable_columns: u16,
+    ) -> nvim::Result<()> {
+        let desired_height =
+            cmp::min(self.config.max_height as usize, completions.len());
+
+        let desired_width = {
+            let compute_width =
+                width_compute_strategy(completions.iter().map(|c| &*c.item));
+
+            completions
+                .iter()
+                .map(|c| c.item.menu_display())
+                .map(|s| compute_width(&s))
+                .max()
+                .unwrap()
+        };
+
+        self.completions = completions;
+        self.render(0..desired_height)?;
+
+        let positioning = MenuGeometry::new(
+            desired_height as u16,
+            desired_width as u16,
+            drawable_rows,
+            drawable_columns,
+        );
+
+        if self.is_open() {
+            self.move_window(positioning)?;
+        } else {
+            self.open_window(positioning)?;
+        }
+
+        Ok(())
+    }
+
+    fn render(&mut self, range: Range<usize>) -> nvim::Result<()> {
+        let start = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Excluded(&n) => n + 1,
+            Bound::Included(&n) => n,
+        };
+
+        let end = match range.end_bound() {
+            Bound::Unbounded => self.completions.len().saturating_sub(1),
+            Bound::Excluded(&n) => n.saturating_sub(1),
+            Bound::Included(&n) => n,
+        };
+
+        assert!(start <= end);
+        assert!(end < self.completions.len());
+
+        let lines = self.completions[range.clone()]
+            .iter()
+            .map(|c| c.item.menu_display());
+
+        self.buf.set_lines(start, end, false, lines)?;
+
+        for (row, completion) in self.completions[range].iter().enumerate() {
+            for (byte_range, hl_group) in completion.item.highlight_ranges() {
+                let opts = SetExtmarkOpts::builder()
+                    .end_row(row)
+                    .end_col(*byte_range.end())
+                    .hl_group(hl_group)
+                    .priority(100)
+                    .build();
+
+                self.buf.set_extmark(
+                    self.namespace_id,
+                    row,
+                    *byte_range.start(),
+                    &opts,
+                )?;
+            }
+
+            for byte_range in completion.matched_ranges() {
+                let offset = completion.item.text_offset();
+
+                let opts = SetExtmarkOpts::builder()
+                    .end_row(row)
+                    .end_col(offset + *byte_range.end())
+                    .hl_group(hlgroups::MENU_MATCHING)
+                    .priority(200)
+                    .build();
+
+                self.buf.set_extmark(
+                    self.namespace_id,
+                    row,
+                    offset + *byte_range.start(),
+                    &opts,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Opens the completion menu's floating window used to display the
+    /// completion results.
+    ///
+    /// Should only be called if the menu is currently closed. If the menu is
+    /// already open consider using [`move_window`] instead.
+    fn open_window(&mut self, geometry: MenuGeometry) -> nvim::Result<()> {
+        debug_assert!(!self.is_open());
+
+        let config = WindowConfig::builder()
+            .relative(WindowRelativeTo::Cursor)
+            .height(geometry.height as _)
+            .width(geometry.width as _)
+            .row(geometry.row)
+            .col(geometry.col)
+            .noautocmd(true)
+            .zindex(200)
+            .build();
+
+        self.win = Some(api::open_win(&self.buf, false, &config)?);
+
+        Ok(())
+    }
+
+    /// Moves the completion menu's floating window to a new position.
+    ///
+    /// Should only be called if the menu is already open. If the menu is
+    /// currently closed consider using [`open_window`] instead.
+    fn move_window(&mut self, geometry: MenuGeometry) -> nvim::Result<()> {
+        debug_assert!(self.is_open());
+
+        let config = WindowConfig::builder()
+            .relative(WindowRelativeTo::Cursor)
+            .height(geometry.height as _)
+            .width(geometry.width as _)
+            .row(geometry.row)
+            .col(geometry.col)
+            .build();
+
+        self.win.as_mut().unwrap().set_config(&config)?;
+
+        Ok(())
+    }
+
+    pub(crate) fn select_next(&mut self) {
+        todo!()
+    }
+
+    pub(crate) fn select_prev(&mut self) {
+        todo!()
+    }
+
+    pub(crate) fn select_completion(&mut self, idx: usize) {
+        todo!()
+    }
+
+    pub(crate) fn close(&mut self) -> nvim::Result<()> {
+        if let Some(win) = self.win.take() {
+            win.hide()?;
+            self.completions.clear();
+            self.selected_completion = None;
+        }
+
+        Ok(())
+    }
+}
+
+/// TODO: docs
+fn width_compute_strategy<'item, I>(
+    completions: I,
+) -> impl for<'a> Fn(&'a str) -> usize
+where
+    I: ExactSizeIterator<Item = &'item CompletionItem>,
+{
+    match completions.len() {
+        n if n <= 50 => nvim_strwidth,
+        n if n <= 1000 => grapheme_width,
+        n if n <= 5000 => code_point_width,
+        _ => bytes_width,
+    }
+}
+
+fn nvim_strwidth(line: &str) -> usize {
+    api::call_function::<_, usize>("strwidth", (line,)).unwrap()
+}
+
+fn grapheme_width(line: &str) -> usize {
+    use unicode_segmentation::UnicodeSegmentation;
+    line.graphemes(true).count()
+}
+
+fn code_point_width(line: &str) -> usize {
+    line.chars().count()
+}
+
+fn bytes_width(line: &str) -> usize {
+    line.bytes().count()
+}
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct MenuConfig {
@@ -68,187 +364,5 @@ where
         )),
 
         height => Ok(height),
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct CompletionMenu {
-    config: MenuConfig,
-
-    /// TODO: docs
-    buf: Buffer,
-
-    /// TODO: docs
-    win: Option<Window>,
-
-    /// TODO: docs
-    height: u16,
-
-    /// TODO: docs
-    width: u16,
-
-    /// TODO: docs
-    namespace_id: u32,
-}
-
-impl Default for CompletionMenu {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            config: MenuConfig::default(),
-            buf: 0.into(),
-            win: None,
-            height: 0,
-            width: 0,
-            namespace_id: api::create_namespace(MENU_NAMESPACE),
-        }
-    }
-}
-
-impl CompletionMenu {
-    #[inline]
-    pub(super) fn init(&mut self, config: MenuConfig) -> nvim::Result<()> {
-        self.config = config;
-        self.buf = api::create_buf(false, true)?;
-
-        Ok(())
-    }
-
-    #[inline]
-    fn is_open(&self) -> bool {
-        self.win.is_some()
-    }
-
-    /// TODO: docs
-    pub(super) fn display(
-        &mut self,
-        comps: &[ScoredCompletion],
-        drawable_rows: u16,
-        drawable_columns: u16,
-    ) -> nvim::Result<()> {
-        let desired_height =
-            cmp::min(self.config.max_height, comps.len() as _);
-
-        // Computing the "correct" width in terms of grapheme clusters is
-        // around 8 times slower than using the number of code points.
-        // Tested with 30k completions, using graphemes takes 57ms vs 7ms w/
-        // code points.
-        //
-        // Code points is already a big improvement vs using raw bytes, so the
-        // marginal increase in correctness is probably not worth 8x the
-        // performance cost.
-        let desired_width = comps
-            .iter()
-            .take(desired_height as _)
-            // .map(|c| {
-            //     use unicode_segmentation::UnicodeSegmentation;
-            //     c.menu_display().graphemes(true).count()
-            // })
-            .map(|c| c.item.menu_display().chars().count())
-            .max()
-            .unwrap();
-
-        let geometry = MenuGeometry::new(
-            desired_height as _,
-            desired_width as _,
-            drawable_rows,
-            drawable_columns,
-        );
-
-        self.set_contents(&comps[..desired_height as _])?;
-
-        if self.is_open() {
-            self.move_window(geometry)?;
-        } else {
-            self.open_window(geometry)?;
-        }
-
-        Ok(())
-    }
-
-    /// Fills the menu's buffer with the new completions and highlights each
-    /// completion according to its highlight ranges.
-    fn set_contents(
-        &mut self,
-        comps: &[ScoredCompletion],
-    ) -> nvim::Result<()> {
-        let lines = comps.iter().map(|cmp| cmp.item.menu_display());
-        self.buf.set_lines(0, u32::MAX as _, false, lines)?;
-
-        // // Highlight each completion in the menu.
-        // for (row, comp) in comps.iter().enumerate() {
-        //     for (byte_range, hl_group) in &comp.highlight_ranges() {
-        //         let opts = SetExtmarkOpts::builder()
-        //             .end_row(row)
-        //             .end_col(*byte_range.end())
-        //             .hl_group(hl_group)
-        //             .priority(100)
-        //             .build();
-
-        //         if let Err(err) = self.buf.set_extmark(
-        //             self.namespace_id,
-        //             row,
-        //             *byte_range.start(),
-        //             &opts,
-        //         ) {
-        //             nvim::print!("ERR: {:?}, {:?}", comp, byte_range);
-        //             return Err(err);
-        //         };
-        //     }
-        // }
-
-        Ok(())
-    }
-
-    /// Opens the completion menu's floating window used to display the
-    /// completion results.
-    ///
-    /// Should only be called if the menu is currently closed. If the menu is
-    /// already open consider using [`move_window`] instead.
-    fn open_window(&mut self, geometry: MenuGeometry) -> nvim::Result<()> {
-        debug_assert!(!self.is_open());
-
-        let config = WindowConfig::builder()
-            .relative(WindowRelativeTo::Cursor)
-            .height(geometry.height as _)
-            .width(geometry.width as _)
-            .row(geometry.row)
-            .col(geometry.col)
-            .noautocmd(true)
-            .zindex(200)
-            .build();
-
-        self.win = Some(api::open_win(&self.buf, false, &config)?);
-
-        Ok(())
-    }
-
-    /// Moves the completion menu's floating window to a new position.
-    ///
-    /// Should only be called if the menu is already open. If the menu is
-    /// currently closed consider using [`open_window`] instead.
-    fn move_window(&mut self, geometry: MenuGeometry) -> nvim::Result<()> {
-        debug_assert!(self.is_open());
-
-        let config = WindowConfig::builder()
-            .relative(WindowRelativeTo::Cursor)
-            .height(geometry.height as _)
-            .width(geometry.width as _)
-            .row(geometry.row)
-            .col(geometry.col)
-            .build();
-
-        self.win.as_mut().unwrap().set_config(&config)?;
-
-        Ok(())
-    }
-
-    /// Closes the completion menu's floating window.
-    pub(super) fn close_window(&mut self) -> nvim::Result<()> {
-        if let Some(win) = self.win.take() {
-            win.hide()?;
-        }
-
-        Ok(())
     }
 }

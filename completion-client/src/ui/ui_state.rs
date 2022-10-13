@@ -45,8 +45,6 @@ pub(crate) struct UiState {
     /// event. However since it doesn't depend on any user-modifiable setting
     /// it should never get out of sync with its "right" value.
     columns: u16,
-
-    completions: Vec<ScoredCompletion>,
 }
 
 impl UiState {
@@ -68,35 +66,21 @@ impl UiState {
     pub(crate) fn update_completions(
         &mut self,
         completions: Vec<ScoredCompletion>,
-        mut buffer: Buffer,
-        position: Arc<Position>,
+        mut _buffer: Buffer,
+        _position: Arc<Position>,
     ) -> nvim::Result<()> {
-        self.display(&completions, &mut buffer, &position)?;
-        self.completions = completions;
-        Ok(())
-    }
-
-    /// TODO: docs
-    #[inline]
-    pub(crate) fn display(
-        &mut self,
-        completions: &[ScoredCompletion],
-        buf: &mut Buffer,
-        position: &Position,
-    ) -> nvim::Result<()> {
-        debug_assert!(!completions.is_empty());
-
+        self.menu.set_completions(completions, self.rows, self.columns)?;
         // self.hint.show(&completions[0].item, buf, position)?;
-        self.menu.display(completions, self.rows, self.columns)?;
-
         Ok(())
     }
+
+    pub(crate) fn select_completion(&mut self) {}
 
     /// Hides the completion hint, menu and details window.
     #[inline]
     pub(crate) fn hide_all(&mut self, buf: &mut Buffer) -> nvim::Result<()> {
         self.hint.hide(buf)?;
-        self.menu.close_window()?;
+        self.menu.close()?;
         self.details.hide()
     }
 

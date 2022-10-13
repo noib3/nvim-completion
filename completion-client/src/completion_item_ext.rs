@@ -4,11 +4,10 @@ use std::ops::RangeInclusive;
 use completion_types::CompletionItem;
 
 pub(crate) trait CompletionItemExt {
-    fn hint_display(&self) -> Cow<'_, str>;
-
-    fn menu_display(&self) -> String;
-
     fn highlight_ranges(&self) -> Vec<(RangeInclusive<usize>, &'static str)>;
+    fn hint_display(&self) -> Cow<'_, str>;
+    fn menu_display(&self) -> String;
+    fn text_offset(&self) -> usize;
 }
 
 impl CompletionItemExt for CompletionItem {
@@ -21,6 +20,10 @@ impl CompletionItemExt for CompletionItem {
 
     fn menu_display(&self) -> String {
         format!(" {} ", self.hint_display())
+    }
+
+    fn text_offset(&self) -> usize {
+        1
     }
 
     fn highlight_ranges(&self) -> Vec<(RangeInclusive<usize>, &'static str)> {

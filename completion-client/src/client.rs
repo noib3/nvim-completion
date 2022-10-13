@@ -5,8 +5,17 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use completion_types::{
-    ClientMessage, ClientSender, Clock, CompletionRequest, CoreMessage,
-    CoreReceiver, CoreSender, Document, Position, RequestKind, Revision,
+    ClientMessage,
+    ClientSender,
+    Clock,
+    CompletionRequest,
+    CoreMessage,
+    CoreReceiver,
+    CoreSender,
+    Document,
+    Position,
+    RequestKind,
+    Revision,
     ScoredCompletion,
 };
 use nvim::api::{
@@ -139,7 +148,7 @@ impl Client {
         (
             _,
             buffer,
-            changedtick,
+            _changedtick,
             start_row,
             start_col,
             _byte_offset,

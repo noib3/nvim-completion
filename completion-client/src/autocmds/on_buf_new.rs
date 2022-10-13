@@ -1,5 +1,8 @@
 use nvim_oxi::api::{
-    self, opts::CreateAutocmdOpts, types::AutocmdCallbackArgs, Buffer,
+    self,
+    opts::CreateAutocmdOpts,
+    types::AutocmdCallbackArgs,
+    Buffer,
 };
 
 use crate::{Client, Result};
