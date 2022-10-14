@@ -99,15 +99,18 @@ pub enum CoreMessage {
     },
 
     /// TODO: docs
+    ExecuteLuaFunction {
+        fun: Box<dyn FnOnce(()) -> Result<(), nvim::Error> + Send>,
+    },
+
+    /// TODO: docs
+    NoCompletions { id: Revision },
+
+    /// TODO: docs
     ResolvedCompletion {
         item: Arc<CompletionItem>,
         properties: ResolvedProperties,
         id: Revision,
-    },
-
-    /// TODO: docs
-    ExecuteLuaFunction {
-        fun: Box<dyn FnOnce(()) -> Result<(), nvim::Error> + Send>,
     },
 
     /// A completion source returned an error while executing its

@@ -227,6 +227,16 @@ impl Client {
                     }
                 },
 
+                CoreMessage::NoCompletions { id } => {
+                    if self.is_last_revision(id) {
+                        let client = self.clone();
+                        nvim::schedule(move |_| {
+                            client.ui_mut().hide_all(&mut Buffer::current())
+                        });
+                        return Ok(());
+                    }
+                },
+
                 CoreMessage::ResolvedCompletion { .. } => {},
 
                 CoreMessage::CoreFailed(why) => {

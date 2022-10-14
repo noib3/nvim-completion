@@ -267,11 +267,12 @@ impl State {
         let state = &*self.inner.lock()?;
 
         if request.id == state.revision && state.is_sending_completions {
-            state.sender.send(CoreMessage::Completions {
-                items,
-                request,
-                clock,
-            });
+            let msg = if !items.is_empty() {
+                CoreMessage::Completions { items, request, clock }
+            } else {
+                CoreMessage::NoCompletions { id: state.revision }
+            };
+            state.sender.send(msg);
         }
 
         Ok(())
