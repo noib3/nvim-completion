@@ -10,8 +10,6 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use rayon::prelude::*;
 
-use crate::PositionExt;
-
 type Score = i64;
 
 /// Sorts a list of completion items against a specific request, filtering out

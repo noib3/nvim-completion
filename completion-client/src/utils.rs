@@ -32,12 +32,12 @@ mod tests {
         assert_eq!("foo{", single_line_display("foo{"));
     }
 
-    // #[test]
-    // fn display_multiline_brace() {
-    //     assert_eq!("foo{(..)}", single_line_display("foo{(\n"));
-    //     assert_eq!("foo{bar(..)}", single_line_display("foo{bar(\n"));
-    //     assert_eq!("foo(bar{..})", single_line_display("foo(bar{\n"));
-    //     assert_eq!("foo)bar}..", single_line_display("foo)bar}\n"));
-    //     assert_eq!("foo)bar}..", single_line_display("foo)bar}{(\n"));
-    // }
+    #[test]
+    fn display_multiline_brace() {
+        // assert_eq!("foo{(..)}", single_line_display("foo{(\n"));
+        // assert_eq!("foo{bar(..)}", single_line_display("foo{bar(\n"));
+        // assert_eq!("foo(bar{..})", single_line_display("foo(bar{\n"));
+        // assert_eq!("foo)bar}..", single_line_display("foo)bar}\n"));
+        // assert_eq!("foo)bar}..", single_line_display("foo)bar}{(\n"));
+    }
 }

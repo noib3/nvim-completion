@@ -257,6 +257,17 @@ impl CompletionMenu {
         Ok(())
     }
 
+    pub(crate) fn selected_completion(&self) -> Option<&CompletionItem> {
+        self.selected_completion.map(|idx| &*self.completions[idx].item)
+    }
+
+    pub(crate) fn nth_completion(
+        &self,
+        idx: usize,
+    ) -> Option<&CompletionItem> {
+        self.completions.get(idx).map(|c| &*c.item)
+    }
+
     pub(crate) fn select_next(&mut self) {
         todo!()
     }

@@ -15,13 +15,6 @@ use crate::PositionExt;
 
 const HINT_NAMESPACE: &str = "completion_hint";
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct HintConfig {
-    #[serde(default)]
-    enable: bool,
-}
-
 #[derive(Debug)]
 pub(crate) struct CompletionHint {
     config: HintConfig,
@@ -65,7 +58,7 @@ impl CompletionHint {
         self.extmark_id.is_some()
     }
 
-    /// Hides the completion hint from the providec buffer.
+    /// Hides the completion hint in the buffer.
     pub fn hide(&mut self, buf: &mut Buffer) -> nvim::Result<()> {
         buf.clear_namespace(self.namespace_id, 0, usize::MAX)?;
         self.extmark_id = None;
@@ -79,9 +72,19 @@ impl CompletionHint {
         buf: &mut Buffer,
         cursor: &Position,
     ) -> nvim::Result<()> {
+        if !self.config.enable {
+            return Ok(());
+        }
+
         let text = match extract_hint_text(cursor, completion) {
             Some(text) => text,
-            None => return Ok(()),
+
+            None => {
+                if self.is_visible() {
+                    self.hide(buf)?;
+                }
+                return Ok(());
+            },
         };
 
         self.opts.set_id(self.extmark_id.unwrap_or(1));
@@ -89,8 +92,8 @@ impl CompletionHint {
 
         self.extmark_id = Some(buf.set_extmark(
             self.namespace_id,
-            cursor.row as _,
-            cursor.col as _,
+            cursor.row as usize,
+            cursor.col as usize,
             &self.opts,
         )?);
 
@@ -111,23 +114,37 @@ fn extract_hint_text<'a>(
     // return early. For example if the current line is `foo.barbaz|` and the
     // completion is `bar`.
     //
-    // This is generally not the case because the completions should have
-    // already been filtered by the time they're displayed, but we're not
-    // making this assumption here.
-    //
     // NOTE: it might make sense to relax this constrait in the future. For
     // example, if the current line is `foo.bar|` and the completion is `baz`
     // we could overlay the `z` on top of the `r` for a better preview
     // experience.
-    // if !cursor.is_at_eol() || completion.text.len() < cursor.len_prefix {
-    //     return None;
-    // }
+    //
+    if !cursor.is_at_eol()
+        || !completion.text.starts_with(cursor.matched_prefix())
+    {
+        return None;
+    }
 
-    // Some(crate::utils::single_line_display(
-    //     &completion.text[cursor.len_prefix..],
-    // ))
+    Some(crate::utils::single_line_display(
+        &completion.text[cursor.len_prefix()..],
+    ))
+}
 
-    todo!()
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct HintConfig {
+    #[serde(default = "yes")]
+    enable: bool,
+}
+
+impl Default for HintConfig {
+    fn default() -> Self {
+        HintConfig { enable: yes() }
+    }
+}
+
+fn yes() -> bool {
+    true
 }
 
 // #[cfg(test)]

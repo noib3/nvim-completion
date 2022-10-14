@@ -66,11 +66,18 @@ impl UiState {
     pub(crate) fn update_completions(
         &mut self,
         completions: Vec<ScoredCompletion>,
-        mut _buffer: Buffer,
-        _position: Arc<Position>,
+        mut buffer: Buffer,
+        position: Arc<Position>,
     ) -> nvim::Result<()> {
         self.menu.set_completions(completions, self.rows, self.columns)?;
-        // self.hint.show(&completions[0].item, buf, position)?;
+
+        let hinted_completion = self
+            .menu
+            .selected_completion()
+            .unwrap_or(self.menu.nth_completion(0).unwrap());
+
+        // self.hint.show(hinted_completion, &mut buffer, &position)?;
+
         Ok(())
     }
 
